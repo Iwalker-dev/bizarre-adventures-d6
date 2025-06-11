@@ -1,0 +1,56 @@
+{
+  "id": "bizarre-adventures-d6",
+  "title": "Bizarre Adventures D6",
+  "description": "An unofficial core system for the Bizarre Adventures D6 system.",
+  "version": "0.5.8",
+  "authors": [
+    {
+      "name": "LIFT",
+      "discord": "itpart"
+    }
+  ],
+    "compatibility": {
+    "minimum": "12",
+    "verified": "12",
+    "maximum": "13"
+  },
+  "esmodules": [
+    "bad6.js"
+  ],
+  "scripts": [
+      "https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"
+  ],
+  "styles": [
+    "bad6.css"
+  ],
+  "itemTypes": [
+    "hit", 
+    "item"
+  ],
+  "socket": false,
+  "primaryTokenAttribute": "hits",
+  "secondaryTokenAttribute": "luck",
+  "grid": {
+    "distance": 2,
+    "units": "m"
+  },
+  "Item": {
+    "types": ["hit", "item"],
+    "htmlFields": ["description"],
+    "hit": {
+      "description": "",
+      "quantity": 1,
+      "weight": 0,
+      "damage": 0,
+      "attributes": {},
+      "groups": {}
+    },
+    "item": {
+      "description": "",
+      "quantity": 1,
+      "weight": 0,
+      "attributes": {},
+      "groups": {}
+    }
+  }
+}

@@ -1,0 +1,192 @@
+{
+    "Actor": {
+
+        "types": [
+            "user",
+            "stand",
+            "power"
+        ],
+
+        "user": {
+            "health": {
+                "dtype": "Resource",
+                "label": "Health",
+                "original": 0,
+                "min": 0,
+                "max": 0
+            },
+            "attributes": {
+
+                "stats": {
+                    "body":     {
+                        "dtype": "Number",   
+                        "label": "Body",     
+                        "value": 0, 
+                        "group": "ustats" 
+                    },
+				    "luck":     {
+                        "dtype": "Burn",
+                        "group": "ustats",
+                        "label": "Learning",
+                        "value": 0, "temp": 0, "perm": 0 
+				    },
+				    "menacing": { 
+                        "dtype": "Number",   
+                        "label": "Menacing", 
+                        "value": 0, 
+                        "group": "ustats" 
+                    },
+                        "pluck":    { 
+                        "dtype": "Number",   
+                        "label": "Pluck",    
+                        "value": 0, 
+                        "group": "ustats" 
+                    },
+                    "reason":   { 
+                        "dtype": "Number",   
+                        "label": "Reason",   
+                        "value": 0, 
+                        "group": "ustats" 
+                    },
+                    "wit":      { 
+                        "dtype": "Number",   
+                        "label": "Wit",      
+                        "value": 0, 
+                        "group": "ustats" 
+                    }
+                }
+            },
+            "bio": {
+                "name": "",
+                "gender": "",
+                "dob": "",
+                "hitLimit": 0,
+                "appearance": "",
+                "personality": "",
+                "philosophy": "",
+                "backstory": ""
+            }
+        },
+        "stand" : {
+            "attributes": {
+                "stats": {
+                    "durability": { 
+                        "dtype": "Number",   
+                        "label": "Durability", 
+                        "value": 0, 
+                        "group": "sstats" 
+                    },
+					"learning":   { 
+                        "dtype": "Burn",
+                        "label": "Learning",   
+                        "original": 0, "temp": 0, "perm": 0, 
+                        "group": "sstats" 
+                    },
+					"power":      { 
+                        "dtype": "Number",   
+                        "label": "Power",      
+                        "value": 0, 
+                        "group": "sstats" 
+                    },
+					"precision":  { 
+                        "dtype": "Number",   
+                        "label": "Precision",  
+                        "value": 0, 
+                        "group": "sstats" 
+                    },
+					"range":      { 
+                        "dtype": "Number", 
+                        "label": "Range",      
+                        "value": 0,
+                        "group": "sstats" 
+                    },
+					"speed":      { 
+                        "dtype": "Number",   
+                        "label": "Speed",      
+                        "value": 0, 
+                        "group": "sstats" 
+                    }
+                }
+            },
+            "info": {
+                "standName": "",
+                "master": "",
+                "type": "",
+                "design": "",
+                "ability": "",
+                "cost": ""
+            }
+        },
+        "power": {
+            "attributes": {
+                "stats": {
+                    "durability": { 
+                        "dtype": "Number",   
+                        "label": "Durability", 
+                        "value": 0, 
+                        "group": "sstats" 
+                    },
+                    "learning":   { 
+                        "dtype": "Burn",
+                        "label": "Learning",   
+                        "original": 0, "temp": 0, "perm": 0, 
+                        "group": "sstats" 
+                    },
+                    "power":      { 
+                        "dtype": "Number",   
+                        "label": "Power",      
+                        "value": 0, 
+                        "group": "sstats" 
+                    },
+                    "precision":  { 
+                        "dtype": "Number",   
+                        "label": "Precision",  
+                        "value": 0, 
+                        "group": "sstats" 
+                    },
+                    "range":      { 
+                        "dtype": "Number", 
+                        "label": "Range",      
+                        "value": 0,
+                        "group": "sstats" 
+                    },
+                    "speed":      { 
+                        "dtype": "Number",   
+                        "label": "Speed",      
+                        "value": 0, 
+                        "group": "sstats" 
+                    }
+                }
+            },
+            "info": {
+                "powerName": "",
+                "master": "",
+                "type": "",
+                "design": "",
+                "ability": ""
+            }
+        }
+    },
+    "Item": {
+            "types": [
+                "item", 
+                "hit"
+            ],
+            "htmlFields": ["description"],
+            
+            "item": {
+                "type": "item",
+                "description": "",
+                "quantity": 1,
+                "weight": 0,
+                "attributes": {},
+                "groups": {}
+            },
+            "hit": {
+                "type": "hit",
+                "description": "",
+                "quantity": 1,
+                "weight": 0
+            }
+        }
+}
