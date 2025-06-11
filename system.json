@@ -9,7 +9,7 @@
       "discord": "itpart"
     }
   ],
-    "compatibility": {
+  "compatibility": {
     "minimum": "12",
     "verified": "12",
     "maximum": "13"
@@ -18,7 +18,7 @@
     "bad6.js"
   ],
   "scripts": [
-      "https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"
+    "https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"
   ],
   "styles": [
     "bad6.css"
@@ -52,5 +52,7 @@
       "attributes": {},
       "groups": {}
     }
-  }
+  },
+  "manifest": "https://raw.githubusercontent.com/FlexLamb-Dev/bizarre-adventures-d6/main/system.json",
+  "download": "https://github.com/FlexLamb-Dev/bizarre-adventures-d6/releases/download/v0.5.8/bizarre-adventures-d6-v0.5.8.zip"
 }
