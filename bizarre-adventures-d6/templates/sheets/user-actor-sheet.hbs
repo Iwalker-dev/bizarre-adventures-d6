@@ -1,0 +1,258 @@
+<form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
+  <div class="jojo-sheet">
+    <header class="sheet-header">
+      <h1>{{actor.name}}</h1>
+      <div style="float: right; font-size: 1.2em; color: #ccc;">
+        Health: {{system.health.value}} / <input type="number" name="system.health.max" value="{{system.health.max}}" style="width: 50px;">
+      </div>
+    </header>
+
+    <nav class="tabs" data-group="primary">
+      <div class="button-container">
+        <a class="item" data-tab="stats">Stats</a>
+      </div>
+      <div class="button-container">
+        <a class="item" data-tab="bio">Biography</a>
+      </div>
+      <div class="button-container">
+        <a class="item" data-tab="hit">Hits</a>
+      </div>
+      <div class="button-container">
+        <a class="item" data-tab="item">Items</a>
+      </div>
+    </nav>
+
+    <section class="sheet-body">
+      <!-- ─────────────────────── Stats Tab ─────────────────────── -->
+      <div class="tab" data-tab="stats" style="display: block;">
+        <div class="stat-line" data-stat="body">
+          <label style="color: white;">Body</label>
+          <div class="stat-stars" data-stat="body">
+            {{#each (range 0 actor.system.attributes.stats.body.value) as |star|}}
+              <span class="stat-star filled">★</span>
+            {{/each}}
+            {{#each (range actor.system.attributes.stats.body.value 5) as |star|}}
+              <span class="stat-star">☆</span>
+            {{/each}}
+          </div>
+        </div>
+        <div class="stat-line" data-stat="wit">
+          <label style="color: white;">Wit</label>
+          <div class="stat-stars" data-stat="wit">
+            {{#each (range 0 actor.system.attributes.stats.wit.value) as |star|}}
+              <span class="stat-star filled">★</span>
+            {{/each}}
+            {{#each (range actor.system.attributes.stats.wit.value 5) as |star|}}
+              <span class="stat-star">☆</span>
+            {{/each}}
+          </div>
+        </div>
+        <div class="stat-line" data-stat="reason">
+          <label style="color: white;">Reason</label>
+          <div class="stat-stars" data-stat="reason">
+            {{#each (range 0 actor.system.attributes.stats.reason.value) as |star|}}
+              <span class="stat-star filled">★</span>
+            {{/each}}
+            {{#each (range actor.system.attributes.stats.reason.value 5) as |star|}}
+              <span class="stat-star">☆</span>
+            {{/each}}
+          </div>
+        </div>
+        <div class="stat-line" data-stat="menacing">
+          <label style="color: white;">Menacing</label>
+          <div class="stat-stars" data-stat="menacing">
+            {{#each (range 0 actor.system.attributes.stats.menacing.value) as |star|}}
+              <span class="stat-star filled">★</span>
+            {{/each}}
+            {{#each (range actor.system.attributes.stats.menacing.value 5) as |star|}}
+              <span class="stat-star">☆</span>
+            {{/each}}
+          </div>
+        </div>
+        <div class="stat-line" data-stat="pluck">
+          <label style="color: white;">Pluck</label>
+          <div class="stat-stars" data-stat="pluck">
+            {{#each (range 0 actor.system.stats.pluck) as |star|}}
+              <span class="stat-star filled">★</span>
+            {{/each}}
+            {{#each (range actor.system.stats.pluck 5) as |star|}}
+              <span class="stat-star">☆</span>
+            {{/each}}
+          </div>
+        </div>
+        <div class="stat-line" data-stat="luck">
+          <label style="color: white;">Luck</label>
+          <div class="stat-buttons">
+            <button class="luck-type" data-type="original" onclick="showLuckStat('original')" style="background-color: var(--accent-dark) !important; color: white !important;">Original</button>
+            <button class="luck-type" data-type="max" onclick="showLuckStat('max')" style="background-color: var(--accent-dark) !important; color: white !important;">Max</button>
+            <button class="luck-type" data-type="temp" onclick="showLuckStat('temp')" style="background-color: var(--accent-light) !important; color: black !important;">Temp</button>
+          </div>
+          <div class="stat-stars" data-stat="luck-original" style="display: none;">
+            {{#each (range 0 actor.system.stats.luck.original) as |star|}}
+              <span class="stat-star filled">★</span>
+            {{/each}}
+            {{#each (range actor.system.stats.luck.original 5) as |star|}}
+              <span class="stat-star">☆</span>
+            {{/each}}
+          </div>
+          <div class="stat-stars" data-stat="luck-max" style="display: none;">
+            {{#each (range 0 actor.system.stats.luck.max) as |star|}}
+              <span class="stat-star filled">★</span>
+            {{/each}}
+            {{#each (range actor.system.stats.luck.max 5) as |star|}}
+              <span class="stat-star">☆</span>
+            {{/each}}
+          </div>
+          <div class="stat-stars" data-stat="luck-temp" style="display: block;">
+            {{#each (range 0 actor.system.stats.luck.temp) as |star|}}
+              <span class="stat-star filled">★</span>
+            {{/each}}
+            {{#each (range actor.system.stats.luck.temp 5) as |star|}}
+              <span class="stat-star">☆</span>
+            {{/each}}
+          </div>
+        </div>
+      </div>
+
+      <!-- ───────────────────── Biography Tab ───────────────────── -->
+      <div class="tab" data-tab="bio" style="display: none;">
+        <div class="bio-container">
+          <div class="bio-row">
+            <label>Name:</label>
+            <input
+              type="text"
+              name="system.bio.name"
+              value="{{system.bio.name}}"
+              placeholder="Enter name"
+            />
+          </div>
+          <div class="bio-row">
+            <label>Gender:</label>
+            <input
+              type="text"
+              name="system.bio.gender"
+              value="{{system.bio.gender}}"
+              placeholder="Enter gender"
+            />
+          </div>
+          <div class="bio-row">
+            <label>Date of Birth:</label>
+            <input
+              type="date"
+              name="system.bio.dob"
+              value="{{system.bio.dob}}"
+            />
+          </div>
+          <div class="bio-row">
+            <label>Hit Limit:</label>
+            <input
+              type="number"
+              name="system.bio.hitLimit"
+              min="0"
+              value="{{system.bio.hitLimit}}"
+            />
+          </div>
+          <div class="bio-row">
+            <label>Appearance:</label>
+            <textarea
+              name="system.bio.appearance"
+              rows="3"
+              placeholder="Describe appearance"
+            >{{system.bio.appearance}}</textarea>
+          </div>
+          <div class="bio-row">
+            <label>Personality:</label>
+            <textarea
+              name="system.bio.personality"
+              rows="3"
+              placeholder="Describe personality"
+            >{{system.bio.personality}}</textarea>
+          </div>
+          <div class="bio-row">
+            <label>Life Philosophy:</label>
+            <textarea
+              name="system.bio.philosophy"
+              rows="3"
+              placeholder="Enter life philosophy"
+            >{{system.bio.philosophy}}</textarea>
+          </div>
+          <div class="bio-row">
+            <label>Backstory:</label>
+            <textarea
+              name="system.bio.backstory"
+              rows="5"
+              placeholder="Enter backstory"
+            >{{system.bio.backstory}}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─────────────────────── Hits Tab ─────────────────────── -->
+      <div class="tab" data-tab="hit" style="display: none;">
+        <div class="hit-container">
+          <!-- Create Hit Button -->
+          <div class="hit-form">
+            <button id="create-hit" type="button">Create Hit</button>
+          </div>
+
+          <!-- Active Hits List -->
+          <div class="hit-list">
+            <ul id="hit-items">
+              {{#each actor.items}}
+                {{#if (eq this.type "hit")}}
+                  <li style="background-color: rgba(0, 0, 0, 0.5); display: inline-block; padding: 10px; margin: 5px; cursor: pointer;" data-item-id="{{this.id}}">
+                    <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}, Damage: {{this.system.damage}}</span>
+                    <button class="delete-hit" data-item-id="{{this.id}}" style="margin-left: 10px;">Delete</button>
+                  </li>
+                {{/if}}
+              {{/each}}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─────────────────────── Items Tab ─────────────────────── -->
+      <div class="tab" data-tab="item" style="display: none;">
+        <div class="item-container">
+          <!-- Create Item Button -->
+          <div class="item-form">
+            <button id="create-item" type="button">Create Item</button>
+          </div>
+
+          <!-- Active Items List -->
+          <div class="item-list">
+            <ul id="item-items">
+              {{#each actor.items}}
+                {{#if (eq this.type "item")}}
+                  <li style="background-color: rgba(0, 0, 0, 0.5); display: inline-block; padding: 10px; margin: 5px; cursor: pointer;" data-item-id="{{this.id}}">
+                    <span>{{this.name}} - Description: {{this.system.description}}</span>
+                    <button class="delete-item" data-item-id="{{this.id}}" style="margin-left: 10px;">Delete</button>
+                  </li>
+                {{/if}}
+              {{/each}}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function showLuckStat(type) {
+      const buttons = document.querySelectorAll('.luck-type');
+      buttons.forEach(button => {
+        if (button.dataset.type === type) {
+          button.style.backgroundColor = 'var(--accent-light)';
+          button.style.color = 'black';
+        } else {
+          button.style.backgroundColor = 'var(--accent-dark)';
+          button.style.color = 'white';
+        }
+      });
+
+      document.querySelector('[data-stat="luck-original"]').style.display = type === 'original' ? 'block' : 'none';
+      document.querySelector('[data-stat="luck-max"]').style.display = type === 'max' ? 'block' : 'none';
+      document.querySelector('[data-stat="luck-temp"]').style.display = type === 'temp' ? 'block' : 'none';
+    }
+  </script>
+</form>
