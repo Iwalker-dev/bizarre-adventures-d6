@@ -36,7 +36,7 @@ export class PowerSheet extends StandSheet {
       'Pillar Man': ['Strength (Power)', 'Senses (Precision)', 'Reflexes (Speed)', 'Bodily Control (Range)', 'Resilience (Durability)', 'Learning'],
       Spin: ['Mass (Power)', 'Control (Precision)', 'Velocity (Speed)', 'RPM (Range)', 'Sturdiness (Durability)', 'Learning'],
       'Armed Phenomenon': ['Strength (Power)', 'Accuracy (Precision)', 'Agility (Speed)', 'Evolution (Range)', 'Endurance (Durability)', 'Learning'],
-      Cyborg: ['Tech Power (Precision)', 'Precision (Precision)', 'Speed (Speed)', 'Range', 'Durability', 'Learning'],
+      Cyborg: ['Tech Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning'],
       Other: ['Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning']
     };
 
