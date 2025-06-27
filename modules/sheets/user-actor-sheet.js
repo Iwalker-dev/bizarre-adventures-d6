@@ -125,20 +125,6 @@ export class UserSheet extends ActorSheet {
       });
     };
   */
-const actorId = this.actor.id; //TODO move if working
-  // Added edit button logic to open the hit's sheet
-  html.find("#hit-items").on("click", ".edit-hit", (event) => {
-    event.stopPropagation();
-    const itemId = $(event.currentTarget).data("item-id");
-    const actor = game.actors.get(actorId);
-    const item = actor?.items.get(itemId);
-
-    if (item) {
-      item.sheet.render(true);
-    } else {
-      console.error("Edit failed. Hit not found for ID:", itemId);
-    }
-  });
 
   // Render hits from the actor's inventory
   const renderHits = () => {
@@ -147,12 +133,13 @@ const actorId = this.actor.id; //TODO move if working
     hitList.empty();
 
     hits.forEach(hit => {
-      const damage = hit.system.weight * hit.system.quantity;
       const listItem = `
         <li data-item-id="${hit.id}" style="background-color: rgba(0, 0, 0, 0.5); display: inline-block; padding: 10px; margin: 5px; cursor: pointer;">
-          ${hit.name} - Weight: ${hit.system.weight}, Quantity: ${hit.system.quantity}, Damage: ${damage}
-          <p style="margin: 5px 0; font-size: 0.9em; color: #ccc;">${hit.system.description || "No description provided."}</p>
-          <button class="delete-hit" data-item-id="${hit.id}" style="margin-left: 10px;">Delete</button>
+          <div>
+            ${hit.name} - Weight: ${hit.system.weight}, Quantity: ${hit.system.quantity}
+            <p style="margin: 5px 0; font-size: 0.9em; color: #ccc;">${hit.system.description || "No description provided."}</p>
+            <button class="delete-hit" data-item-id="${hit.id}" style="margin-top: 5px;">Delete</button>
+          </div>
         </li>
       `;
       hitList.append(listItem);
@@ -193,70 +180,53 @@ const actorId = this.actor.id; //TODO move if working
     this.actor.createEmbeddedDocuments("Item", [itemData]);
   });
 
-  // Add click event listener for hits
-  html.find('#hit-items li').on('click', function(event) {
-    event.stopPropagation(); // Ensure the click event is not intercepted by child elements
+    // Use `this.actor` directly
+    const actor = this.actor; //move if working
 
-    const itemId = $(this).data('item-id');
-    console.log('Item ID:', itemId); // Log the retrieved item ID
+    html.find('#hit-items').on('click', 'li', async (event) => {
+      // Prevent click-through from the delete button
+      if (event.target.closest('button')) return;
 
-    const actorId = html.closest('.sheet.actor-sheet').data('actor-id');
-    console.log('Actor ID:', actorId); // Log the actor ID
+      const itemId = $(event.currentTarget).data('item-id');
+      const item = this.actor.items.get(itemId);
 
-    if (!actorId) {
-      console.error('Actor ID is undefined');
-      return;
-    }
+      if (item) {
+        console.log(`Opening sheet for hit ID: ${itemId}`);
+        item.sheet.render(true);
+      } else {
+        console.warn(`No item found with ID: ${itemId}`);
+      }
+    });
 
-    const actor = game.actors.get(actorId);
 
-    if (!actor) {
-      console.error('Actor is undefined');
-      return;
-    }
 
-    const hitItem = actor.items.get(itemId);
+    // Delegated edit button
+    html.find("#hit-items").on("click", ".edit-hit", (event) => {
+      event.stopPropagation();
+      const itemId = $(event.currentTarget).data("item-id");
+      const hitItem = actor.items.get(itemId);
 
-    if (hitItem) {
-      hitItem.sheet.render(true);
-    } else {
-      console.error('Hit item not found');
-    }
-  });
+      if (hitItem) {
+        hitItem.sheet.render(true);
+      } else {
+        console.error("Edit failed. Hit not found for ID:", itemId);
+      }
+    });
 
-  // Add click event listener for delete button
-html.find("#hit-items").on("click", ".delete-hit", async (event) => {
-  event.stopPropagation();
-  const itemId = $(event.currentTarget).data("item-id");
-  const actor = game.actors.get(actorId);
+    // Delegated delete button
+    html.find("#hit-items").on("click", ".delete-hit", async (event) => {
+      event.stopPropagation();
+      const itemId = $(event.currentTarget).data("item-id");
+      const hitItem = actor.items.get(itemId);
 
-  if (!actor) return console.error("Actor not found");
+      if (hitItem) {
+        await actor.deleteEmbeddedDocuments("Item", [itemId]);
+        this.render(); // Refresh sheet
+      } else {
+        console.error("Delete failed. Hit not found for ID:", itemId);
+      }
+    });
 
-  const item = actor.items.get(itemId);
-  if (item) {
-    await actor.deleteEmbeddedDocuments("Item", [itemId]);
-    this.render(); // refresh UI
-  } else {
-    console.error("Delete failed. Hit not found for ID:", itemId);
-  }
-});
-
-    // Log the actor's items collection
-    console.log('Actor items before deletion:', actor.items);
-
-    const hitItem = actor.items.get(itemId);
-    if (hitItem) {
-      console.log('Hit item found for deletion:', hitItem);
-      actor.deleteEmbeddedDocuments('Item', [itemId]).then(() => {
-        console.log('Hit item successfully deleted:', itemId);
-        console.log('Actor items after deletion:', actor.items);
-      }).catch(err => {
-        console.error('Error occurred while deleting hit item:', err);
-      });
-    } else {
-      console.error('Hit item not found for ID:', itemId);
-    }
-  });
 
   // Add event listener for max health input
   html.find("input[name='system.health.max']").change(async (ev) => {
@@ -295,46 +265,6 @@ html.find("#hit-items").on("click", ".delete-hit", async (event) => {
       item.sheet.render(true);
     } else {
       console.error('Item not found');
-    }
-  });
-
-  // Add click event listener for delete button in items
-  html.find('.delete-item').on('click', function(event) {
-    event.stopPropagation();
-
-    const itemId = $(this).data('item-id');
-    console.log('Delete button clicked. Item ID:', itemId);
-
-    const actorId = html.closest('.sheet.actor-sheet').data('actor-id');
-    console.log('Actor ID retrieved from sheet:', actorId);
-
-    if (!actorId) {
-      console.error('Actor ID is undefined');
-      return;
-    }
-
-    const actor = game.actors.get(actorId);
-    console.log('Actor object retrieved:', actor);
-
-    if (!actor) {
-      console.error('Actor is undefined');
-      return;
-    }
-
-    // Log the actor's items collection
-    console.log('Actor items before deletion:', actor.items);
-
-    const item = actor.items.get(itemId);
-    if (item) {
-      console.log('Item found for deletion:', item);
-      actor.deleteEmbeddedDocuments('Item', [itemId]).then(() => {
-        console.log('Item successfully deleted:', itemId);
-        console.log('Actor items after deletion:', actor.items);
-      }).catch(err => {
-        console.error('Error occurred while deleting item:', err);
-      });
-    } else {
-      console.error('Item not found for ID:', itemId);
     }
   });
 
