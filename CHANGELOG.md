@@ -32,5 +32,5 @@
 - Fixed global color overrides affecting all sheets when opening a new one.
 
 ### 🔧 Misc
-- Used `requestAnimationFrame()` to ensure chart renders after DOM paint!
+- Used `requestAnimationFrame()` to ensure chart renders after DOM paint.
 
