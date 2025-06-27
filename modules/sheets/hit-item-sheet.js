@@ -35,23 +35,13 @@ export class HitItemSheet extends ItemSheet {
         const damage = weight * quantity;
         this.item.update({
           "system.weight": weight,
-          "system.quantity": quantity,
-          "system.damage": damage,
+          "system.quantity": quantity
         });
 
-        // Log the updated hit
-        console.log(`Hit updated: Weight: ${weight}, Quantity: ${quantity}, Damage: ${damage}`);
       } else {
         console.warn("Invalid hit data provided.");
       }
     });
 
-    // Update damage dynamically based on weight and quantity
-    html.find("#hit-weight, #hit-quantity").on("input", () => {
-      const weight = parseFloat(html.find("#hit-weight").val()) || 0;
-      const quantity = parseInt(html.find("#hit-quantity").val(), 10) || 0;
-      const damage = weight * quantity;
-      html.find("#hit-damage").val(damage);
-    });
   }
 }
