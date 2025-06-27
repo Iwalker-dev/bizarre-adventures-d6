@@ -201,7 +201,7 @@
               {{#each actor.items}}
                 {{#if (eq this.type "hit")}}
                   <li style="background-color: rgba(0, 0, 0, 0.5); display: inline-block; padding: 10px; margin: 5px; cursor: pointer;" data-item-id="{{this.id}}">
-                    <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}, Damage: {{this.system.damage}}</span>
+                    <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}, Description: {{this.system.description}}</span>
                     <button class="delete-hit" data-item-id="{{this.id}}" style="margin-left: 10px;">Delete</button>
                   </li>
                 {{/if}}
