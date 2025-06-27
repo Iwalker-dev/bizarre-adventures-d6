@@ -1,4 +1,4 @@
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 
 <form class="sheet actor-sheet {{cssClass}}" autocomplete="off">
   <div class="jojo-sheet">
@@ -18,93 +18,126 @@
     <section class="sheet-body">
       <!-- ─────────────────────── Stats Tab ─────────────────────── -->
       <div class="tab" data-tab="stats" style="display: block;">
-        <div class="stat-line" data-stat="power">
-          <label style="color: white;">Power</label>
-          <div class="stat-stars" data-stat="power">
-            {{#each (range 0 actor.system.attributes.stats.power.value) as |star|}}
+          <div class="stats-and-chart">
+            <div class="stat-list">
+              <div class="stat-line" data-stat="power">
+                <label style="color: white;">Power</label>
+                <div class="stat-stars" data-stat="power">
+                  {{#each (range 0 actor.system.attributes.stats.power.value) as |star|}}
+                    <span class="stat-star filled">★</span>
+                  {{/each}}
+                  {{#each (range actor.system.attributes.stats.power.value 5) as |star|}}
+                    <span class="stat-star">☆</span>
+                  {{/each}}
+                </div>
+              </div>
+              <div class="stat-line" data-stat="precision">
+                <label style="color: white;">Precision</label>
+                <div class="stat-stars" data-stat="precision">
+                  {{#each (range 0 actor.system.attributes.stats.precision.value) as |star|}}
+                    <span class="stat-star filled">★</span>
+                  {{/each}}
+                  {{#each (range actor.system.attributes.stats.precision.value 5) as |star|}}
+                    <span class="stat-star">☆</span>
+                  {{/each}}
+                </div>
+              </div>
+              <div class="stat-line" data-stat="speed">
+                <label style="color: white;">Speed</label>
+                <div class="stat-stars" data-stat="speed">
+                  {{#each (range 0 actor.system.attributes.stats.speed.value) as |star|}}
+                    <span class="stat-star filled">★</span>
+                  {{/each}}
+                  {{#each (range actor.system.attributes.stats.speed.value 5) as |star|}}
+                    <span class="stat-star">☆</span>
+                  {{/each}}
+                </div>
+              </div>
+              <div class="stat-line" data-stat="range">
+                <label style="color: white;">Range</label>
+                <div class="stat-stars" data-stat="range">
+                  {{#each (range 0 actor.system.attributes.stats.range.value) as |star|}}
+                    <span class="stat-star filled">★</span>
+                  {{/each}}
+                  {{#each (range actor.system.attributes.stats.range.value 5) as |star|}}
+                    <span class="stat-star">☆</span>
+                  {{/each}}
+                </div>
+              </div>
+              <div class="stat-line" data-stat="durability">
+                <label style="color: white;">Durability</label>
+                <div class="stat-stars" data-stat="durability">
+                  {{#each (range 0 actor.system.stats.durability) as |star|}}
+                    <span class="stat-star filled">★</span>
+                  {{/each}}
+                  {{#each (range actor.system.stats.durability 5) as |star|}}
+                    <span class="stat-star">☆</span>
+                  {{/each}}
+                </div>
+              </div>
+              <div class="stat-line" data-stat="learning">
+                <label style="color: white;">Learning</label>
+                <div class="stat-buttons">
+                  <button class="learning-type" data-type="original" onclick="showLearningStat('original')" style="background-color: var(--accent-dark) !important; color: white !important;">Original</button>
+                  <button class="learning-type" data-type="perm" onclick="showLearningStat('perm')" style="background-color: var(--accent-dark) !important; color: white !important;">Perm</button>
+                  <button class="learning-type" data-type="temp" onclick="showLearningStat('temp')" style="background-color: var(--accent-light) !important; color: black !important;">Temp</button>
+                </div>
+                <div class="stat-stars" data-stat="learning-original" style="display: none;">
+                  {{#each (range 0 actor.system.attributes.stats.learning.original) as |star|}}
+                    <span class="stat-star filled">★</span>
+                  {{/each}}
+                  {{#each (range actor.system.attributes.stats.learning.original 5) as |star|}}
+                    <span class="stat-star">☆</span>
+                  {{/each}}
+                </div>
+                <div class="stat-stars" data-stat="learning-perm" style="display: none;">
+                  {{#each (range 0 actor.system.attributes.stats.learning.perm) as |star|}}
+                    <span class="stat-star filled">★</span>
+                  {{/each}}
+                  {{#each (range actor.system.attributes.stats.learning.perm 5) as |star|}}
+                    <span class="stat-star">☆</span>
+                  {{/each}}
+                </div>
+                <div class="stat-stars" data-stat="learning-temp" style="display: block;">
+                  {{#each (range 0 actor.system.attributes.stats.learning.temp) as |star|}}
+                    <span class="stat-star filled">★</span>
+                  {{/each}}
+                  {{#each (range actor.system.attributes.stats.learning.temp 5) as |star|}}
+                    <span class="stat-star">☆</span>
+                  {{/each}}
+                </div>
+              </div>
+            </div>
+            <div class="stand-chart-container">
+              <canvas id="stand-stat-chart" width="400" height="400"></canvas>
+            </div>
+
+        {{#ifEquals system.info.type "Independent"}}
+        <div class="stat-line" data-stat="wit">
+          <label style="color: white;">Wit</label>
+          <div class="stat-stars" data-stat="wit">
+            {{#each (range 0 actor.system.attributes.stats.wit.value) as |star|}}
               <span class="stat-star filled">★</span>
             {{/each}}
-            {{#each (range actor.system.attributes.stats.power.value 5) as |star|}}
+            {{#each (range actor.system.attributes.stats.wit.value 5) as |star|}}
               <span class="stat-star">☆</span>
             {{/each}}
           </div>
         </div>
-        <div class="stat-line" data-stat="precision">
-          <label style="color: white;">Precision</label>
-          <div class="stat-stars" data-stat="precision">
-            {{#each (range 0 actor.system.attributes.stats.precision.value) as |star|}}
+
+        <div class="stat-line" data-stat="menacing">
+          <label style="color: white;">Menacing</label>
+          <div class="stat-stars" data-stat="menacing">
+            {{#each (range 0 actor.system.attributes.stats.menacing.value) as |star|}}
               <span class="stat-star filled">★</span>
             {{/each}}
-            {{#each (range actor.system.attributes.stats.precision.value 5) as |star|}}
+            {{#each (range actor.system.attributes.stats.menacing.value 5) as |star|}}
               <span class="stat-star">☆</span>
             {{/each}}
           </div>
         </div>
-        <div class="stat-line" data-stat="speed">
-          <label style="color: white;">Speed</label>
-          <div class="stat-stars" data-stat="speed">
-            {{#each (range 0 actor.system.attributes.stats.speed.value) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.speed.value 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
-        <div class="stat-line" data-stat="range">
-          <label style="color: white;">Range</label>
-          <div class="stat-stars" data-stat="range">
-            {{#each (range 0 actor.system.attributes.stats.range.value) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.range.value 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
-        <div class="stat-line" data-stat="durability">
-          <label style="color: white;">Durability</label>
-          <div class="stat-stars" data-stat="durability">
-            {{#each (range 0 actor.system.stats.durability) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.stats.durability 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
-        <div class="stat-line" data-stat="learning">
-          <label style="color: white;">Learning</label>
-          <div class="stat-buttons">
-            <button class="learning-type" data-type="original" onclick="showLearningStat('original')" style="background-color: var(--accent-dark) !important; color: white !important;">Original</button>
-            <button class="learning-type" data-type="perm" onclick="showLearningStat('perm')" style="background-color: var(--accent-dark) !important; color: white !important;">Perm</button>
-            <button class="learning-type" data-type="temp" onclick="showLearningStat('temp')" style="background-color: var(--accent-light) !important; color: black !important;">Temp</button>
-          </div>
-          <div class="stat-stars" data-stat="learning-original" style="display: none;">
-            {{#each (range 0 actor.system.attributes.stats.learning.original) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.learning.original 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-          <div class="stat-stars" data-stat="learning-perm" style="display: none;">
-            {{#each (range 0 actor.system.attributes.stats.learning.perm) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.learning.perm 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-          <div class="stat-stars" data-stat="learning-temp" style="display: block;">
-            {{#each (range 0 actor.system.attributes.stats.learning.temp) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.learning.temp 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
+        {{/ifEquals}}
+
       </div>
 
       <!-- ───────────────────── Stand Info Tab ───────────────────── -->
@@ -114,8 +147,8 @@
             <label>Stand:</label>
             <input
               type="text"
-              name="system.info.standName"
-              value="{{system.info.standName}}"
+              name="name"
+              value="{{actor.name}}"
               placeholder="Enter stand name"
             />
           </div>

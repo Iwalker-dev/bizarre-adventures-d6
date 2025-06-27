@@ -35,10 +35,9 @@ export class UserSheet extends ActorSheet {
     // Calculate total health damage from hits
     const totalDamage = this.actor.items
       .filter(item => item.type === "hit")
-      .reduce((sum, hit) => sum + (hit.system.damage || 0), 0);
-
+      .reduce((sum, item) => sum + (item.system.quantity ?? 0), 0);
     // Compute current health
-    data.system.health.value = Math.max(0, this.actor.system.health.max - totalDamage);
+    data.system.health.value = Math.max(this.actor.system.health.min, this.actor.system.health.max - totalDamage);
 
     return data;
   }

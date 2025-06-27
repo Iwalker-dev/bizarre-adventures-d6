@@ -10,9 +10,9 @@
   height: 500px;
 }
 :root {
-  --accent-color: #fca311; /* Default base orange */
-  --accent-light: #ffd166; /* Default light yellow-orange */
-  --accent-dark: #c46d00;  /* Default deep gold/orange-brown */
+  --accent-color: #868686;
+  --accent-light: #ffffff;
+  --accent-dark: #000000;
 }
 body {
   margin: 0;
@@ -228,14 +228,6 @@ body {
 .jojo-sheet .bio-row textarea::placeholder {
   color: #888;
 }
-.jojo-sheet :root {
-  --accent-color: #fca311;
-  /* base orange */
-  --accent-light: #ffd166;
-  /* light yellow‐orange */
-  --accent-dark: #c46d00;
-  /* deep gold / orange‐brown */
-}
 .jojo-sheet body {
   margin: 0;
   background: black;
@@ -383,6 +375,24 @@ body {
 .jojo-sheet .chart-wrapper {
   margin-bottom: 2rem;
 }
+
+.stats-and-chart {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1em;
+}
+
+.stat-list {
+  flex: 1;
+}
+
+.stand-chart-container {
+  width: 400px;
+  height: 400px;
+  flex-shrink: 0;
+}
+
 /* ────────────────────────── Stand Info Tab ────────────────────────── */
 .jojo-sheet .info-container {
   display: flex;
@@ -400,6 +410,18 @@ body {
   display: inline-block;
   width: 120px;
   color: white;
+}
+.jojo-sheet .info-row textarea {
+  background-color: black;
+  color: white;
+  border: 1px solid var(--accent-light);
+  padding: 0.5rem;
+  resize: vertical; /* Allow resizing vertically */
+  overflow-y: auto; /* Add scrollbars if content exceeds the visible area */
+  min-height: 3rem; /* Set a minimum height */
+  max-height: 15rem; /* Set a maximum height to prevent excessive growth */
+  line-height: 1.5; /* Adjust line height for better spacing */
+  box-sizing: border-box; /* Include padding and border in height calculations */
 }
 .jojo-sheet .info-row input,
 .jojo-sheet .info-row select {
