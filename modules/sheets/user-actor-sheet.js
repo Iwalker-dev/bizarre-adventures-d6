@@ -176,7 +176,9 @@ export class UserSheet extends ActorSheet {
   });
 
     // Add click event listener for items
-  html.find('#item-items li').on('click', function(event) {
+  html.find('#item-items').on('click', 'li', function(event) {
+    if (event.target.closest('button')) return;
+
     event.stopPropagation(); // Ensure the click event is not intercepted by child elements
 
     const itemId = $(this).data('item-id');
@@ -248,7 +250,7 @@ export class UserSheet extends ActorSheet {
       event.stopPropagation();
       const itemId = $(event.currentTarget).data("item-id");
       const hitItem = actor.items.get(itemId);
-
+      
       if (hitItem) {
         hitItem.sheet.render(true);
       } else {

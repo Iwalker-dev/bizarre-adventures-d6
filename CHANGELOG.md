@@ -24,12 +24,15 @@
 - Simplified stat update flow by removing `statData` and updating actor data directly.
 - Moved all color theming logic to sheet-level render hook.
 - Default color fallback is now `#ffcc00` if CSS variables are missing.
+- Removed large blocks of unnecessary code
+- Simplified the look of hit and item renders
 
 ### Fixes
 - Fixed Chart.js loading issue (MIME type error) by switching to local `chart.umd.js` file.
 - Prevented invalid `rgb(..., -n, -n)` parsing by validating hex format before conversion.
 - Removed accidental creation of keys like `learning-original`.
 - Fixed global color overrides affecting all sheets when opening a new one.
+- Fixed hit damage calculation
 
 ### 🔧 Misc
 - Used `requestAnimationFrame()` to ensure chart renders after DOM paint.
@@ -38,5 +41,6 @@
 
 Combat based on the Lancer Initiative
 -Options for other choices
-Fix hit damage calculation
+Add better item/hit description functionality
+-Currently struggles with longer descriptions
 Properly Expand upon Stand and Enemy types

@@ -566,10 +566,20 @@ body {
   cursor: pointer;
 }
 
-.scrollable-list .entry-description {
-  display: block;
+.scrollable-list .item-entry {
+  display: flex;
+  flex-direction: column;
+  word-break: normal; /* Default */
+}
+
+.scrollable-list .item-header {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scrollable-list .item-description {
   margin: 4px 0 0 0;
-  margin-top: 5px;
   font-size: 0.85em;
   color: #ccc;
   white-space: normal;

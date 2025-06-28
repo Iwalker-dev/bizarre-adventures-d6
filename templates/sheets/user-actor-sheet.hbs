@@ -200,10 +200,8 @@
                 {{#if (eq this.type "hit")}}
                   <li data-item-id="{{this.id}}">
                     <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}</span>
-                    <div class="entry-description">
-                      {{this.system.description}}
-                    </div>
-                    <button class="delete-hit" data-item-id="{{this.id}}">🗑️</button>
+                    <p class="item-description">{{this.system.description}}</p>
+                    <i class="fas fa-trash delete-hit" data-item-id="{{this.id}}"></i>
                   </li>
                 {{/if}}
               {{/each}}
@@ -224,11 +222,9 @@
               {{#each actor.items}}
                 {{#if (eq this.type "item")}}
                   <li data-item-id="{{this.id}}">
-                    <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}</span>
-                    <div class="entry-description">
-                      {{this.system.description}}
-                    </div>
-                    <button class="delete-item" data-item-id="{{this.id}}">🗑️</button>
+                    <span>{{this.name}}</span>
+                    <p class="item-description">{{this.system.description}}</p>
+                    <i class="fas fa-trash delete-item" data-item-id="{{this.id}}"></i>
                   </li>
                 {{/if}}
               {{/each}}
