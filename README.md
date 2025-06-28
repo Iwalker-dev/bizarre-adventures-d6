@@ -30,13 +30,29 @@ Actors:
     Stand Actors:
         Limited implementation of unique types
 
-Future Additions:
+Changelog.md inside
+
+Some Future Additions:
 
 Full Stand Implementation
+
 Cleaner Sheet Look
+
 Dark Determination Implementation
+
 Full Stand types Implementation
+
 Optimization option for lower end devices
+
 Customized Combat
+    Combat based on Lancer Initiative
+        Alternate options for freedom of choice
+
 Random Character Generator (Would require a resource)
+
 Enter system onto FoundryVTT
+
+Add better item/hit description functionality
+    -Currently struggles with longer descriptions
+
+Properly Expand upon Stand and Power types

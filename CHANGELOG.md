@@ -36,11 +36,3 @@
 
 ### 🔧 Misc
 - Used `requestAnimationFrame()` to ensure chart renders after DOM paint.
-
-### Upcoming
-
-Combat based on the Lancer Initiative
--Options for other choices
-Add better item/hit description functionality
--Currently struggles with longer descriptions
-Properly Expand upon Stand and Enemy types
