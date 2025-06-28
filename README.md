@@ -1,7 +1,8 @@
 It is reccomended to run with Lancer Initiative for better control over combat intitiative. An old personal rolling module will be released after some edits. Anyone may recieve it upon request through Discord.
 
+Changelog.md inside
 
-Features:
+**Features:**
 
 Actors:
 
@@ -9,13 +10,13 @@ Actors:
 
 -Simple, Stylized Stat viewing and editing
 
--Simple, Easier viewing of Burn type stats (Learning, Luck)
+-Simplified viewing of Burn type stats (Learning, Luck)
 
 -Hit rendering and auto calculation of damage to health
 
--Mantainable simple item implementation
+-Simple item implementation
 
--Locations to fill in character information
+-Direct locations to fill in character information
 
 **Known limitations**
 
@@ -23,24 +24,16 @@ Actors:
 
 -Changes to the sheet can be resource intensive for lower end devices
 
+-Limited Functionality for especially unique ability/user types
 
-    Alt Power Actors:
-        Automatically changes the names of stats based on chosen type
 
-    Stand Actors:
-        Limited implementation of unique types
-
-Changelog.md inside
-
-Some Future Additions:
-
-Full Stand Implementation
+**Some Future Additions:**
 
 Cleaner Sheet Look
 
 Dark Determination Implementation
 
-Full Stand types Implementation
+Full ability types Implementation
 
 Optimization option for lower end devices
 
