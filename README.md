@@ -6,14 +6,23 @@ Features:
 Actors:
 
 -Customized Sheet
+
 -Simple, Stylized Stat viewing and editing
+
 -Simple, Easier viewing of Burn type stats (Learning, Luck)
+
 -Hit rendering and auto calculation of damage to health
+
 -Mantainable simple item implementation
+
 -Locations to fill in character information
-**Known limitations
+
+**Known limitations**
+
 -Doesn't have a direct implementation for Dark Determination
+
 -Changes to the sheet can be resource intensive for lower end devices
+
 
     Alt Power Actors:
         Automatically changes the names of stats based on chosen type
