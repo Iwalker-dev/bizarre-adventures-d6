@@ -47,6 +47,19 @@ export function registerHandlebarsHelpers() {
     }
     return range;
   });
+  Handlebars.registerHelper("math", function(lvalue, operator, rvalue) {
+  lvalue = parseFloat(lvalue);
+  rvalue = parseFloat(rvalue);
+
+  switch (operator) {
+    case "+": return lvalue + rvalue;
+    case "-": return lvalue - rvalue;
+    case "*": return lvalue * rvalue;
+    case "/": return rvalue !== 0 ? lvalue / rvalue : 0;
+    default: return 0;
+  }
+});
+
 }
 
 export function preloadHandlebarsTemplates() {

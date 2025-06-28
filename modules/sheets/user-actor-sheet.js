@@ -125,7 +125,7 @@ export class UserSheet extends ActorSheet {
       });
     };
   */
-
+/*
   // Render hits from the actor's inventory
   const renderHits = () => {
     const hits = this.actor.items.filter(item => item.type === "hit");
@@ -145,14 +145,72 @@ export class UserSheet extends ActorSheet {
       hitList.append(listItem);
     });
   };
-
   // Call renderHits on sheet render
   renderHits();
+*/
 
-  // Simplified hit creation
+   // <--------------------------Item Logic--------------------------->
+  html.find("#create-item").click(() => {
+    const itemData = {
+      name: "New Item",
+      type: "item",
+      system: {
+        weight: 0,
+        quantity: 1
+      }
+    };
+
+    // Create the hit item in the actor's inventory
+    this.actor.createEmbeddedDocuments("Item", [itemData]);
+  });
+
+  html.find("#item-items").on("click", ".delete-item", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const itemId = $(event.currentTarget).data("item-id");
+    const item = this.actor.items.get(itemId);
+    if (item) {
+      await this.actor.deleteEmbeddedDocuments("Item", [itemId]);
+      this.render(); // Refresh
+    }
+  });
+
+    // Add click event listener for items
+  html.find('#item-items li').on('click', function(event) {
+    event.stopPropagation(); // Ensure the click event is not intercepted by child elements
+
+    const itemId = $(this).data('item-id');
+    console.log('Item ID:', itemId); // Log the retrieved item ID
+
+    const actorId = html.closest('.sheet.actor-sheet').data('actor-id');
+    console.log('Actor ID:', actorId); // Log the actor ID
+
+    if (!actorId) {
+      console.error('Actor ID is undefined');
+      return;
+    }
+
+    const actor = game.actors.get(actorId);
+
+    if (!actor) {
+      console.error('Actor is undefined');
+      return;
+    }
+
+    const item = actor.items.get(itemId);
+
+    if (item) {
+      item.sheet.render(true);
+    } else {
+      console.error('Item not found');
+    }
+  });
+
+
+  // <---------------------------Hit Logic--------------------------->
   html.find("#create-hit").click(() => {
     const hitData = {
-      name: "NewHit",
+      name: "New Hit",
       type: "hit",
       system: {
         weight: 1,
@@ -165,22 +223,7 @@ export class UserSheet extends ActorSheet {
     this.actor.createEmbeddedDocuments("Item", [hitData]);
   });
 
-   // Simplified item creation
-  html.find("#create-item").click(() => {
-    const itemData = {
-      name: "NewItem",
-      type: "item",
-      system: {
-        weight: 0,
-        quantity: 1
-      }
-    };
 
-    // Create the hit item in the actor's inventory
-    this.actor.createEmbeddedDocuments("Item", [itemData]);
-  });
-
-    // Use `this.actor` directly
     const actor = this.actor; //move if working
 
     html.find('#hit-items').on('click', 'li', async (event) => {
@@ -215,15 +258,13 @@ export class UserSheet extends ActorSheet {
 
     // Delegated delete button
     html.find("#hit-items").on("click", ".delete-hit", async (event) => {
+      event.preventDefault();
       event.stopPropagation();
       const itemId = $(event.currentTarget).data("item-id");
-      const hitItem = actor.items.get(itemId);
-
+      const hitItem = this.actor.items.get(itemId);
       if (hitItem) {
-        await actor.deleteEmbeddedDocuments("Item", [itemId]);
-        this.render(); // Refresh sheet
-      } else {
-        console.error("Delete failed. Hit not found for ID:", itemId);
+        await this.actor.deleteEmbeddedDocuments("Item", [itemId]);
+        this.render(); // Refresh
       }
     });
 
@@ -234,37 +275,6 @@ export class UserSheet extends ActorSheet {
     if (!isNaN(newMax)) {
       await this.actor.update({ "system.health.max": newMax });
       await updateHealthValue();
-    }
-  });
-
-  // Add click event listener for items
-  html.find('#item-items li').on('click', function(event) {
-    event.stopPropagation(); // Ensure the click event is not intercepted by child elements
-
-    const itemId = $(this).data('item-id');
-    console.log('Item ID:', itemId); // Log the retrieved item ID
-
-    const actorId = html.closest('.sheet.actor-sheet').data('actor-id');
-    console.log('Actor ID:', actorId); // Log the actor ID
-
-    if (!actorId) {
-      console.error('Actor ID is undefined');
-      return;
-    }
-
-    const actor = game.actors.get(actorId);
-
-    if (!actor) {
-      console.error('Actor is undefined');
-      return;
-    }
-
-    const item = actor.items.get(itemId);
-
-    if (item) {
-      item.sheet.render(true);
-    } else {
-      console.error('Item not found');
     }
   });
 
