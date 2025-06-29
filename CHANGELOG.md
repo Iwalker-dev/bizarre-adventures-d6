@@ -10,8 +10,6 @@ Previously developed code which is now being added to the BAD6 System.
 - Runs from Scene Controls (Lighting Controls)
 # To Be Continued
 - Runs from Scene Controls (Lighting Controls)
-### Optimization
-
 ### Fixes
+All old scripts have been simplified and edited for use within this system.
 
-### 🔧 Misc
