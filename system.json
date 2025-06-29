@@ -2,7 +2,7 @@
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
   "description": "An unofficial core system for the Bizarre Adventures D6 system.",
-  "version": "0.6.7",
+  "version": "0.7.0",
   "authors": [
     {
       "name": "LIFT",
@@ -41,7 +41,6 @@
       "description": "",
       "quantity": 1,
       "weight": 0,
-      "damage": 0,
       "attributes": {},
       "groups": {}
     },
@@ -54,5 +53,5 @@
     }
   },
   "manifest": "https://raw.githubusercontent.com/FlexLamb-Dev/bizarre-adventures-d6/main/system.json",
-  "download": "https://github.com/FlexLamb-Dev/bizarre-adventures-d6/releases/download/v0.5.8/bizarre-adventures-d6-v0.5.8.zip"
+  "download": "https://github.com/FlexLamb-Dev/bizarre-adventures-d6/releases/download/v0.5.8/bizarre-adventures-d6-v0.7.0.zip"
 }

@@ -68,7 +68,8 @@ export class UserSheet extends ActorSheet {
         .reduce((sum, hit) => sum + (hit.system.damage || 0), 0);
       console.log("Total damage from hits:", totalDamage);
       const maxHP = this.actor.system.health.max || 0;
-      const newHP = Math.max(0, maxHP - totalDamage);
+      const minHP = this.actor.system.health.min || 0;
+      const newHP = Math.max(minHP, maxHP - totalDamage);
 
       await this.actor.update({ "system.health.value": newHP });
       this.render();
@@ -81,21 +82,17 @@ export class UserSheet extends ActorSheet {
       const quantity = parseInt(html.find("#hit-quantity").val(), 10) || 0;
 
       if (name && weight > 0 && quantity > 0) {
-        const damage = weight * quantity;
         const hitData = {
           name: name,
           type: "hit",
           data: {
             weight: weight,
-            quantity: quantity,
-            damage: damage
+            quantity: quantity
           }
         };
 
         await this.actor.createEmbeddedDocuments("Item", [hitData]);
         await updateHealthValue();
-
-        console.log(`Hit added: ${name}, Weight: ${weight}, Quantity: ${quantity}, Damage: ${damage}`);
       } else {
         console.warn("Invalid hit data provided.");
       }
@@ -110,32 +107,25 @@ export class UserSheet extends ActorSheet {
 
       // Render stars
   this.renderStars(html);
+  /*
+    // Update health dynamically based on hits
+    const updateHealth = () => {
+      const totalDamage = this.actor.items
+        .filter(item => item.type === "hit")
+        .reduce((sum, hit) => sum + (hit.system.damage || 0), 0);
 
-  // Update health dynamically based on hits
-  const updateHealth = () => {
-    const totalDamage = this.actor.items
-      .filter(item => item.type === "hit")
-      .reduce((sum, hit) => sum + (hit.system.damage || 0), 0);
+      const newHealthValue = Math.max(0, this.actor.system.health.max - totalDamage);
 
-    const newHealthValue = Math.max(0, this.actor.system.health.max - totalDamage);
+      // Debugging health value changes
+      console.log("Before update:", this.actor.system.health.value);
+      console.log("Calculated new value:", newHealthValue);
 
-    // Debugging health value changes
-    console.log("Before update:", this.actor.system.health.value);
-    console.log("Calculated new value:", newHealthValue);
-
-    this.actor.update({ "system.health.value": newHealthValue }).then(() => {
-      console.log("After update:", this.actor.system.health.value);
-    });
-  };
-
-  // Added edit button logic to open the hit's sheet
-  html.find("#hit-items").on("click", ".edit-hit", function() {
-    const itemId = $(this).data("item-id");
-    const hitItem = this.actor.items.get(itemId);
-    hitItem.sheet.render(true);
-    console.log("Editing hit:", itemId);
-  });
-
+      this.actor.update({ "system.health.value": newHealthValue }).then(() => {
+        console.log("After update:", this.actor.system.health.value);
+      });
+    };
+  */
+/*
   // Render hits from the actor's inventory
   const renderHits = () => {
     const hits = this.actor.items.filter(item => item.type === "hit");
@@ -143,42 +133,26 @@ export class UserSheet extends ActorSheet {
     hitList.empty();
 
     hits.forEach(hit => {
-      const damage = hit.system.weight * hit.system.quantity;
       const listItem = `
         <li data-item-id="${hit.id}" style="background-color: rgba(0, 0, 0, 0.5); display: inline-block; padding: 10px; margin: 5px; cursor: pointer;">
-          ${hit.name} - Weight: ${hit.system.weight}, Quantity: ${hit.system.quantity}, Damage: ${damage}
-          <p style="margin: 5px 0; font-size: 0.9em; color: #ccc;">${hit.system.description || "No description provided."}</p>
-          <button class="delete-hit" data-item-id="${hit.id}" style="margin-left: 10px;">Delete</button>
+          <div>
+            ${hit.name} - Weight: ${hit.system.weight}, Quantity: ${hit.system.quantity}
+            <p style="margin: 5px 0; font-size: 0.9em; color: #ccc;">${hit.system.description || "No description provided."}</p>
+            <button class="delete-hit" data-item-id="${hit.id}" style="margin-top: 5px;">Delete</button>
+          </div>
         </li>
       `;
       hitList.append(listItem);
     });
   };
-
   // Call renderHits on sheet render
   renderHits();
+*/
 
-  // Simplified hit creation
-  html.find("#create-hit").click(() => {
-    const hitData = {
-      name: "NewHit",
-      type: "hit",
-      system: {
-        weight: 1,
-        quantity: 1,
-        damage: 1
-      }
-    };
-    updateHealthValue();
-
-    // Create the hit item in the actor's inventory
-    this.actor.createEmbeddedDocuments("Item", [hitData]);
-  });
-
-   // Simplified hit creation
+   // <--------------------------Item Logic--------------------------->
   html.find("#create-item").click(() => {
     const itemData = {
-      name: "NewItem",
+      name: "New Item",
       type: "item",
       system: {
         weight: 0,
@@ -190,88 +164,21 @@ export class UserSheet extends ActorSheet {
     this.actor.createEmbeddedDocuments("Item", [itemData]);
   });
 
-  // Add click event listener for hits
-  html.find('#hit-items li').on('click', function(event) {
-    event.stopPropagation(); // Ensure the click event is not intercepted by child elements
-
-    const itemId = $(this).data('item-id');
-    console.log('Item ID:', itemId); // Log the retrieved item ID
-
-    const actorId = html.closest('.sheet.actor-sheet').data('actor-id');
-    console.log('Actor ID:', actorId); // Log the actor ID
-
-    if (!actorId) {
-      console.error('Actor ID is undefined');
-      return;
-    }
-
-    const actor = game.actors.get(actorId);
-
-    if (!actor) {
-      console.error('Actor is undefined');
-      return;
-    }
-
-    const hitItem = actor.items.get(itemId);
-
-    if (hitItem) {
-      hitItem.sheet.render(true);
-    } else {
-      console.error('Hit item not found');
-    }
-  });
-
-  // Add click event listener for delete button
-  html.find('.delete-hit').on('click', function(event) {
+  html.find("#item-items").on("click", ".delete-item", async (event) => {
+    event.preventDefault();
     event.stopPropagation();
-
-    const itemId = $(this).data('item-id');
-    console.log('Delete button clicked. Item ID:', itemId);
-
-    const actorId = html.closest('.sheet.actor-sheet').data('actor-id');
-    console.log('Actor ID retrieved from sheet:', actorId);
-
-    if (!actorId) {
-      console.error('Actor ID is undefined');
-      return;
-    }
-
-    const actor = game.actors.get(actorId);
-    console.log('Actor object retrieved:', actor);
-
-    if (!actor) {
-      console.error('Actor is undefined');
-      return;
-    }
-
-    // Log the actor's items collection
-    console.log('Actor items before deletion:', actor.items);
-
-    const hitItem = actor.items.get(itemId);
-    if (hitItem) {
-      console.log('Hit item found for deletion:', hitItem);
-      actor.deleteEmbeddedDocuments('Item', [itemId]).then(() => {
-        console.log('Hit item successfully deleted:', itemId);
-        console.log('Actor items after deletion:', actor.items);
-      }).catch(err => {
-        console.error('Error occurred while deleting hit item:', err);
-      });
-    } else {
-      console.error('Hit item not found for ID:', itemId);
+    const itemId = $(event.currentTarget).data("item-id");
+    const item = this.actor.items.get(itemId);
+    if (item) {
+      await this.actor.deleteEmbeddedDocuments("Item", [itemId]);
+      this.render(); // Refresh
     }
   });
 
-  // Add event listener for max health input
-  html.find("input[name='system.health.max']").change(async (ev) => {
-    const newMax = parseInt(ev.target.value, 10);
-    if (!isNaN(newMax)) {
-      await this.actor.update({ "system.health.max": newMax });
-      await updateHealthValue();
-    }
-  });
+    // Add click event listener for items
+  html.find('#item-items').on('click', 'li', function(event) {
+    if (event.target.closest('button')) return;
 
-  // Add click event listener for items
-  html.find('#item-items li').on('click', function(event) {
     event.stopPropagation(); // Ensure the click event is not intercepted by child elements
 
     const itemId = $(this).data('item-id');
@@ -301,43 +208,75 @@ export class UserSheet extends ActorSheet {
     }
   });
 
-  // Add click event listener for delete button in items
-  html.find('.delete-item').on('click', function(event) {
-    event.stopPropagation();
 
-    const itemId = $(this).data('item-id');
-    console.log('Delete button clicked. Item ID:', itemId);
+  // <---------------------------Hit Logic--------------------------->
+  html.find("#create-hit").click(() => {
+    const hitData = {
+      name: "New Hit",
+      type: "hit",
+      system: {
+        weight: 1,
+        quantity: 1
+      }
+    };
+    updateHealthValue();
 
-    const actorId = html.closest('.sheet.actor-sheet').data('actor-id');
-    console.log('Actor ID retrieved from sheet:', actorId);
+    // Create the hit item in the actor's inventory
+    this.actor.createEmbeddedDocuments("Item", [hitData]);
+  });
 
-    if (!actorId) {
-      console.error('Actor ID is undefined');
-      return;
-    }
 
-    const actor = game.actors.get(actorId);
-    console.log('Actor object retrieved:', actor);
+    const actor = this.actor; //move if working
 
-    if (!actor) {
-      console.error('Actor is undefined');
-      return;
-    }
+    html.find('#hit-items').on('click', 'li', async (event) => {
+      // Prevent click-through from the delete button
+      if (event.target.closest('button')) return;
 
-    // Log the actor's items collection
-    console.log('Actor items before deletion:', actor.items);
+      const itemId = $(event.currentTarget).data('item-id');
+      const item = this.actor.items.get(itemId);
 
-    const item = actor.items.get(itemId);
-    if (item) {
-      console.log('Item found for deletion:', item);
-      actor.deleteEmbeddedDocuments('Item', [itemId]).then(() => {
-        console.log('Item successfully deleted:', itemId);
-        console.log('Actor items after deletion:', actor.items);
-      }).catch(err => {
-        console.error('Error occurred while deleting item:', err);
-      });
-    } else {
-      console.error('Item not found for ID:', itemId);
+      if (item) {
+        console.log(`Opening sheet for hit ID: ${itemId}`);
+        item.sheet.render(true);
+      } else {
+        console.warn(`No item found with ID: ${itemId}`);
+      }
+    });
+
+
+
+    // Delegated edit button
+    html.find("#hit-items").on("click", ".edit-hit", (event) => {
+      event.stopPropagation();
+      const itemId = $(event.currentTarget).data("item-id");
+      const hitItem = actor.items.get(itemId);
+      
+      if (hitItem) {
+        hitItem.sheet.render(true);
+      } else {
+        console.error("Edit failed. Hit not found for ID:", itemId);
+      }
+    });
+
+    // Delegated delete button
+    html.find("#hit-items").on("click", ".delete-hit", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const itemId = $(event.currentTarget).data("item-id");
+      const hitItem = this.actor.items.get(itemId);
+      if (hitItem) {
+        await this.actor.deleteEmbeddedDocuments("Item", [itemId]);
+        this.render(); // Refresh
+      }
+    });
+
+
+  // Add event listener for max health input
+  html.find("input[name='system.health.max']").change(async (ev) => {
+    const newMax = parseInt(ev.target.value, 10);
+    if (!isNaN(newMax)) {
+      await this.actor.update({ "system.health.max": newMax });
+      await updateHealthValue();
     }
   });
 
@@ -388,9 +327,8 @@ export class UserSheet extends ActorSheet {
     hitList.empty();
 
     hits.forEach(hit => {
-      const damage = hit.weight * hit.quantity;
       const listItem = $(
-        `<li>${hit.name} - Weight: ${hit.weight}, Quantity: ${hit.quantity}, Damage: ${damage}</li>`
+        `<li>${hit.name} - Weight: ${hit.weight}, Quantity: ${hit.quantity} </br> Description: ${hit.description}</li>`
       );
       hitList.append(listItem);
     });

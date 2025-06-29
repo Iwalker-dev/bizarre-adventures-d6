@@ -187,22 +187,21 @@
         </div>
       </div>
 
-      <!-- ─────────────────────── Hits Tab ─────────────────────── -->
+      <!-- ───────────── Hits Tab ───────────── -->
       <div class="tab" data-tab="hit" style="display: none;">
         <div class="hit-container">
-          <!-- Create Hit Button -->
           <div class="hit-form">
             <button id="create-hit" type="button">Create Hit</button>
           </div>
 
-          <!-- Active Hits List -->
-          <div class="hit-list">
+          <div class="hit-list scrollable-list">
             <ul id="hit-items">
               {{#each actor.items}}
                 {{#if (eq this.type "hit")}}
-                  <li style="background-color: rgba(0, 0, 0, 0.5); display: inline-block; padding: 10px; margin: 5px; cursor: pointer;" data-item-id="{{this.id}}">
-                    <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}, Damage: {{this.system.damage}}</span>
-                    <button class="delete-hit" data-item-id="{{this.id}}" style="margin-left: 10px;">Delete</button>
+                  <li data-item-id="{{this.id}}">
+                    <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}</span>
+                    <p class="item-description">{{this.system.description}}</p>
+                    <i class="fas fa-trash delete-hit" data-item-id="{{this.id}}"></i>
                   </li>
                 {{/if}}
               {{/each}}
@@ -211,22 +210,21 @@
         </div>
       </div>
 
-      <!-- ─────────────────────── Items Tab ─────────────────────── -->
+      <!-- ───────────── Items Tab ───────────── -->
       <div class="tab" data-tab="item" style="display: none;">
         <div class="item-container">
-          <!-- Create Item Button -->
           <div class="item-form">
             <button id="create-item" type="button">Create Item</button>
           </div>
 
-          <!-- Active Items List -->
-          <div class="item-list">
+          <div class="item-list scrollable-list">
             <ul id="item-items">
               {{#each actor.items}}
                 {{#if (eq this.type "item")}}
-                  <li style="background-color: rgba(0, 0, 0, 0.5); display: inline-block; padding: 10px; margin: 5px; cursor: pointer;" data-item-id="{{this.id}}">
-                    <span>{{this.name}} - Description: {{this.system.description}}</span>
-                    <button class="delete-item" data-item-id="{{this.id}}" style="margin-left: 10px;">Delete</button>
+                  <li data-item-id="{{this.id}}">
+                    <span>{{this.name}}</span>
+                    <p class="item-description">{{this.system.description}}</p>
+                    <i class="fas fa-trash delete-item" data-item-id="{{this.id}}"></i>
                   </li>
                 {{/if}}
               {{/each}}
@@ -236,6 +234,7 @@
       </div>
     </section>
   </div>
+
 
   <script>
     function showLuckStat(type) {

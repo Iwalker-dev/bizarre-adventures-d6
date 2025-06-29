@@ -31,11 +31,11 @@ export class PowerSheet extends StandSheet {
 
     // Define the mapping of types to stat labels
     const statLabels = {
-      Hamon: ['Strength', 'Accuracy', 'Agility', 'Conduction', 'Blocking', 'Learning'],
-      Vampire: ['Strength', 'Senses', 'Reflex', 'Bodily Control', 'Resilience', 'Learning'],
-      'Pillar Man': ['Strength', 'Senses', 'Reflexes', 'Bodily Control', 'Resilience', 'Learning'],
-      Spin: ['Mass', 'Control', 'Velocity', 'RPM', 'Sturdiness', 'Learning'],
-      'Armed Phenomenon': ['Strength', 'Accuracy', 'Agility', 'Evolution', 'Endurance', 'Learning'],
+      Hamon: ['Strength (Power)', 'Accuracy (Precision)', 'Agility (Speed)', 'Conduction (Range)', 'Blocking (Durability)', 'Learning'],
+      Vampire: ['Strength (Power)', 'Senses (Precision)', 'Reflex (Speed)', 'Bodily Control (Range)', 'Resilience (Durability)', 'Learning'],
+      'Pillar Man': ['Strength (Power)', 'Senses (Precision)', 'Reflexes (Speed)', 'Bodily Control (Range)', 'Resilience (Durability)', 'Learning'],
+      Spin: ['Mass (Power)', 'Control (Precision)', 'Velocity (Speed)', 'RPM (Range)', 'Sturdiness (Durability)', 'Learning'],
+      'Armed Phenomenon': ['Strength (Power)', 'Accuracy (Precision)', 'Agility (Speed)', 'Evolution (Range)', 'Endurance (Durability)', 'Learning'],
       Cyborg: ['Tech Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning'],
       Other: ['Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning']
     };

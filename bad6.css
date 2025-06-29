@@ -477,73 +477,117 @@ body {
   background: var(--accent-dark); /* Fill the box with the darker color when active */
   color: white; /* Ensure the text color is white when active */
 }
-/* ────────────────────────── Hit Tab ────────────────────────── */
-/* Add styles for the Hit tab */
-.tab[data-tab="hit"] {
+/* ────────────────────────── Shared Styles ────────────────────────── */
+.tab[data-tab="item"] li,
+.tab[data-tab="hit"] li {
+  background-color: rgba(0, 0, 0, 0.5);
   color: white;
   padding: 10px;
+  margin: 5px 0;
   border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
 }
 
-/* Style input fields in the Hit tab */
+.tab[data-tab="item"] li:hover,
+.tab[data-tab="hit"] li:hover {
+  background-color: var(--accent-dark);
+}
+
+.delete-item,
+.delete-hit {
+  background-color: black;
+  color: white;
+  border: 1px solid white;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.delete-item:hover,
+.delete-hit:hover {
+  background-color: white;
+  color: black;
+}
+
+/* ────────────────────────── Create Buttons ────────────────────────── */
+#create-item,
+#create-hit {
+  background-color: black;
+  color: white;
+  border: 1px solid white;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+#create-item:hover,
+#create-hit:hover {
+  background-color: white;
+  color: black;
+}
+
+/* ────────────────────────── Input Fields in Hit Tab ────────────────────────── */
 .tab[data-tab="hit"] input {
   background-color: black;
   color: white;
   border: 1px solid white;
   padding: 5px;
   border-radius: 3px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 5px;
 }
 
-/* Style the Add Hit button */
-.tab[data-tab="hit"] button {
-  background-color: black;
-  color: white;
-  border: 1px solid white;
-  padding: 5px 10px;
-  border-radius: 3px;
+
+.scrollable-list {
+  max-height: 300px;  /* Adjust this height based on your UI design */
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.scrollable-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.scrollable-list li {
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  margin: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   cursor: pointer;
 }
 
-.tab[data-tab="hit"] button:hover {
-  background-color: white;
-  color: black;
+.scrollable-list .item-entry {
+  display: flex;
+  flex-direction: column;
+  word-break: normal; /* Default */
 }
 
+.scrollable-list .item-header {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-/* ────────────────────────── Item Tab ────────────────────────── */
-#create-item {
-  background-color: black;
-  color: white;
-  border: 1px solid white;
-  padding: 5px 10px;
-  border-radius: 3px;
+.scrollable-list .item-description {
+  margin: 4px 0 0 0;
+  font-size: 0.85em;
+  color: #ccc;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.scrollable-list i.fa-trash {
+  margin-left: 10px;
+  color: #ff6666;
   cursor: pointer;
-}
-
-#create-item:hover {
-  background-color: white;
-  color: black;
-}
-
-#item-items li {
-  color: white;
-}
-
-#item-items li:hover {
-  background-color: var(--accent-dark);
-  color: white;
-}
-
-.delete-item {
-  background-color: black;
-  color: white;
-  border: 1px solid white;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.delete-item:hover {
-  background-color: white;
-  color: black;
 }
