@@ -1,6 +1,6 @@
 # Changelog – BAD6 System
 
-## [0.7.X] – 2025-06-29
+## [0.8.X] – 2025-06-29
 ### Added
 ## Imports
 Previously developed code which is now being added to the BAD6 System.

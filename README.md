@@ -1,4 +1,4 @@
-It is reccomended to run with Lancer Initiative for better control over combat intitiative. An old personal rolling module will be released after some edits. Anyone may recieve it upon request through Discord.
+It is reccomended to run with Lancer Initiative for better control over combat intitiative.
 
 Changelog.md inside
 
