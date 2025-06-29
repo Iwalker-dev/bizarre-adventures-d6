@@ -3,12 +3,14 @@ import { setupStats } from "./modules/listenerFunctions.js";
 import { registerHandlebarsHelpers } from "./modules/utils.js";
 import { preloadHandlebarsTemplates } from "./modules/utils.js"; 
 import { loadChartJS } from "./modules/objects/stat-chart-loader.js";
+import { BAD6Roller } from './modules/apps/bad6-roller.js';
 
 // Wait for Chart.js to load before initializing the system
 Hooks.once("init", async () => {
     console.log("BAD6 Core System is Initializing");
     // Load Chart.js
     await loadChartJS();
+    BAD6Roller();
     console.log("Chart.js has been loaded");
     // Dynamically import UserSheet and StandSheet after Chart.js is loaded
     const { UserSheet } = await import("./modules/sheets/user-actor-sheet.js");
