@@ -27,7 +27,7 @@
     "hit", 
     "item"
   ],
-  "socket": false,
+  "socket": true,
   "primaryTokenAttribute": "hits",
   "secondaryTokenAttribute": "luck",
   "grid": {

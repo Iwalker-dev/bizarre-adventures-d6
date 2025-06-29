@@ -1,5 +1,5 @@
 let socket;
-export function BAD6Roller() {
+export function rollerControl() {
     Hooks.on("getSceneControlButtons", (controls) => {
         const tokenControls = controls.find(c => c.name === "token");
         if (tokenControls) {
@@ -15,6 +15,33 @@ export function BAD6Roller() {
             });
         }
     });
+}
+
+async function readyCheck(actor, formula, statLabel, advantage, data) {
+  const advantagePhrase = advantage > 0 ? ` with +${advantage} advantage` : "";
+  const content = `<p>Would you like to roll <strong>${statLabel}</strong>${advantagePhrase}? <code>(${formula})</code></p>`;
+
+  const confirmed = await new Promise(resolve => {
+    new Dialog({
+      title: "A Roll is Ready",
+      content,
+      buttons: {
+        "Yes": { label: "Yes", callback: () => resolve(true) },
+        "No": { label: "No", callback: () => resolve(false) }
+      },
+      default: "No"
+    }).render(true);
+  });
+	if (confirmed) {
+		// Roll it
+		const roll = new Roll(formula, data);
+		await roll.evaluate({ async: true });
+		roll.toMessage({
+			speaker: ChatMessage.getSpeaker({ actor }),
+			flavor: `★ <em>${statLabel}</em> Challenge ★<br>Advantage Level: <strong>${advantage}</strong>`
+		});
+		return roll._total;
+	}
 }
 
 Hooks.once("socketlib.ready", () => {
