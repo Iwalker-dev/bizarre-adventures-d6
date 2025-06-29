@@ -53,5 +53,15 @@
     }
   },
   "manifest": "https://raw.githubusercontent.com/FlexLamb-Dev/bizarre-adventures-d6/main/system.json",
-  "download": "https://github.com/FlexLamb-Dev/bizarre-adventures-d6/releases/download/v0.5.8/bizarre-adventures-d6-v0.7.0.zip"
+  "download": "https://github.com/FlexLamb-Dev/bizarre-adventures-d6/releases/download/v0.5.8/bizarre-adventures-d6-v0.7.0.zip",
+  "relationships": {
+    "requires": [
+      {
+        "id": "socketlib",
+        "type": "module",
+        "manifest": "https://github.com/farling42/foundryvtt-socketlib/releases/latest/download/module.json",
+        "compatibility": { "verified": "11" }
+      }
+    ]
+  }
 }
