@@ -62,12 +62,20 @@ export function registerHandlebarsHelpers() {
 
 }
 
-export function preloadHandlebarsTemplates() {
+export async function preloadHandlebarsTemplates() {
     const templatePaths = [
-        "systems/bizarre-adventures-d6/templates/sheets/user-actor-sheet.hbs",
-        "systems/bizarre-adventures-d6/templates/sheets/stand-actor-sheet.hbs"
-       //"/templates/actor-sheet-item.hbs",
+      "systems/bizarre-adventures-d6/templates/partials/actor-shell.hbs",
+      "systems/bizarre-adventures-d6/templates/partials/actor-nav.hbs",
+      "systems/bizarre-adventures-d6/templates/partials/actor-class.hbs",
+      "systems/bizarre-adventures-d6/templates/partials/actor-stats.hbs",
     ];
 
-    return loadTemplates(templatePaths);
+  // 1. Load & compile
+  const [shellTpl, navTpl, classTpl, statsTp1] = await loadTemplates(templatePaths);
+
+  // 2. Register each under the same name you call it in your hbs
+  Handlebars.registerPartial("actor-shell", shellTpl);
+  Handlebars.registerPartial("actor-nav",    navTpl);
+  Handlebars.registerPartial("actor-class",  classTpl);
+  Handlebars.registerPartial("actor-stats",  statsTp1);
 }

@@ -1,228 +1,105 @@
-
-
-<form class="sheet actor-sheet {{cssClass}}" autocomplete="off">
+{{!-- systems/bizarre-adventures-d6/templates/sheets/stand-actor-sheet.hbs --}}
+<form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
   <div class="jojo-sheet">
     <header class="sheet-header">
       <h1>{{actor.name}}</h1>
     </header>
 
-    <nav class="tabs" data-group="primary">
-      <div class="button-container">
-        <a class="item" data-tab="stats">Stats</a>
-      </div>
-      <div class="button-container">
-        <a class="item" data-tab="info">Stand Info</a>
-      </div>
+    <nav class="sheet-tabs" data-group="primary">
+      {{> actor-nav}}
     </nav>
 
     <section class="sheet-body">
-      <!-- ─────────────────────── Stats Tab ─────────────────────── -->
-      <div class="tab" data-tab="stats" style="display: block;">
-          <div class="stats-and-chart">
-            <div class="stat-list">
-              <div class="stat-line" data-stat="power">
-                <label style="color: white;">Power</label>
-                <div class="stat-stars" data-stat="power">
-                  {{#each (range 0 actor.system.attributes.stats.power.value) as |star|}}
-                    <span class="stat-star filled">★</span>
-                  {{/each}}
-                  {{#each (range actor.system.attributes.stats.power.value 5) as |star|}}
-                    <span class="stat-star">☆</span>
-                  {{/each}}
-                </div>
-              </div>
-              <div class="stat-line" data-stat="precision">
-                <label style="color: white;">Precision</label>
-                <div class="stat-stars" data-stat="precision">
-                  {{#each (range 0 actor.system.attributes.stats.precision.value) as |star|}}
-                    <span class="stat-star filled">★</span>
-                  {{/each}}
-                  {{#each (range actor.system.attributes.stats.precision.value 5) as |star|}}
-                    <span class="stat-star">☆</span>
-                  {{/each}}
-                </div>
-              </div>
-              <div class="stat-line" data-stat="speed">
-                <label style="color: white;">Speed</label>
-                <div class="stat-stars" data-stat="speed">
-                  {{#each (range 0 actor.system.attributes.stats.speed.value) as |star|}}
-                    <span class="stat-star filled">★</span>
-                  {{/each}}
-                  {{#each (range actor.system.attributes.stats.speed.value 5) as |star|}}
-                    <span class="stat-star">☆</span>
-                  {{/each}}
-                </div>
-              </div>
-              <div class="stat-line" data-stat="range">
-                <label style="color: white;">Range</label>
-                <div class="stat-stars" data-stat="range">
-                  {{#each (range 0 actor.system.attributes.stats.range.value) as |star|}}
-                    <span class="stat-star filled">★</span>
-                  {{/each}}
-                  {{#each (range actor.system.attributes.stats.range.value 5) as |star|}}
-                    <span class="stat-star">☆</span>
-                  {{/each}}
-                </div>
-              </div>
-              <div class="stat-line" data-stat="durability">
-                <label style="color: white;">Durability</label>
-                <div class="stat-stars" data-stat="durability">
-                  {{#each (range 0 actor.system.stats.durability) as |star|}}
-                    <span class="stat-star filled">★</span>
-                  {{/each}}
-                  {{#each (range actor.system.stats.durability 5) as |star|}}
-                    <span class="stat-star">☆</span>
-                  {{/each}}
-                </div>
-              </div>
-              <div class="stat-line" data-stat="learning">
-                <label style="color: white;">Learning</label>
-                <div class="stat-buttons">
-                  <button class="learning-type" data-type="original" onclick="showLearningStat('original')" style="background-color: var(--accent-dark) !important; color: white !important;">Original</button>
-                  <button class="learning-type" data-type="perm" onclick="showLearningStat('perm')" style="background-color: var(--accent-dark) !important; color: white !important;">Perm</button>
-                  <button class="learning-type" data-type="temp" onclick="showLearningStat('temp')" style="background-color: var(--accent-light) !important; color: black !important;">Temp</button>
-                </div>
-                <div class="stat-stars" data-stat="learning-original" style="display: none;">
-                  {{#each (range 0 actor.system.attributes.stats.learning.original) as |star|}}
-                    <span class="stat-star filled">★</span>
-                  {{/each}}
-                  {{#each (range actor.system.attributes.stats.learning.original 5) as |star|}}
-                    <span class="stat-star">☆</span>
-                  {{/each}}
-                </div>
-                <div class="stat-stars" data-stat="learning-perm" style="display: none;">
-                  {{#each (range 0 actor.system.attributes.stats.learning.perm) as |star|}}
-                    <span class="stat-star filled">★</span>
-                  {{/each}}
-                  {{#each (range actor.system.attributes.stats.learning.perm 5) as |star|}}
-                    <span class="stat-star">☆</span>
-                  {{/each}}
-                </div>
-                <div class="stat-stars" data-stat="learning-temp" style="display: block;">
-                  {{#each (range 0 actor.system.attributes.stats.learning.temp) as |star|}}
-                    <span class="stat-star filled">★</span>
-                  {{/each}}
-                  {{#each (range actor.system.attributes.stats.learning.temp 5) as |star|}}
-                    <span class="stat-star">☆</span>
-                  {{/each}}
-                </div>
+      <!-- ─ Stats Tab ─ -->
+      <div class="tab" data-tab="stats" data-group="primary">
+        <div class="stats-and-chart">
+          <div class="tab" data-tab="stats"></div>
+            {{> actor-nav}}
+          </div>
+          <div class="stand-chart-container">
+            <canvas id="stand-stat-chart" width="400" height="400"></canvas>
+          </div>
+
+          {{!-- Independent‐type extras in stats --}}
+          {{#ifEquals system.info.type "Independent"}}
+            <div class="stat-line" data-stat="wit">
+              <label style="color: white;">Wit</label>
+              <div class="stat-stars" data-stat="wit">
+                {{#each (range 0 actor.system.attributes.stats.wit.value) as |star|}}
+                  <span class="stat-star filled">★</span>
+                {{/each}}
+                {{#each (range actor.system.attributes.stats.wit.value 5) as |star|}}
+                  <span class="stat-star">☆</span>
+                {{/each}}
               </div>
             </div>
-            <div class="stand-chart-container">
-              <canvas id="stand-stat-chart" width="400" height="400"></canvas>
+            <div class="stat-line" data-stat="menacing">
+              <label style="color: white;">Menacing</label>
+              <div class="stat-stars" data-stat="menacing">
+                {{#each (range 0 actor.system.attributes.stats.menacing.value) as |star|}}
+                  <span class="stat-star filled">★</span>
+                {{/each}}
+                {{#each (range actor.system.attributes.stats.menacing.value 5) as |star|}}
+                  <span class="stat-star">☆</span>
+                {{/each}}
+              </div>
             </div>
-
-        {{#ifEquals system.info.type "Independent"}}
-        <div class="stat-line" data-stat="wit">
-          <label style="color: white;">Wit</label>
-          <div class="stat-stars" data-stat="wit">
-            {{#each (range 0 actor.system.attributes.stats.wit.value) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.wit.value 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
+          {{/ifEquals}}
         </div>
-
-        <div class="stat-line" data-stat="menacing">
-          <label style="color: white;">Menacing</label>
-          <div class="stat-stars" data-stat="menacing">
-            {{#each (range 0 actor.system.attributes.stats.menacing.value) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.menacing.value 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
-        {{/ifEquals}}
-
       </div>
 
-      <!-- ───────────────────── Stand Info Tab ───────────────────── -->
+      <!-- ─ Stand Info Tab ─ -->
       <div class="tab" data-tab="info" style="display: none;">
         <div class="info-container">
           <div class="info-row">
             <label>Stand:</label>
-            <input
-              type="text"
-              name="name"
-              value="{{actor.name}}"
-              placeholder="Enter stand name"
-            />
+            <input type="text"
+                   name="name"
+                   value="{{actor.name}}"
+                   placeholder="Enter stand name">
           </div>
           <div class="info-row">
             <label>Master:</label>
-            <input
-              type="text"
-              name="system.info.master"
-              value="{{system.info.master}}"
-              placeholder="Enter master name"
-            />
+            <input type="text"
+                   name="system.info.master"
+                   value="{{system.info.master}}"
+                   placeholder="Enter master name">
           </div>
           <div class="info-row">
             <label>Type:</label>
             <select id="stand-type" name="system.info.type">
-              <option value="Natural" {{#ifEquals system.info.type "Natural"}}selected{{/ifEquals}}>Natural</option>
-              <option value="Artificial" {{#ifEquals system.info.type "Artificial"}}selected{{/ifEquals}}>Artificial</option>
-              <option value="Object" {{#ifEquals system.info.type "Object"}}selected{{/ifEquals}}>Object</option>
-              <option value="Bound" {{#ifEquals system.info.type "Bound"}}selected{{/ifEquals}}>Bound</option>
-              <option value="Wearable" {{#ifEquals system.info.type "Wearable"}}selected{{/ifEquals}}>Wearable</option>
-              <option value="Swarm" {{#ifEquals system.info.type "Swarm"}}selected{{/ifEquals}}>Swarm</option>
-              <option value="Integrated" {{#ifEquals system.info.type "Integrated"}}selected{{/ifEquals}}>Integrated</option>
-              <option value="Detached" {{#ifEquals system.info.type "Detached"}}selected{{/ifEquals}}>Detached</option>
-              <option value="Other" {{#ifEquals system.info.type "Other"}}selected{{/ifEquals}}>Other</option>
-              <option value="Automatic" {{#ifEquals system.info.type "Automatic"}}selected{{/ifEquals}}>Automatic</option>
-              <option value="Independent" {{#ifEquals system.info.type "Independent"}}selected{{/ifEquals}}>Independent</option>
-              <option value="Act" {{#ifEquals system.info.type "Act"}}selected{{/ifEquals}}>Act</option>
+              {{#each Object.keys (lookup typeConfigs) as |t|}}
+                <option value="{{t}}" {{#ifEquals system.info.type t}}selected{{/ifEquals}}>
+                  {{typeConfigs[t].label}}
+                </option>
+              {{/each}}
             </select>
           </div>
           <div class="info-row">
             <label>Design:</label>
-            <textarea
-              name="system.info.design"
-              rows="3"
-              placeholder="Enter design"
-            >{{system.info.design}}</textarea>
+            <textarea name="system.info.design"
+                      rows="3"
+                      placeholder="Enter design">{{system.info.design}}</textarea>
           </div>
           <div class="info-row">
             <label>Ability:</label>
-            <textarea
-              name="system.info.ability"
-              rows="3"
-              placeholder="Enter ability"
-            >{{system.info.ability}}</textarea>
+            <textarea name="system.info.ability"
+                      rows="3"
+                      placeholder="Enter ability">{{system.info.ability}}</textarea>
           </div>
           <div class="info-row">
             <label>Cost:</label>
-            <input
-              type="text"
-              name="system.info.cost"
-              value="{{system.info.cost}}"
-              readonly
-            />
+            <input type="text"
+                   name="system.info.cost"
+                   value="{{system.info.cost}}"
+                   readonly>
           </div>
+
+          {{!-- Extras for any configured Stand type --}}
+          {{> actor-class}}
+
         </div>
       </div>
     </section>
   </div>
 </form>
-<script>
-  function showLearningStat(type) {
-    const buttons = document.querySelectorAll('.learning-type');
-    buttons.forEach(button => {
-      if (button.dataset.type === type) {
-        button.style.backgroundColor = 'var(--accent-light)';
-        button.style.color = 'black';
-      } else {
-        button.style.backgroundColor = 'var(--accent-dark)';
-        button.style.color = 'white';
-      }
-    });
-
-    document.querySelector('[data-stat="learning-original"]').style.display = type === 'original' ? 'block' : 'none';
-    document.querySelector('[data-stat="learning-perm"]').style.display = type === 'perm' ? 'block' : 'none';
-    document.querySelector('[data-stat="learning-temp"]').style.display = type === 'temp' ? 'block' : 'none';
-  }
-</script>

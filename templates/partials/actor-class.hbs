@@ -1,0 +1,23 @@
+{{!-- systems/bizarre-adventures-d6/templates/partials/actor-class.hbs --}}
+{{#if extraConfig}}
+  <h3>{{extraConfig.label}} Abilities</h3>
+  {{#each extraConfig.fields as |field|}}
+    <div class="bio-row extra-field">
+      <label>{{field.label}}:</label>
+      {{#ifEquals field.input "text"}}
+        <input
+          type="text"
+          name="system.extra.{{field.key}}"
+          value="{{getProperty system (concat "extra." field.key)}}"
+          placeholder="{{field.placeholder}}"
+        >
+      {{else ifEquals field.input "textarea"}}
+        <textarea
+          name="system.extra.{{field.key}}"
+          rows="{{field.rows}}"
+          placeholder="{{field.placeholder}}"
+        >{{getProperty system (concat "extra." field.key)}}</textarea>
+      {{/ifEquals}}
+    </div>
+  {{/each}}
+{{/if}}
