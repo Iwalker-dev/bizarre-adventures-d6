@@ -5,7 +5,7 @@
       <h1>{{actor.name}}</h1>
     </header>
 
-    <nav class="sheet-tabs" data-group="primary">
+    <nav class="sheet-tabs tabs" data-group="primary">
       {{> actor-nav}}
     </nav>
 
@@ -13,43 +13,17 @@
       <!-- ─ Stats Tab ─ -->
       <div class="tab" data-tab="stats" data-group="primary">
         <div class="stats-and-chart">
-          <div class="tab" data-tab="stats"></div>
-            {{> actor-nav}}
+          <div class="stat-list">
+            {{> actor-stats}}
           </div>
           <div class="stand-chart-container">
-            <canvas id="stand-stat-chart" width="400" height="400"></canvas>
+            <canvas id="stand-stat-chart" width="300" height="300"></canvas>
           </div>
-
-          {{!-- Independent‐type extras in stats --}}
-          {{#ifEquals system.info.type "Independent"}}
-            <div class="stat-line" data-stat="wit">
-              <label style="color: white;">Wit</label>
-              <div class="stat-stars" data-stat="wit">
-                {{#each (range 0 actor.system.attributes.stats.wit.value) as |star|}}
-                  <span class="stat-star filled">★</span>
-                {{/each}}
-                {{#each (range actor.system.attributes.stats.wit.value 5) as |star|}}
-                  <span class="stat-star">☆</span>
-                {{/each}}
-              </div>
-            </div>
-            <div class="stat-line" data-stat="menacing">
-              <label style="color: white;">Menacing</label>
-              <div class="stat-stars" data-stat="menacing">
-                {{#each (range 0 actor.system.attributes.stats.menacing.value) as |star|}}
-                  <span class="stat-star filled">★</span>
-                {{/each}}
-                {{#each (range actor.system.attributes.stats.menacing.value 5) as |star|}}
-                  <span class="stat-star">☆</span>
-                {{/each}}
-              </div>
-            </div>
-          {{/ifEquals}}
         </div>
       </div>
 
       <!-- ─ Stand Info Tab ─ -->
-      <div class="tab" data-tab="info" style="display: none;">
+      <div class="tab" data-tab="info" data-group="primary">
         <div class="info-container">
           <div class="info-row">
             <label>Stand:</label>
@@ -68,9 +42,10 @@
           <div class="info-row">
             <label>Type:</label>
             <select id="stand-type" name="system.info.type">
-              {{#each Object.keys (lookup typeConfigs) as |t|}}
-                <option value="{{t}}" {{#ifEquals system.info.type t}}selected{{/ifEquals}}>
-                  {{typeConfigs[t].label}}
+              {{#each typeConfigs}}
+                <option value="{{@key}}"
+                {{#ifEquals system.info.type @key}}selected{{/ifEquals}}>
+                  {{this.label}}
                 </option>
               {{/each}}
             </select>
