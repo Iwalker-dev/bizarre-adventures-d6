@@ -46,7 +46,7 @@ export const typeConfigs = {
             -Ghosts are on the same level of selective intangibility as Stands.
             -Animals and Stand Users can see Ghosts.
             -Ghosts cannot be seen by normal people, but can make themselves heard.
-            -If a Ghost’s limb unwillingly touches a living thing, it is severed but not lost.
+            -If a Ghost's limb unwillingly touches a living thing, it is severed but not lost.
             -Normal objects may be manipulated as normal, but not felt by the ghost.
             -When any object is destroyed, its previous form becomes a Ghost Object.
             -Ghost Objects can be used by Ghosts, and only affect other non-living spirits.
@@ -68,7 +68,7 @@ export const typeConfigs = {
             -
             • These beings can Shapeshift into any non-complex object, of equal or lesser mass.
             • Aliens have a Sensitivity to high-pitched sounds, and take a Hit on exposure.
-            • While exposed to sound, the alien’s form will be unstable, and change rapidly.
+            • While exposed to sound, the alien's form will be unstable, and change rapidly.
             -
             • Aliens may also have access to foreign technologies and weapons based on setting.
             • This section is made under the assumption that Mikitaka is not a Stand User.
@@ -114,10 +114,10 @@ export const typeConfigs = {
             -
             • Higher Being grants double the organ systems from Range ranks, and superior minds.
             • The first User Stat roll has double dice, A Power B/Wit A roll would be 14d6 in total.
-            • A Pillar Man that hasn’t used a Stone Mask still ages, but lives for thousands of years.
+            • A Pillar Man that hasn't used a Stone Mask still ages, but lives for thousands of years.
             • Rock Form can negate instant death from Hamon/Sun exposure, and help hibernate.
             -
-            • After using a Stone Mask, a Pillar Man’s innate vampirism and hunger increase greatly.
+            • After using a Stone Mask, a Pillar Man's innate vampirism and hunger increase greatly.
             • Superhuman Body lets Pillar Men rearrange their bodies or others at will.
             • Absorption upgrades Blood Sucking, assimilating live victims on any physical contact.
             • Functions evolve into Modes based on an element.

@@ -394,6 +394,15 @@ body {
 }
 
 /* ────────────────────────── Stand Info Tab ────────────────────────── */
+.jojo-sheet .burn-type {
+  background-color: rgba(128, 128, 128, 0.116);
+  color: rgb(255, 255, 255);
+  border: 1px solid var(--accent-light);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
 .jojo-sheet .info-container {
   display: flex;
   flex-direction: column;
