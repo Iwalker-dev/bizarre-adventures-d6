@@ -1,55 +1,70 @@
 import { BaseActorSheet } from "./base-actor-sheet.js";
 import { typeConfigs }    from "../config/actor-configs.js";
+const mergeObject = foundry.utils.mergeObject;
 
 export class PowerSheet extends BaseActorSheet {
-  /** @override */
   static get defaultOptions() {
     return mergeObject(super.defaultOptions, {
-      classes: ["bizarre-adventures-d6", "sheet", "actor", "power"],
+      classes: ["bizarre-adventures-d6","sheet","actor","power"],
       template: "systems/bizarre-adventures-d6/templates/sheets/power-actor-sheet.hbs",
       width: 800,
       height: 800,
       tabs: [{
-        navSelector: ".sheet-tabs",          // ← matches your <nav class="tabs">
+        navSelector: ".sheet-tabs",
         contentSelector: "section.sheet-body",
         initial: "stats"
       }]
     });
   }
 
+  /** Build statLabelMap so stats.hbs can pick up the custom labels */
   getData() {
     const data = super.getData();
-    data.system = this.actor.system;
+    data.system      = this.actor.system;
     data.typeConfigs = typeConfigs.power;
-
-    // ensure info exists
     data.system.info = data.system.info || {};
 
-    data.extraConfig = data.typeConfigs[data.system.info.type] || null;
+    const types = Object.keys(data.typeConfigs);
+    if (!data.system.info.type && types.length) {
+      data.system.info.type = types[0];
+    }
 
-    data.getSelectedValue = (stat) => {
-      const statData = this.actor.system.attributes.stats[stat];
-      return statData[statData.selected] || 0;
+    data.extraConfig = data.typeConfigs[data.system.info.type] || {};
+
+    // —— NEW: statLabelMap —— 
+    const keys = ['power','precision','speed','range','durability','learning'];
+    data.statLabelMap = {};
+    if (Array.isArray(data.extraConfig.statlabels)) {
+      data.extraConfig.statlabels.forEach((lbl, idx) => {
+        const key = keys[idx];
+        if (key) data.statLabelMap[key] = lbl;
+      });
+    }
+    // ————————————————
+
+    data.getSelectedValue = stat => {
+      const s = this.actor.system.attributes.stats[stat];
+      return s[s.selected] || 0;
     };
-
     return data;
   }
 
   activateListeners(html) {
-    // Let Foundry wire up the tabs for you
     super.activateListeners(html);
-
-    // Render all of the “star” click‐to‐set listeners
     this.renderStars(html);
 
-    // Handle any custom “switch-value” buttons you have (e.g. Burn vs Live, Original vs Temp, etc.)
+    // Burn‐type toggles
     html.find(".switch-value").click(ev => {
-      const button = ev.currentTarget;
-      const stat     = button.dataset.stat;
-      const valueType = button.dataset.value;
-      // Toggle the selected sub-value on your actor’s stats
-      this.actor.update({ [`system.attributes.stats.${stat}.selected`]: valueType });
+      const { stat, value } = ev.currentTarget.dataset;
+      this.actor.update({ [`system.attributes.stats.${stat}.selected`]: value });
+    });
+
+    // When the “Type” dropdown changes:
+    html.find('#power-type').on('change', ev => {
+      const newType = ev.target.value;
+      // Update the actor, then re-render so getData() rebuilds statLabelMap
+      this.actor.update({ 'system.info.type': newType })
+          .then(() => this.render(true));
     });
   }
-   
 }

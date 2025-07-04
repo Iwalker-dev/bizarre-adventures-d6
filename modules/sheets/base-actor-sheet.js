@@ -8,6 +8,14 @@ export class BaseActorSheet extends ActorSheet {
     });
   }
 
+  static statOrder = [
+    "power",
+    "precision",
+    "speed",
+    "durability",
+    "range",
+    "learning"
+  ];
 
 /** @override **/
   getData() {
@@ -24,10 +32,28 @@ export class BaseActorSheet extends ActorSheet {
       temp:     stat.temp,
       perm:     stat.perm
     }));
+    if (data.typeConfigs && typeof data.typeConfigs === "object") {
+      const types = Object.keys(data.typeConfigs);
+      if (!data.system.info.type && types.length) {
+        data.system.info.type = types[0];
+      }
+    }
+    // 1) Sort by dtype (Burn first, then Number)
+    const dtypeOrder = { Burn: 0, Number: 1 };
 
-    // Sort: Numbers first (0), Burns second (1)
-    const order = { Number: 1, Burn: 0 };
-    stats.sort((a, b) => (order[a.dtype] || 99) - (order[b.dtype] || 99));
+    // 2) Then by your static key order
+    const keyOrder = this.constructor.statOrder;
+
+    stats.sort((a, b) => {
+      // primary: dtype
+      const dd = (dtypeOrder[a.dtype] || 99) - (dtypeOrder[b.dtype] || 99);
+      if (dd !== 0) return dd;
+      // secondary: index in statOrder
+      const ai = keyOrder.indexOf(a.key);
+      const bi = keyOrder.indexOf(b.key);
+      // missing keys go to the end
+      return (ai < 0 ? Infinity : ai) - (bi < 0 ? Infinity : bi);
+    });
 
     data.stats = stats;
     return data;
