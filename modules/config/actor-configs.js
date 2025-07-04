@@ -289,68 +289,27 @@ export const typeConfigs = {
   power: {
     Hamon: {
       label: "Hamon Warrior",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "Abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "Describe your power",
-          description: "Incomplete."
-        }
-      ]
+      statlabels: ['Strength', 'Accuracy', 'Agility', 'Conduction', 'Blocking', 'Learning']
     },
     Vampire: {
       label: "Vampire",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "Abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "How it was created",
-          description: "Details on how this power was artificially created."
-        }
-      ]
+      statlabels: ['Strength', 'Senses', 'Reflex', 'Bodily Control', 'Resilience', 'Learning']
     },
     Spin: {
       label: "Spin",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "How it was created",
-          description: "Details on how this power was artificially created."
-        }
-      ]
+      statlabels: ['Mass', 'Control', 'Velocity', 'RPM', 'Sturdiness', 'Learning']
     },
     Armed: {
       label: "Armed Phenomenon",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "How it was created",
-          description: "Details on how this power was artificially created."
-        }
-      ]
+      statlabels: ['Strength', 'Accuracy', 'Agility', 'Evolution', 'Endurance', 'Learning']
     },
     Cyborg: {
       label: "Cyborg",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "How it was created",
-          description: "Details on how this power was artificially created."
-        }
-      ]
+      statlabels: ['Tech Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning']
+    },
+    Other: {
+      label: "Other Power",
+      statlabels: ['Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning']
     },
     // …other power types…
   }
