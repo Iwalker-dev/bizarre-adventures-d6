@@ -55,8 +55,8 @@
       "groups": {}
     }
   },
-  "manifest": "https://raw.githubusercontent.com/FlexLamb-Dev/bizarre-adventures-d6/main/system.json",
-  "download": "https://github.com/FlexLamb-Dev/bizarre-adventures-d6/releases/download/v0.8.X/bizarre-adventures-d6-v0.8.X.zip",
+  "manifest": "https://raw.githubusercontent.com/Iwalker-Dev/bizarre-adventures-d6/main/system.json",
+  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.8.X/bizarre-adventures-d6-v0.8.X.zip",
   "relationships": {
     "requires": [
       {
