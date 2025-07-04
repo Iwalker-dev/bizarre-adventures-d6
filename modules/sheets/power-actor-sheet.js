@@ -23,12 +23,6 @@ export class PowerSheet extends BaseActorSheet {
     data.system      = this.actor.system;
     data.typeConfigs = typeConfigs.power;
     data.system.info = data.system.info || {};
-
-    const types = Object.keys(data.typeConfigs);
-    if (!data.system.info.type && types.length) {
-      data.system.info.type = types[0];
-    }
-
     data.extraConfig = data.typeConfigs[data.system.info.type] || {};
 
     // —— NEW: statLabelMap —— 
@@ -66,5 +60,11 @@ export class PowerSheet extends BaseActorSheet {
       this.actor.update({ 'system.info.type': newType })
           .then(() => this.render(true));
     });
+
+    const current = this.actor.system.info.type;
+    if (!current) {
+      const defaultType = Object.keys(typeConfigs.power)[0];
+      html.find('#power-type').val(defaultType);
+  }
   }
 }

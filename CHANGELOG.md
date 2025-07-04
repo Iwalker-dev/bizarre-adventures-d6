@@ -8,7 +8,6 @@ Foundations for stand, user, and power type functionality.
 Over arching changes to the entire sheet for V13
 Scalability and optimization within sheets
 ### Issues
-Power Sheet is still unfinished
-Costs are not accurate
-Special Types aren't properly handled.
+Types default to first entry on render. Temporarily fixed by adding a "none" entry.
+Powers do not currently have a description detailing abilities. Temporarily fixed by necessitating using outside sources.
 

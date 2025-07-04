@@ -2,6 +2,9 @@
 
 export const typeConfigs = {
   user: {
+    None: {
+      label: "",
+    },
     Natural: {
       label: "Natural User",
       cost: "None",
@@ -144,6 +147,9 @@ export const typeConfigs = {
   },
 
   stand: {
+    None: {
+      label: "",
+    },
     Natural: {
       label: "Natural Stand",
       cost: "None",
@@ -287,6 +293,9 @@ export const typeConfigs = {
   },
 
   power: {
+    None: {
+      label: "",
+    },
     Hamon: {
       label: "Hamon Warrior",
       statlabels: [
