@@ -57,6 +57,7 @@ activateListeners(html) {
 
   // Handle the Stand-type dropdown to add/remove stats on the fly
   html.find("#stand-type").on("change", async event => {
+    const oldType = this.actor.system.info.type;
     const newType = event.target.value;
     await this.actor.update({ "system.info.type": newType });
     await this.syncStatsForStand(newType);

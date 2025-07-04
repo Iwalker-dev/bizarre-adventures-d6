@@ -6,104 +6,14 @@
       <h1>{{actor.name}}</h1>
     </header>
 
-    <nav class="tabs" data-group="primary">
-      <div class="button-container">
-        <a class="item" data-tab="stats">Stats</a>
-      </div>
-      <div class="button-container">
-        <a class="item" data-tab="info">Power Info</a>
-      </div>
+    <nav class="sheet-tabs tabs" data-group="primary">
+      {{> actor-nav}}
     </nav>
 
     <section class="sheet-body">
       <!-- ─────────────────────── Stats Tab ─────────────────────── -->
-      <div class="tab" data-tab="stats" style="display: block;">
-        <div class="stat-line" data-stat="power">
-          <label style="color: white;">Power</label>
-          <div class="stat-stars" data-stat="power">
-            {{#each (range 0 actor.system.attributes.stats.power.value) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.power.value 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
-        <div class="stat-line" data-stat="precision">
-          <label style="color: white;">Precision</label>
-          <div class="stat-stars" data-stat="precision">
-            {{#each (range 0 actor.system.attributes.stats.precision.value) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.precision.value 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
-        <div class="stat-line" data-stat="speed">
-          <label style="color: white;">Speed</label>
-          <div class="stat-stars" data-stat="speed">
-            {{#each (range 0 actor.system.attributes.stats.speed.value) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.speed.value 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
-        <div class="stat-line" data-stat="range">
-          <label style="color: white;">Range</label>
-          <div class="stat-stars" data-stat="range">
-            {{#each (range 0 actor.system.attributes.stats.range.value) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.range.value 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
-        <div class="stat-line" data-stat="durability">
-          <label style="color: white;">Durability</label>
-          <div class="stat-stars" data-stat="durability">
-            {{#each (range 0 actor.system.stats.durability) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.stats.durability 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-        </div>
-        <div class="stat-line" data-stat="learning">
-          <label style="color: white;">Learning</label>
-          <div class="stat-buttons">
-            <button class="learning-type" data-type="original" onclick="showLearningStat('original')" style="background-color: var(--accent-dark) !important; color: white !important;">Original</button>
-            <button class="learning-type" data-type="perm" onclick="showLearningStat('perm')" style="background-color: var(--accent-dark) !important; color: white !important;">Perm</button>
-            <button class="learning-type" data-type="temp" onclick="showLearningStat('temp')" style="background-color: var(--accent-light) !important; color: black !important;">Temp</button>
-          </div>
-          <div class="stat-stars" data-stat="learning-original" style="display: none;">
-            {{#each (range 0 actor.system.attributes.stats.learning.original) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.learning.original 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-          <div class="stat-stars" data-stat="learning-perm" style="display: none;">
-            {{#each (range 0 actor.system.attributes.stats.learning.perm) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.learning.perm 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
-          <div class="stat-stars" data-stat="learning-temp" style="display: block;">
-            {{#each (range 0 actor.system.attributes.stats.learning.temp) as |star|}}
-              <span class="stat-star filled">★</span>
-            {{/each}}
-            {{#each (range actor.system.attributes.stats.learning.temp 5) as |star|}}
-              <span class="stat-star">☆</span>
-            {{/each}}
-          </div>
+      <div class="tab" data-tab="stats" data-group="primary">
+      {{> actor-stats}}
         </div>
       </div>
 
@@ -130,14 +40,13 @@
           </div>
           <div class="info-row">
             <label>Type:</label>
-            <select id="stand-type" name="system.info.type">
-              <option value="Hamon" {{#ifEquals system.info.type "Hamon"}}selected{{/ifEquals}}>Hamon</option>
-              <option value="Vampire" {{#ifEquals system.info.type "Vampire"}}selected{{/ifEquals}}>Vampire</option>
-              <option value="Pillar Man" {{#ifEquals system.info.type "Pillar Man"}}selected{{/ifEquals}}>Pillar Man</option>
-              <option value="Spin" {{#ifEquals system.info.type "Spin"}}selected{{/ifEquals}}>Spin</option>
-              <option value="Armed Phenomenon" {{#ifEquals system.info.type "Armed Phenomenon"}}selected{{/ifEquals}}>Armed Phenomenon</option>
-              <option value="Cyborg" {{#ifEquals system.info.type "Cyborg"}}selected{{/ifEquals}}>Cyborg</option>
-              <option value="Other" {{#ifEquals system.info.type "Other"}}selected{{/ifEquals}}>Other</option>
+          {{> actor-class}}
+            <select id="power-type" name="system.info.type">
+              {{#each typeConfigs}}
+                <option value="{{@key}}" {{#ifEquals ../system.info.type @key}}selected{{/ifEquals}}>
+                  {{this.label}}
+                </option>
+              {{/each}}
             </select>
           </div>
           <div class="info-row">

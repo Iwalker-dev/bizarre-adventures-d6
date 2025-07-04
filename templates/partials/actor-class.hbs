@@ -1,6 +1,18 @@
 {{!-- systems/bizarre-adventures-d6/templates/partials/actor-class.hbs --}}
 {{#if extraConfig}}
-  <h3>{{extraConfig.label}} Abilities</h3>
+  <h3 class="bio-section-header">{{extraConfig.label}} Abilities</h3>
+
+    {{!-- show cost and description --}}
+  <div class="bio-row extra-cost">
+    <label>Cost:</label>
+    <span>{{extraConfig.cost}}</span>
+  </div>
+  <div class="bio-row extra-description">
+    <label>Description:</label>
+    <span>{{{extraConfig.description}}}</span>
+  </div>
+
+  {{!-- show extra fields --}}
   {{#each extraConfig.fields as |field|}}
     <div class="bio-row extra-field">
       <label>{{field.label}}:</label>
@@ -8,7 +20,7 @@
         <input
           type="text"
           name="system.extra.{{field.key}}"
-          value="{{getProperty system (concat "extra." field.key)}}"
+          value="{{system.extra.[field.key]}}"
           placeholder="{{field.placeholder}}"
         >
       {{else ifEquals field.input "textarea"}}

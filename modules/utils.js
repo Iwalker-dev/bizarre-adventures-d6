@@ -59,7 +59,9 @@ export function registerHandlebarsHelpers() {
     default: return 0;
   }
 });
-
+  Handlebars.registerHelper('getProperty', (obj, path) => {
+    return foundry.utils.getProperty(obj, path);
+  });
 }
 
 export async function preloadHandlebarsTemplates() {

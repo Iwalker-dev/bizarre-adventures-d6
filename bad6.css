@@ -600,3 +600,30 @@ body {
   color: #ff6666;
   cursor: pointer;
 }
+
+/* ────────────────────────── Extra Cost & Description in Bio Tab ────────────────────────── */
+.jojo-sheet .bio-section-header {
+  width: 120px;          
+  color: white;
+}
+
+.jojo-sheet .bio-row.extra-cost,
+.jojo-sheet .bio-row.extra-description {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Cost row: label + span just like input + label */
+.jojo-sheet .bio-row.extra-cost label,
+.jojo-sheet .bio-row.extra-description label
+{
+  width: 180px;          /* same as other bio-row labels */
+  color: white;
+}
+.jojo-sheet .bio-row.extra-cost span,
+.jojo-sheet .bio-row.extra-description span{
+  flex: 1;               /* fill the remaining space */
+  color: white;
+}

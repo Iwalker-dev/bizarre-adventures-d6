@@ -20,7 +20,8 @@
       "files": [
         "templates/sheets/user-actor-sheet.hbs",
         "templates/partials/actor-nav.hbs",
-        "modules/sheets/user-actor-sheet.js"
+        "modules/sheets/user-actor-sheet.js",
+        "templates/partials/actor-class.hbs"
       ]
     }
   },
