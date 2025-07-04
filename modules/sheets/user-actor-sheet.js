@@ -1,362 +1,134 @@
-export class UserSheet extends ActorSheet {
-  static statData = {
-    body:     0,
-    wit:      0,
-    reason:   0,
-    menacing: 0,
-    pluck:    0,
-    luck:     0
-  };
+// systems/bizarre-adventures-d6/scripts/sheets/user-actor-sheet.js
+import { BaseActorSheet } from "./base-actor-sheet.js";
+import { typeConfigs }    from "../config/actor-configs.js";
+
+export class UserSheet extends BaseActorSheet {
+  /** @override */
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ["bizarre-adventures-d6", "sheet", "actor", "user"],
-      template: "systems/bizarre-adventures-d6/templates/sheets/user-actor-sheet.hbs",
-      width: 800,
-      height: 800,
-      tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "stats" }]
+      classes:   ["bizarre-adventures-d6","sheet","actor","user"],
+      template:  "systems/bizarre-adventures-d6/templates/sheets/user-actor-sheet.hbs",
+      width:     800,
+      height:    800,
+      tabs: [{
+        navSelector:    ".sheet-tabs",
+        contentSelector:".sheet-body",
+        initial:        "stats"
+      }]
     });
   }
 
+  /** @override */
   getData() {
-    const data = super.getData();
-    data.system = this.actor.system;
+    const data         = super.getData();
+    data.system        = this.actor.system;
+    data.system.info = data.system.info ?? {};
+    data.system.info.type = data.system.info.type ?? "user";     
+    data.typeConfigs   = typeConfigs.user;                                             // for <select> options
+    data.extraConfig   = typeConfigs[data.system.info.type] || null;              // for {{> bio-extras}}
 
-    // Add a helper to resolve the selected value for Burn-type stats
-    data.getSelectedValue = (stat) => {
-      const statData = this.actor.system.attributes.stats[stat];
-      return statData[statData.selected] || 0;
+    // Helper to pick the right star-value sub-field
+    data.getSelectedValue = stat => {
+      const s = this.actor.system.attributes.stats[stat];
+      return s?.[s.selected] ?? 0;
     };
 
-    // Ensure health data is initialized
-    if (!this.actor.system.health) {
-      this.actor.system.health = { max: 0, value: 0, current: 0 };
-    }
+    // Initialize health if missing
+    this.actor.system.health ??= { min:0, max:0, value:0 };
 
-    // Calculate total health damage from hits
+    // Compute current HP based on Hit items
     const totalDamage = this.actor.items
-      .filter(item => item.type === "hit")
-      .reduce((sum, item) => sum + (item.system.quantity ?? 0), 0);
-    // Compute current health
-    data.system.health.value = Math.max(this.actor.system.health.min, this.actor.system.health.max - totalDamage);
+      .filter(i => i.type==="hit")
+      .reduce((sum,i)=>sum+(i.system.quantity||0),0);
+    data.system.health.value = Math.max(
+      this.actor.system.health.min,
+      this.actor.system.health.max - totalDamage
+    );
 
     return data;
   }
 
+  /** @override */
   activateListeners(html) {
     super.activateListeners(html);
 
-    // Tab switching logic
-    html.find(".tabs button").click(ev => {
-      const tabId = ev.currentTarget.dataset.tab;
+    // Inject accent colors once
+    const base   = game.user.color?.toString() || "#ffffff";
+    const light  = this.lightenColor(base,  30);
+    const dark   = this.lightenColor(base, -20);
+    document.documentElement.style.setProperty("--accent-color", base);
+    document.documentElement.style.setProperty("--accent-light", light);
+    document.documentElement.style.setProperty("--accent-dark", dark);
 
-      // Deactivate all tabs and buttons
-      html.find(".tabs button").removeClass("active");
-      html.find(".tab-content").hide();
+    // Render all the stat-stars
+    this.renderStars(html);
 
-      // Activate the clicked button and its corresponding tab
-      ev.currentTarget.classList.add("active");
-      html.find(`#${tabId}`).show();
-    });
+    // Handle Type dropdown changes
+    html.find("#user-type").on("change", async ev => {
+      const oldType = this.actor.system.info.type;
+      const newType = ev.target.value;
+      await this.actor.update({ "system.info.type": newType });
 
-    // Ensure the default tab is visible
-    html.find(".tab-content#stats").show();
+      // Remove old‐type extra fields
+      const cleanup = {};
+      (typeConfigs[oldType]?.fields||[]).forEach(f => cleanup[`system.extra.${f.key}`]=null);
+      if (Object.keys(cleanup).length) await this.actor.update(cleanup);
 
-    // Helper function to update health value
-    const updateHealthValue = async () => {
-      const totalDamage = this.actor.items
-        .filter(item => item.type === "hit")
-        .reduce((sum, hit) => sum + (hit.system.damage || 0), 0);
-      console.log("Total damage from hits:", totalDamage);
-      const maxHP = this.actor.system.health.max || 0;
-      const minHP = this.actor.system.health.min || 0;
-      const newHP = Math.max(minHP, maxHP - totalDamage);
-
-      await this.actor.update({ "system.health.value": newHP });
       this.render();
-    };
+    });
 
-    // Add logic for Hits tab
-    html.find("#add-hit").click(async () => {
-      const name = html.find("#hit-name").val();
-      const weight = parseFloat(html.find("#hit-weight").val()) || 0;
-      const quantity = parseInt(html.find("#hit-quantity").val(), 10) || 0;
-
-      if (name && weight > 0 && quantity > 0) {
-        const hitData = {
-          name: name,
-          type: "hit",
-          data: {
-            weight: weight,
-            quantity: quantity
-          }
-        };
-
-        await this.actor.createEmbeddedDocuments("Item", [hitData]);
-        await updateHealthValue();
-      } else {
-        console.warn("Invalid hit data provided.");
+    // Health‐max changes
+    html.find("input[name='system.health.max']").change(async ev => {
+      const max = parseInt(ev.target.value);
+      if (!Number.isNaN(max)) {
+        await this.actor.update({ "system.health.max": max });
+        this.render();
       }
     });
 
-    // Log initialization
-    console.log("Listeners activated for UserSheet.");
-
-    // ─────────────────────────────────────────────────────
-    // Stat stars data & rendering logic
-    // ─────────────────────────────────────────────────────
-
-      // Render stars
-  this.renderStars(html);
-  /*
-    // Update health dynamically based on hits
-    const updateHealth = () => {
-      const totalDamage = this.actor.items
-        .filter(item => item.type === "hit")
-        .reduce((sum, hit) => sum + (hit.system.damage || 0), 0);
-
-      const newHealthValue = Math.max(0, this.actor.system.health.max - totalDamage);
-
-      // Debugging health value changes
-      console.log("Before update:", this.actor.system.health.value);
-      console.log("Calculated new value:", newHealthValue);
-
-      this.actor.update({ "system.health.value": newHealthValue }).then(() => {
-        console.log("After update:", this.actor.system.health.value);
-      });
-    };
-  */
-/*
-  // Render hits from the actor's inventory
-  const renderHits = () => {
-    const hits = this.actor.items.filter(item => item.type === "hit");
-    const hitList = html.find("#hit-items");
-    hitList.empty();
-
-    hits.forEach(hit => {
-      const listItem = `
-        <li data-item-id="${hit.id}" style="background-color: rgba(0, 0, 0, 0.5); display: inline-block; padding: 10px; margin: 5px; cursor: pointer;">
-          <div>
-            ${hit.name} - Weight: ${hit.system.weight}, Quantity: ${hit.system.quantity}
-            <p style="margin: 5px 0; font-size: 0.9em; color: #ccc;">${hit.system.description || "No description provided."}</p>
-            <button class="delete-hit" data-item-id="${hit.id}" style="margin-top: 5px;">Delete</button>
-          </div>
-        </li>
-      `;
-      hitList.append(listItem);
+    // Create and delete Item entries
+    html.find("#create-item").click(() => {
+      this.actor.createEmbeddedDocuments("Item",[{
+        name: "New Item", type:"item",
+        system:{ weight:0, quantity:1 }
+      }]);
     });
-  };
-  // Call renderHits on sheet render
-  renderHits();
-*/
+    html.find("#item-items").on("click",".delete-item",async ev=>{
+      const id=$(ev.currentTarget).data("item-id");
+      await this.actor.deleteEmbeddedDocuments("Item",[id]);
+      this.render();
+    });
+    html.find("#item-items").on("click", "li", ev => {
+  // If the click was on (or inside) the trash icon, bail out
+  if ( $(ev.target).closest(".delete-item").length ) return;
 
-   // <--------------------------Item Logic--------------------------->
-  html.find("#create-item").click(() => {
-    const itemData = {
-      name: "New Item",
-      type: "item",
-      system: {
-        weight: 0,
-        quantity: 1
-      }
-    };
-
-    // Create the hit item in the actor's inventory
-    this.actor.createEmbeddedDocuments("Item", [itemData]);
+  // Otherwise get the item ID from the <li> and open its sheet
+  const id = $(ev.currentTarget).data("item-id");
+  const item = this.actor.items.get(id);
+  if ( item ) item.sheet.render(true);
   });
 
-  html.find("#item-items").on("click", ".delete-item", async (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const itemId = $(event.currentTarget).data("item-id");
-    const item = this.actor.items.get(itemId);
-    if (item) {
-      await this.actor.deleteEmbeddedDocuments("Item", [itemId]);
-      this.render(); // Refresh
-    }
-  });
-
-    // Add click event listener for items
-  html.find('#item-items').on('click', 'li', function(event) {
-    if (event.target.closest('button')) return;
-
-    event.stopPropagation(); // Ensure the click event is not intercepted by child elements
-
-    const itemId = $(this).data('item-id');
-    console.log('Item ID:', itemId); // Log the retrieved item ID
-
-    const actorId = html.closest('.sheet.actor-sheet').data('actor-id');
-    console.log('Actor ID:', actorId); // Log the actor ID
-
-    if (!actorId) {
-      console.error('Actor ID is undefined');
-      return;
-    }
-
-    const actor = game.actors.get(actorId);
-
-    if (!actor) {
-      console.error('Actor is undefined');
-      return;
-    }
-
-    const item = actor.items.get(itemId);
-
-    if (item) {
-      item.sheet.render(true);
-    } else {
-      console.error('Item not found');
-    }
-  });
-
-
-  // <---------------------------Hit Logic--------------------------->
-  html.find("#create-hit").click(() => {
-    const hitData = {
-      name: "New Hit",
-      type: "hit",
-      system: {
-        weight: 1,
-        quantity: 1
-      }
-    };
-    updateHealthValue();
-
-    // Create the hit item in the actor's inventory
-    this.actor.createEmbeddedDocuments("Item", [hitData]);
-  });
-
-
-    const actor = this.actor; //move if working
-
-    html.find('#hit-items').on('click', 'li', async (event) => {
-      // Prevent click-through from the delete button
-      if (event.target.closest('button')) return;
-
-      const itemId = $(event.currentTarget).data('item-id');
-      const item = this.actor.items.get(itemId);
-
-      if (item) {
-        console.log(`Opening sheet for hit ID: ${itemId}`);
-        item.sheet.render(true);
-      } else {
-        console.warn(`No item found with ID: ${itemId}`);
-      }
+    // Create and delete Hit entries (and update health)
+    const recalc = async () => this.render();
+    html.find("#create-hit").click(async ()=>{
+      await this.actor.createEmbeddedDocuments("Item",[{
+        name:"New Hit",type:"hit",
+        system:{ weight:1, quantity:1 }
+      }]);
+      recalc();
     });
-
-
-
-    // Delegated edit button
-    html.find("#hit-items").on("click", ".edit-hit", (event) => {
-      event.stopPropagation();
-      const itemId = $(event.currentTarget).data("item-id");
-      const hitItem = actor.items.get(itemId);
-      
-      if (hitItem) {
-        hitItem.sheet.render(true);
-      } else {
-        console.error("Edit failed. Hit not found for ID:", itemId);
-      }
+    html.find("#hit-items").on("click",".delete-hit",async ev=>{
+      const id=$(ev.currentTarget).data("item-id");
+      await this.actor.deleteEmbeddedDocuments("Item",[id]);
+      recalc();
     });
-
-    // Delegated delete button
-    html.find("#hit-items").on("click", ".delete-hit", async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const itemId = $(event.currentTarget).data("item-id");
-      const hitItem = this.actor.items.get(itemId);
-      if (hitItem) {
-        await this.actor.deleteEmbeddedDocuments("Item", [itemId]);
-        this.render(); // Refresh
-      }
-    });
-
-
-  // Add event listener for max health input
-  html.find("input[name='system.health.max']").change(async (ev) => {
-    const newMax = parseInt(ev.target.value, 10);
-    if (!isNaN(newMax)) {
-      await this.actor.update({ "system.health.max": newMax });
-      await updateHealthValue();
-    }
-  });
-
-  // Add event listeners for Burn-type stat switchers
-  html.find(".switch-value").click(ev => {
-    const button = ev.currentTarget;
-    const stat = button.dataset.stat;
-    const valueType = button.dataset.value;
-
-    // Update the displayed value based on the selected type
-    const input = html.find(`input[name='system.attributes.stats.${stat}.value']`);
-    const actorData = this.actor.system.attributes.stats[stat];
-    input.val(actorData[valueType]);
-  });
-  }
-
-  renderStars(html) {
-    html.find(".stat-stars").each((_, container) => {
-      const statKey = container.dataset.stat;
-      container.innerHTML = "";
-      const value = UserSheet.statData[statKey] || 0;
-
-      container.classList.toggle("infinite", value === 6);
-
-      for (let i = 1; i <= 6; i++) {
-        const star = document.createElement("span");
-        star.classList.add("stat-star");
-        if (i <= value) star.classList.add("filled");
-        star.textContent = (i === 6 ? "✶" : "★");
-
-        star.title = (i === 6)
-          ? "∞ / Unmeasurable"
-          : `Rank ${["E", "D", "C", "B", "A"][i - 1]}`;
-
-        star.addEventListener("click", () => {
-          UserSheet.statData[statKey] = (UserSheet.statData[statKey] === i) ? i - 1 : i;
-          this.renderStars(html); // Re-render stars
-        });
-
-        container.appendChild(star);
-      }
-    });
-  }
-
-  updateHitDamage() {
-    const hits = this.actor.getFlag("bizarre-adventures-d6", "hits") || [];
-    const hitList = this.element.find("#hit-list");
-    hitList.empty();
-
-    hits.forEach(hit => {
-      const listItem = $(
-        `<li>${hit.name} - Weight: ${hit.weight}, Quantity: ${hit.quantity} </br> Description: ${hit.description}</li>`
-      );
-      hitList.append(listItem);
-    });
+    html.find("#hit-items").on("click", "li", ev => {
+  // If the click was on (or inside) the trash icon, bail out
+  if ( $(ev.target).closest(".delete-hit").length ) return;
+  // Otherwise get the item ID from the <li> and open its sheet
+  const id = $(ev.currentTarget).data("item-id");
+  const hit = this.actor.items.get(id);
+  if ( hit ) hit.sheet.render(true);
+});
   }
 }
-
-  // ─────────────────────────────────────────────────────
-  // Color variable injection for CSS
-  // ─────────────────────────────────────────────────────
-  function lightenColor(hex, percent) {
-    if (typeof hex !== "string" || !hex.startsWith("#")) {
-      console.warn("Invalid hex color provided:", hex);
-      hex = "#ffffff"; // Default to white if the color is invalid
-    }
-
-    const num = parseInt(hex.slice(1), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = Math.min(255, (num >> 16) + amt);
-    const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
-    const B = Math.min(255, (num & 0x0000FF) + amt);
-    return `rgb(${R}, ${G}, ${B})`;
-  }
-
-  // Convert game.user.color to a hex string
-  const baseAccent = game.user?.color?.toString() || "#ffffff"; // Convert Color object to hex string
-  const lightAccent = lightenColor(baseAccent, 30);
-  const darkAccent = lightenColor(baseAccent, -20);
-
-  document.documentElement.style.setProperty("--accent-color", baseAccent);
-  document.documentElement.style.setProperty("--accent-light", lightAccent);
-  document.documentElement.style.setProperty("--accent-dark", darkAccent);

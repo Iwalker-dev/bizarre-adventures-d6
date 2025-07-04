@@ -2,7 +2,7 @@
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
   "description": "An unofficial core system for the Bizarre Adventures D6 system.",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "authors": [
     {
       "name": "LIFT",
@@ -10,15 +10,25 @@
     }
   ],
   "compatibility": {
-    "minimum": "12",
-    "verified": "12",
+    "minimum": "13",
+    "verified": "13",
     "maximum": "13"
+  },
+  "flags": {
+    "hotReload": {
+      "enabled": true,
+      "files": [
+        "templates/sheets/user-actor-sheet.hbs",
+        "templates/partials/actor-nav.hbs",
+        "modules/sheets/user-actor-sheet.js",
+        "templates/partials/actor-class.hbs"
+      ]
+    }
   },
   "esmodules": [
     "bad6.js"
   ],
   "scripts": [
-    "https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"
   ],
   "styles": [
     "bad6.css"
@@ -33,6 +43,10 @@
   "grid": {
     "distance": 2,
     "units": "m"
+  },
+  "actors": {
+    "types": ["user", "stand", "power"],
+    "default": "user"
   },
   "Item": {
     "types": ["hit", "item"],

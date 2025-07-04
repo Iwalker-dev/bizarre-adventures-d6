@@ -1,0 +1,59 @@
+{{!-- systems/bizarre-adventures-d6/templates/partials/stats.hbs --}}
+{{#each stats as |stat|}}
+  <div class="stat-line">
+    <label>{{stat.label}}</label>
+
+    {{#ifEquals stat.dtype "Burn"}}
+      <div class="burn-control" data-stat="{{stat.key}}">
+
+        {{!— ORIGINAL row —}}
+        <div class="burn-row">
+          <button type="button"
+                  class="burn-type"
+                  data-type="original">
+            Original:
+          </button>
+          <span class="stat-stars"
+                data-stat="{{stat.key}}-original"
+                style="display:none; margin-left:0.5em;">
+          </span>
+        </div>
+
+        {{!— TEMP row —}}
+        <div class="burn-row">
+          <button type="button"
+                  class="burn-type"
+                  data-type="temp">
+            Temporary:
+          </button>
+          <span class="stat-stars"
+                data-stat="{{stat.key}}-temp"
+                style="display:none; margin-left:0.5em;">
+          </span>
+        </div>
+
+        {{!— PERM row —}}
+        <div class="burn-row">
+          <button type="button"
+                  class="burn-type"
+                  data-type="perm">
+            Permanent:
+          </button>
+          <span class="stat-stars"
+                data-stat="{{stat.key}}-perm"
+                style="display:none; margin-left:0.5em;">
+          </span>
+        </div>
+
+      </div>
+    {{else}}
+      <div class="stat-line-number">
+        <span>{{stat.value}}</span>
+        <span class="stat-stars"
+              data-stat="{{stat.key}}-value"
+              style="margin-left:0.5em;">
+        </span>
+      </div>
+    {{/ifEquals}}
+  </div>
+{{/each}}

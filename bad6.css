@@ -111,74 +111,70 @@ body {
   color: var(--accent-color);
   font-size: 2.5rem;
 }
-/* Tabs */
-.jojo-sheet .tabs {
+/* ─── Evenly distribute the primary tabs across the header ─── */
+.jojo-sheet .sheet-tabs {
   display: flex;
-  align-items: flex-start; /* Align boxes to the left */
-  gap: 0.5rem;
-  background: none; /* Remove the background box around the whole tab section */
-  border: none; /* Remove the border around the whole tab section */
-  padding: 0; /* Remove padding */
-  margin-bottom: 0.5rem; /* Reduce spacing below the tabs */
-}
-/* Style individual tab buttons */
-.jojo-sheet .tabs button {
-  background: var(--accent-dark) !important;
-  border: 1px solid var(--accent-color);
-  color: white !important;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-/* Remove hover effect */
-.jojo-sheet .tabs button:hover {
-  box-shadow: none !important; /* Remove any hover glow effect */
-}
-/* Style active tab button */
-.jojo-sheet .tabs button.active {
-  background: var(--accent-light) !important; /* Ensure it overrides other styles */
-  color: black !important; /* Ensure text color changes to black */
+  justify-content: space-evenly;  /* spreads them with equal space around */
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0;
+  list-style: none;
 }
 
-/* Ensure specificity for button text color */
-.jojo-sheet .tabs .button-container a.active {
-  color: black !important;
+/* Make each “button-container” grow to fill its slot */
+.jojo-sheet .sheet-tabs .button-container {
+  flex: 1;
+  margin: 0;            /* remove any extra gutters */
+  text-align: center;   /* center the link inside */
 }
 
-/* Fallback for data-active attribute if used instead of class */
-.jojo-sheet .tabs button[data-active="true"] {
-  background: var(--accent-light) !important;
-  color: black !important;
-}
-/* Style the tab content container */
-.jojo-sheet .tab-content {
-  display: none; /* Hide all tab content by default */
-  background: rgba(0, 0, 0, 0.2); /* Slightly transparent background */
-  border: 1px solid var(--accent-color); /* Border around the content */
-  border-radius: 5px; /* Rounded corners */
-  padding: 1rem; /* Add padding inside the content box */
-  margin-top: 0; /* Remove unnecessary spacing above the tab content */
-}
 
 .app.actor .window-content .tab-content.active {
   display: block; /* Show the active tab content */
 }
 /* ────────────────────────── Stats Tab ────────────────────────── */
-.jojo-sheet .stat-line {
+/* Make every row a flex container with a small gap */
+.jojo-sheet .stat-line,
+.jojo-sheet .burn-row,
+.jojo-sheet .stat-line-number {
   margin: 0.5rem 0;
   display: flex;
   align-items: center;
   gap: 1rem;
 }
-.jojo-sheet .stat-line label {
+
+/* Fixed label width for the main stat names */
+.jojo-sheet .stat-line > label {
   display: inline-block;
+  background-color: var(--accent-light);
+  color: black;
+  padding: 0.25rem 1rem;
+  border-radius: 0;
+  border: 1px solid var(--accent-dark);
   width: 120px;
-  /* adjust to fit longer stat names */
   text-align: left;
 }
+
+/* Allow burn-type buttons to size naturally (shrink/grow) */
+.jojo-sheet .burn-row .burn-type {
+  flex: 0 1 auto;
+}
+
+/* Allow the “value” span in number stats to size naturally */
+.jojo-sheet .stat-line-number > span:first-child {
+  flex: 0 1 auto;
+  display: inline-block;
+  width: auto;
+  text-align: left;
+}
+
+/* Stars container stays inline so it sits beside its control */
 .jojo-sheet .stat-stars {
-  display: flex;
+  display: inline-flex;
   gap: 5px;
 }
+
+/* Individual star styling */
 .jojo-sheet .stat-star {
   width: 24px;
   height: 24px;
@@ -187,12 +183,16 @@ body {
   cursor: pointer;
   transition: color 0.2s ease;
 }
+
+/* Filled and infinite overrides */
 .jojo-sheet .stat-star.filled {
   color: var(--accent-color);
 }
 .jojo-sheet .stat-stars.infinite .stat-star {
   color: crimson !important;
 }
+
+
 /* ────────────────────────── Biography Tab ────────────────────────── */
 .jojo-sheet .bio-container {
   display: flex;
@@ -388,12 +388,21 @@ body {
 }
 
 .stand-chart-container {
-  width: 400px;
-  height: 400px;
+  width: 300px;
+  height: 300px;
   flex-shrink: 0;
 }
 
 /* ────────────────────────── Stand Info Tab ────────────────────────── */
+.jojo-sheet .burn-type {
+  background-color: rgba(128, 128, 128, 0.116);
+  color: rgb(255, 255, 255);
+  border: 1px solid var(--accent-light);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
 .jojo-sheet .info-container {
   display: flex;
   flex-direction: column;
@@ -590,4 +599,31 @@ body {
   margin-left: 10px;
   color: #ff6666;
   cursor: pointer;
+}
+
+/* ────────────────────────── Extra Cost & Description in Bio Tab ────────────────────────── */
+.jojo-sheet .bio-section-header {
+  width: 120px;          
+  color: white;
+}
+
+.jojo-sheet .bio-row.extra-cost,
+.jojo-sheet .bio-row.extra-description {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Cost row: label + span just like input + label */
+.jojo-sheet .bio-row.extra-cost label,
+.jojo-sheet .bio-row.extra-description label
+{
+  width: 180px;          /* same as other bio-row labels */
+  color: white;
+}
+.jojo-sheet .bio-row.extra-cost span,
+.jojo-sheet .bio-row.extra-description span{
+  flex: 1;               /* fill the remaining space */
+  color: white;
 }

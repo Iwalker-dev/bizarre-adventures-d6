@@ -1,15 +1,14 @@
 # Changelog – BAD6 System
 
-## [0.8.X] – 2025-06-29
+## [0.8.X] – 2025-07-04
+### V13 Transfer
+
 ### Added
-## Imports
-Previously developed code which is now being added to the BAD6 System.
-# BAD6 Roller
-- Runs from Scene Controls (Token Controls)
-# Canvas Hue Shift
-- Runs from Scene Controls (Lighting Controls)
-# To Be Continued
-- Runs from Scene Controls (Lighting Controls)
-### Fixes
-All old scripts have been simplified and edited for use within this system.
+Foundations for stand, user, and power type functionality.
+Over arching changes to the entire sheet for V13
+Scalability and optimization within sheets
+### Issues
+Power Sheet is still unfinished
+Costs are not accurate
+Special Types aren't properly handled.
 

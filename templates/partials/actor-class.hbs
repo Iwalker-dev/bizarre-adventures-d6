@@ -1,0 +1,35 @@
+{{!-- systems/bizarre-adventures-d6/templates/partials/actor-class.hbs --}}
+{{#if extraConfig}}
+  <h3 class="bio-section-header">{{extraConfig.label}} Abilities</h3>
+
+    {{!-- show cost and description --}}
+  <div class="bio-row extra-cost">
+    <label>Cost:</label>
+    <span>{{extraConfig.cost}}</span>
+  </div>
+  <div class="bio-row extra-description">
+    <label>Description:</label>
+    <span>{{{extraConfig.description}}}</span>
+  </div>
+
+  {{!-- show extra fields --}}
+  {{#each extraConfig.fields as |field|}}
+    <div class="bio-row extra-field">
+      <label>{{field.label}}:</label>
+      {{#ifEquals field.input "text"}}
+        <input
+          type="text"
+          name="system.extra.{{field.key}}"
+          value="{{system.extra.[field.key]}}"
+          placeholder="{{field.placeholder}}"
+        >
+      {{else ifEquals field.input "textarea"}}
+        <textarea
+          name="system.extra.{{field.key}}"
+          rows="{{field.rows}}"
+          placeholder="{{field.placeholder}}"
+        >{{getProperty system (concat "extra." field.key)}}</textarea>
+      {{/ifEquals}}
+    </div>
+  {{/each}}
+{{/if}}

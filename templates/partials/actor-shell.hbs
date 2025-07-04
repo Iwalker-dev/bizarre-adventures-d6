@@ -1,0 +1,18 @@
+{{!-- systems/bizarre-adventures-d6/templates/partials/actor-shell.hbs --}}
+<form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
+  <div class="jojo-sheet">
+    <header class="sheet-header">
+      <h1>{{actor.name}}</h1>
+      {{!-- you can pass in extra header markup via a block: --}}
+      {{#if extraHeader}}{{{extraHeader}}}{{/if}}
+    </header>
+
+    <nav class="tabs" data-group="primary">
+      {{> actor-nav}}
+    </nav>
+
+    <section class="sheet-body">
+      {{{body}}}
+    </section>
+  </div>
+</form>

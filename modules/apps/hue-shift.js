@@ -1,152 +1,142 @@
+// hue-shift.js
 let socket;
 let hueFilter;
 let currentHue = 0;
-let targetHue = 0;
+let targetHue  = 0;
 let animTicker = null;
 
-// Register socketlib functions
+// 1) Register your socket handler
 Hooks.once("socketlib.ready", () => {
-  socket = socketlib.registerSystem('bizarre-adventures-d6');
+  socket = socketlib.registerSystem("bizarre-adventures-d6");
   socket.register("stepHueShift", stepHueShift);
 });
+
+// 2) Ensure your control hooks are bound on init
+Hooks.once("init", () => {
+  HueShiftControl();
+});
+
 export function HueShiftControl() {
-    // Add the Lighting Control button
-    Hooks.on("getSceneControlButtons", (controls) => {
-    const lightingControls = controls.find(c => c.name === "lighting");
+  // Add a “Hue Shift” tool to the lighting controls
+  Hooks.on("getSceneControlButtons", (controls) => {
+    const lightingControls = controls.lighting;
     if (!lightingControls) return;
 
-    lightingControls.tools.push({
-        name: "hueShift",
-        title: "Hue Shift Canvas",
-        icon: "fas fa-adjust",
-        visible: game.user.isGM,
-        button: true,
-        toggle: true,
-        active: targetHue !== 0,
-        onClick: () => {
+    lightingControls.tools["hueShift"] = {
+      name:   "hueShift",
+      title:  "Hue Shift Canvas",
+      icon:   "fas fa-adjust",
+      visible: game.user.isGM,
+      button:  true,
+      toggle:  true,
+      active:  targetHue !== 0,
+      order:   100,
+      onClick: () => {
         socket.executeForEveryone("stepHueShift", 30);
-        ui.controls.render(); // Ensure the glow updates immediately
-        }
-    });
-    });
-
-
-  // Handle right-click context menu to reset hue shift
-  Hooks.once("renderSceneControls", (_controls, html) => {
-    // Avoid adding the listener more than once
-    if (window._hueResetListenerAdded) return;
-    window._hueResetListenerAdded = true;
-
-    document.addEventListener("pointerdown", event => {
-      // Only care about right-clicks
-      if (event.button !== 2) return;
-      // See if the click happened inside our hueShift tool
-      const toolLi = event.target.closest('li.control-tool[data-tool="hueShift"]');
-      if (!toolLi) return;
-
-      // Stop Foundry’s context-menu suppression and normal processing
-      event.preventDefault();
-      event.stopPropagation();
-
-      // Reset to zero by sending −targetHue
-      const resetStep = -targetHue;
-      socket.executeForEveryone("stepHueShift", resetStep);
-      ui.controls.render();
-    }, /* useCapture */ true);
+        ui.controls.render();
+      }
+    };
   });
+
+/* TODO: Uncomment this section to add a right-click reset option
+
+  Hooks.on("renderSceneControls", (_controls, html) => {
+    // Find our tool each render
+    const toolEl = html.querySelector('li.control-tool[data-tool="hueShift"]');
+    if (!toolEl) return;
+
+    // Avoid double-binding
+    if (toolEl._hueListener) return;
+    toolEl._hueListener = true;
+
+    // Catch the right-click on mousedown, in capture phase
+    toolEl.addEventListener("mousedown", event => {
+      if (event.button !== 2) return;      // only right-click
+      event.stopImmediatePropagation();    // kill Foundry’s listener
+      event.preventDefault();              // no browser menu
+
+      // Reset hue and refresh the controls
+      socket.executeForEveryone("stepHueShift", -targetHue);
+      ui.controls.render();
+    }, { capture: true });
+  });
+
+*/
 }
 
-// Main function that handles hue shifting
+// Core hue-shifting logic, run via socket on everyone
 function stepHueShift(step = 30) {
-  if (!canvas?.scene) return;
+  if (!canvas.scene) return;
 
-  // Set up filter if not already
+  // Create & attach the filter if needed
   if (!hueFilter) {
     hueFilter = new PIXI.filters.ColorMatrixFilter();
     canvas.app.stage.filters = [...(canvas.app.stage.filters || []), hueFilter];
   }
 
-  // Update the target hue
-  targetHue = (targetHue + step) % 360;
+  // Update target and start the animation ticker if not already running
+  targetHue = (targetHue + step + 360) % 360;
+  if (animTicker) return;
 
-  // Start animating if not already
-  if (!animTicker) {
-    animTicker = (delta) => {
-      const speed = 1 * delta;
-      const diff = ((targetHue - currentHue + 540) % 360) - 180; // shortest path
-      if (Math.abs(diff) < speed) {
-        currentHue = targetHue;
-      } else {
-        currentHue += Math.sign(diff) * speed;
-        currentHue = (currentHue + 360) % 360;
-      }
+  animTicker = delta => {
+    // Gradually move currentHue toward targetHue
+    const speed = delta;
+    const diff  = ((targetHue - currentHue + 540) % 360) - 180;
+    currentHue = Math.abs(diff) < speed
+      ? targetHue
+      : (currentHue + Math.sign(diff) * speed + 360) % 360;
+
+    // Apply the hue
+    hueFilter.hue(currentHue, false);
+
+    // Update the button glow if the Lighting tab is open
+    if (ui.controls.control?.name === "lighting") {
+      const tool = ui.controls.control.tools?.["hueShift"];
+      if (tool) tool.active = (targetHue !== 0);
+      ui.controls.render();
+    }
+
+    // Stop when done
+    if (currentHue === targetHue) {
+      PIXI.Ticker.shared.remove(animTicker);
+      animTicker = null;
+    }
+  };
+
+  PIXI.Ticker.shared.add(animTicker);
+}
+
+// Re-apply filter & ticker if you reload the canvas
+Hooks.on("canvasReady", () => {
+  if (currentHue === 0 && targetHue === 0) return;
+
+  // Recreate the filter
+  hueFilter = new PIXI.filters.ColorMatrixFilter();
+  hueFilter.hue(currentHue, false);
+  canvas.app.stage.filters = [...(canvas.app.stage.filters || []), hueFilter];
+
+  // Restart the ticker if needed
+  if (!animTicker && currentHue !== targetHue) {
+    animTicker = delta => {
+      const speed = delta;
+      const diff  = ((targetHue - currentHue + 540) % 360) - 180;
+      currentHue = Math.abs(diff) < speed
+        ? targetHue
+        : (currentHue + Math.sign(diff) * speed + 360) % 360;
 
       hueFilter.hue(currentHue, false);
 
-      // Update glow state
-      const toolName = "hueShift";
-      const shouldGlow = targetHue !== 0;
-
       if (ui.controls.control?.name === "lighting") {
-        const lighting = ui.controls.controls.find(c => c.name === "lighting");
-        if (lighting) {
-          const tool = lighting.tools.find(t => t.name === toolName);
-          if (tool) tool.active = shouldGlow;
-        }
+        const tool = ui.controls.control.tools?.["hueShift"];
+        if (tool) tool.active = (targetHue !== 0);
         ui.controls.render();
       }
 
-      // Stop animating if target reached
       if (currentHue === targetHue) {
         PIXI.Ticker.shared.remove(animTicker);
         animTicker = null;
       }
     };
-
     PIXI.Ticker.shared.add(animTicker);
-  }
-}
-
-Hooks.on("canvasReady", () => {
-  if (targetHue !== 0 || currentHue !== 0) {
-    // Recreate and apply filter
-    hueFilter = new PIXI.filters.ColorMatrixFilter();
-    hueFilter.hue(currentHue, false);
-    canvas.app.stage.filters = [...(canvas.app.stage.filters || []), hueFilter];
-
-    // Restart animation if needed
-    if (currentHue !== targetHue && !animTicker) {
-      animTicker = (delta) => {
-        const speed = 1 * delta;
-        const diff = ((targetHue - currentHue + 540) % 360) - 180;
-        if (Math.abs(diff) < speed) {
-          currentHue = targetHue;
-        } else {
-          currentHue += Math.sign(diff) * speed;
-          currentHue = (currentHue + 360) % 360;
-        }
-
-        hueFilter.hue(currentHue, false);
-
-        // Update glow state
-        const toolName = "hueShift";
-        const shouldGlow = targetHue !== 0;
-        if (ui.controls.control?.name === "lighting") {
-          const lighting = ui.controls.controls.find(c => c.name === "lighting");
-          if (lighting) {
-            const tool = lighting.tools.find(t => t.name === toolName);
-            if (tool) tool.active = shouldGlow;
-          }
-          ui.controls.render();
-        }
-
-        if (currentHue === targetHue) {
-          PIXI.Ticker.shared.remove(animTicker);
-          animTicker = null;
-        }
-      };
-
-      PIXI.Ticker.shared.add(animTicker);
-    }
   }
 });

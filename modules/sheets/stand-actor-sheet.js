@@ -1,4 +1,7 @@
-export class StandSheet extends ActorSheet {
+import { BaseActorSheet } from "./base-actor-sheet.js";
+import { typeConfigs }    from "../config/actor-configs.js";
+
+export class StandSheet extends BaseActorSheet {
   static typeSpecificStats = {
     Independent: ["wit", "menacing"]
   };
@@ -9,13 +12,24 @@ export class StandSheet extends ActorSheet {
       template: "systems/bizarre-adventures-d6/templates/sheets/stand-actor-sheet.hbs",
       width: 800,
       height: 800,
-      tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "stats" }]
+      tabs: [{ 
+      navSelector: ".sheet-tabs",          // ← matches your <nav class="tabs">
+      contentSelector: "section.sheet-body",
+      initial: "stats"
+      }]
     });
   }
 
   getData() {
     const data = super.getData();
     data.system = this.actor.system;
+    data.typeConfigs = typeConfigs;
+
+    // ensure info exists
+    data.system.info = data.system.info || {};
+
+    data.typeConfigs = typeConfigs.stand;
+    data.extraConfig = data.typeConfigs[data.system.info.type] || null;
 
     data.getSelectedValue = (stat) => {
       const statData = this.actor.system.attributes.stats[stat];
@@ -25,25 +39,39 @@ export class StandSheet extends ActorSheet {
     return data;
   }
 
-  activateListeners(html) {
-    super.activateListeners(html);
+activateListeners(html) {
+  // Let Foundry wire up the tabs for you
+  super.activateListeners(html);
 
-    html.find(".switch-value").click(ev => {
-      const button = ev.currentTarget;
-      const stat = button.dataset.stat;
-      const valueType = button.dataset.value;
+  // Render all of the “star” click‐to‐set listeners
+  this.renderStars(html);
 
-      this.actor.update({[`system.attributes.stats.${stat}.selected`]: valueType});
-    });
+  // Handle any custom “switch-value” buttons you have (e.g. Burn vs Live, Original vs Temp, etc.)
+  html.find(".switch-value").click(ev => {
+    const button = ev.currentTarget;
+    const stat     = button.dataset.stat;
+    const valueType = button.dataset.value;
+    // Toggle the selected sub-value on your actor’s stats
+    this.actor.update({ [`system.attributes.stats.${stat}.selected`]: valueType });
+  });
 
-    html.find('#stand-type').on('change', async (event) => {
-      const newType = event.target.value;
-      await this.actor.update({ "system.info.type": newType });
-      await this.syncStatsForStand(newType);
-    });
+  // Handle the Stand-type dropdown to add/remove stats on the fly
+  html.find("#stand-type").on("change", async event => {
+    const oldType = this.actor.system.info.type;
+    const newType = event.target.value;
+    await this.actor.update({ "system.info.type": newType });
+    await this.syncStatsForStand(newType);
 
-    this.renderStars(html);
-  }
+     // Clean up old extra‐fields
+      const cleanup = {};
+      (typeConfigs.stand[oldType]?.fields || []).forEach(f => {
+        cleanup[`system.extra.${f.key}`] = null;
+      });
+      if (Object.keys(cleanup).length) await this.actor.update(cleanup);
+
+     html.closest("form").trigger("render"); // re‐render to show new extras
+     });
+   }
 
   async syncStatsForStand(newType) {
     const expected = StandSheet.typeSpecificStats[newType] || [];
@@ -70,39 +98,5 @@ export class StandSheet extends ActorSheet {
     if (Object.keys(updates).length > 0) {
       await this.actor.update(updates);
     }
-  }
-
-  renderStars(html) {
-    html.find(".stat-stars").each((_, container) => {
-      const statKey = container.dataset.stat;
-      const statParts = statKey.split("-");
-      const statName = statParts[0];              // e.g., "learning"
-      const valueType = statParts[1] || "value";  // e.g., "temp", "perm", or "value"
-
-      const statData = this.actor.system.attributes.stats[statName];
-      const value = statData?.[valueType] ?? 0;
-
-      container.innerHTML = "";
-      container.classList.toggle("infinite", value === 6);
-
-      for (let i = 1; i <= 6; i++) {
-        const star = document.createElement("span");
-        star.classList.add("stat-star");
-        if (i <= value) star.classList.add("filled");
-        star.textContent = (i === 6 ? "✶" : "★");
-        star.title = (i === 6)
-          ? "∞ / Unmeasurable"
-          : `Rank ${["E", "D", "C", "B", "A"][i - 1]}`;
-
-        star.addEventListener("click", async () => {
-          const newValue = (value === i) ? i - 1 : i;
-          const path = `system.attributes.stats.${statName}.${valueType}`;
-          await this.actor.update({ [path]: newValue });
-          this.render(); // Refresh full sheet after stat update
-        });
-
-        container.appendChild(star);
-      }
-    });
   }
 }

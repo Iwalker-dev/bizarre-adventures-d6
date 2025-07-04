@@ -1,0 +1,23 @@
+{{!-- systems/bizarre-adventures-d6/templates/partials/actor-nav.hbs --}}
+{{#ifEquals actor.type "stand"}}
+  <div class="button-container">
+    <a class="item" data-tab="stats" data-group="primary">Stats</a>
+  </div>
+  <div class="button-container">
+    <a class="item" data-tab="info" data-group="primary">Stand Info</a>
+  </div>
+{{/ifEquals}}
+{{#ifEquals actor.type "user"}}
+  <div class="button-container">
+    <a class="item" data-tab="stats" data-group="primary">Stats</a>
+  </div>
+  <div class="button-container">
+    <a class="item" data-tab="bio" data-group="primary">Biography</a>
+  </div>
+  <div class="button-container">
+    <a class="item" data-tab="hit" data-group="primary">Hits</a>
+  </div>
+  <div class="button-container">
+    <a class="item" data-tab="item" data-group="primary">Items</a>
+  </div>
+{{/ifEquals}}
