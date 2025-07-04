@@ -23,12 +23,12 @@ export class StandSheet extends BaseActorSheet {
   getData() {
     const data = super.getData();
     data.system = this.actor.system;
-    data.typeConfigs = typeConfigs;
+    data.typeConfigs = typeConfigs.stand;
 
     // ensure info exists
     data.system.info = data.system.info || {};
 
-    data.typeConfigs = typeConfigs.stand;
+    
     data.extraConfig = data.typeConfigs[data.system.info.type] || null;
 
     data.getSelectedValue = (stat) => {

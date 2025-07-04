@@ -2,6 +2,9 @@
 
 export const typeConfigs = {
   user: {
+    None: {
+      label: "",
+    },
     Natural: {
       label: "Natural User",
       cost: "None",
@@ -144,6 +147,9 @@ export const typeConfigs = {
   },
 
   stand: {
+    None: {
+      label: "",
+    },
     Natural: {
       label: "Natural Stand",
       cost: "None",
@@ -287,84 +293,75 @@ export const typeConfigs = {
   },
 
   power: {
+    None: {
+      label: "",
+    },
     Hamon: {
       label: "Hamon Warrior",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "Abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "Describe your power",
-          description: "Incomplete."
-        }
+      statlabels: [
+        "Strength (Power)",
+        "Accuracy (Precision)",
+        "Agility (Speed)",
+        "Conduction (Range)",
+        "Blocking (Durability)",
+        "Learning (Learning)"
       ]
     },
     Vampire: {
       label: "Vampire",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "Abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "How it was created",
-          description: "Details on how this power was artificially created."
-        }
+      statlabels: [
+        "Strength (Power)",
+        "Senses (Precision)",
+        "Reflex (Speed)",
+        "Bodily Control (Range)",
+        "Resilience (Durability)",
+        "Learning (Learning)"
       ]
     },
     Spin: {
       label: "Spin",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "How it was created",
-          description: "Details on how this power was artificially created."
-        }
+      statlabels: [
+        "Mass (Power)",
+        "Control (Precision)",
+        "Velocity (Speed)",
+        "RPM (Range)",
+        "Sturdiness (Durability)",
+        "Learning (Learning)"
       ]
     },
     Armed: {
       label: "Armed Phenomenon",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "How it was created",
-          description: "Details on how this power was artificially created."
-        }
+      statlabels: [
+        "Strength (Power)",
+        "Accuracy (Precision)",
+        "Agility (Speed)",
+        "Evolution (Range)",
+        "Endurance (Durability)",
+        "Learning (Learning)"
       ]
     },
     Cyborg: {
       label: "Cyborg",
-      fields: [
-        {
-          key:         "abilities",
-          label:       "abilities",
-          input:       "textarea",
-          rows:        2,
-          placeholder: "How it was created",
-          description: "Details on how this power was artificially created."
-        }
+      statlabels: [
+        "Tech Power (Power)",
+        "Precision (Precision)",
+        "Speed (Speed)",
+        "Range (Range)",
+        "Durability (Durability)",
+        "Learning (Learning)"
       ]
     },
-    // …other power types…
+    Other: {
+      label: "Other Power",
+      statlabels: [
+        "Power (Power)",
+        "Precision (Precision)",
+        "Speed (Speed)",
+        "Range (Range)",
+        "Durability (Durability)",
+        "Learning (Learning)"
+      ]
+    }
+
   }
 };
-
-
-/*
-    const statLabels = {
-      Hamon: ['Strength', 'Accuracy', 'Agility', 'Conduction', 'Blocking', 'Learning'],
-      Vampire: ['Strength', 'Senses', 'Reflex', 'Bodily Control', 'Resilience', 'Learning'],
-      'Pillar Man': ['Strength', 'Senses', 'Reflexes', 'Bodily Control', 'Resilience', 'Learning'],
-      Spin: ['Mass', 'Control', 'Velocity', 'RPM', 'Sturdiness', 'Learning'],
-      'Armed Phenomenon': ['Strength', 'Accuracy', 'Agility', 'Evolution', 'Endurance', 'Learning'],
-      Cyborg: ['Tech Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning'],
-      Other: ['Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning']
-    };
-*/

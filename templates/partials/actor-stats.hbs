@@ -1,7 +1,16 @@
 {{!-- systems/bizarre-adventures-d6/templates/partials/stats.hbs --}}
 {{#each stats as |stat|}}
+{{! If the config includes "statlabels", use those labels if the intended label is the same as the one in parenthesis.!}}
+
   <div class="stat-line">
-    <label>{{stat.label}}</label>
+
+    <label>
+      {{#if (lookup @root.statLabelMap stat.key)}}
+        {{lookup @root.statLabelMap stat.key}}
+      {{else}}
+        {{stat.label}}
+      {{/if}}
+    </label>
 
     {{#ifEquals stat.dtype "Burn"}}
       <div class="burn-control" data-stat="{{stat.key}}">
