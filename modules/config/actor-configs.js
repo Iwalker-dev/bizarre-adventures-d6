@@ -289,29 +289,71 @@ export const typeConfigs = {
   power: {
     Hamon: {
       label: "Hamon Warrior",
-      statlabels: ['Strength', 'Accuracy', 'Agility', 'Conduction', 'Blocking', 'Learning']
+      statlabels: [
+        "Strength (Power)",
+        "Accuracy (Precision)",
+        "Agility (Speed)",
+        "Conduction (Range)",
+        "Blocking (Durability)",
+        "Learning (Learning)"
+      ]
     },
     Vampire: {
       label: "Vampire",
-      statlabels: ['Strength', 'Senses', 'Reflex', 'Bodily Control', 'Resilience', 'Learning']
+      statlabels: [
+        "Strength (Power)",
+        "Senses (Precision)",
+        "Reflex (Speed)",
+        "Bodily Control (Range)",
+        "Resilience (Durability)",
+        "Learning (Learning)"
+      ]
     },
     Spin: {
       label: "Spin",
-      statlabels: ['Mass', 'Control', 'Velocity', 'RPM', 'Sturdiness', 'Learning']
+      statlabels: [
+        "Mass (Power)",
+        "Control (Precision)",
+        "Velocity (Speed)",
+        "RPM (Range)",
+        "Sturdiness (Durability)",
+        "Learning (Learning)"
+      ]
     },
     Armed: {
       label: "Armed Phenomenon",
-      statlabels: ['Strength', 'Accuracy', 'Agility', 'Evolution', 'Endurance', 'Learning']
+      statlabels: [
+        "Strength (Power)",
+        "Accuracy (Precision)",
+        "Agility (Speed)",
+        "Evolution (Range)",
+        "Endurance (Durability)",
+        "Learning (Learning)"
+      ]
     },
     Cyborg: {
       label: "Cyborg",
-      statlabels: ['Tech Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning']
+      statlabels: [
+        "Tech Power (Power)",
+        "Precision (Precision)",
+        "Speed (Speed)",
+        "Range (Range)",
+        "Durability (Durability)",
+        "Learning (Learning)"
+      ]
     },
     Other: {
       label: "Other Power",
-      statlabels: ['Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning']
-    },
-    // …other power types…
+      statlabels: [
+        "Power (Power)",
+        "Precision (Precision)",
+        "Speed (Speed)",
+        "Range (Range)",
+        "Durability (Durability)",
+        "Learning (Learning)"
+      ]
+    }
+
   }
 };
 

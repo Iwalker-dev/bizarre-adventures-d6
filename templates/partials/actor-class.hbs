@@ -1,17 +1,21 @@
 {{!-- systems/bizarre-adventures-d6/templates/partials/actor-class.hbs --}}
 {{#if extraConfig}}
   <h3 class="bio-section-header">{{extraConfig.label}} Abilities</h3>
-
+  
+  {{#if extraConfig.cost}}
     {{!-- show cost and description --}}
   <div class="bio-row extra-cost">
     <label>Cost:</label>
     <span>{{extraConfig.cost}}</span>
   </div>
+  {{/if}}
+  {{!-- show description --}}
+  {{#if extraConfig.description}}
   <div class="bio-row extra-description">
     <label>Description:</label>
     <span>{{{extraConfig.description}}}</span>
   </div>
-
+  {{/if}}
   {{!-- show extra fields --}}
   {{#each extraConfig.fields as |field|}}
     <div class="bio-row extra-field">

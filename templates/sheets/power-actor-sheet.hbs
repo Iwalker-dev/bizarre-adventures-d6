@@ -1,5 +1,3 @@
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <form class="sheet actor-sheet {{cssClass}}" autocomplete="off">
   <div class="jojo-sheet">
     <header class="sheet-header">
@@ -13,12 +11,11 @@
     <section class="sheet-body">
       <!-- ─────────────────────── Stats Tab ─────────────────────── -->
       <div class="tab" data-tab="stats" data-group="primary">
-      {{> actor-stats}}
-        </div>
+        {{> actor-stats}}
       </div>
 
-      <!-- ───────────────────── Stand Info Tab ───────────────────── -->
-      <div class="tab" data-tab="info" style="display: none;">
+      <!-- ───────────────────── Power Info Tab ───────────────────── -->
+      <div class="tab" data-tab="info" data-group="primary">
         <div class="info-container">
           <div class="info-row">
             <label>Name:</label>
@@ -39,17 +36,6 @@
             />
           </div>
           <div class="info-row">
-            <label>Type:</label>
-          {{> actor-class}}
-            <select id="power-type" name="system.info.type">
-              {{#each typeConfigs}}
-                <option value="{{@key}}" {{#ifEquals ../system.info.type @key}}selected{{/ifEquals}}>
-                  {{this.label}}
-                </option>
-              {{/each}}
-            </select>
-          </div>
-          <div class="info-row">
             <label>Design:</label>
             <textarea
               name="system.info.design"
@@ -58,77 +44,18 @@
             >{{system.info.design}}</textarea>
           </div>
           <div class="info-row">
-            <label>Ability:</label>
-            <textarea
-              name="system.info.ability"
-              rows="3"
-              placeholder="Enter ability"
-            >{{system.info.ability}}</textarea>
-          </div>
-          <div class="info-row">
-            <label>Cost:</label>
-            <input
-              type="text"
-              name="system.info.cost"
-              value="{{system.info.cost}}"
-              readonly
-            />
+            <label>Type:</label>
+            <select id="power-type" name="system.info.type">
+              {{#each typeConfigs}}
+                <option value="{{@key}}" {{#ifEquals system.info.type @key}}selected{{/ifEquals}}>
+                  {{this.label}}
+                </option>
+              {{/each}}
+            </select>
+            {{> actor-class}}
           </div>
         </div>
       </div>
     </section>
   </div>
 </form>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const typeSelect = document.getElementById('stand-type');
-    const statLabels = {
-      Hamon: ['Strength', 'Accuracy', 'Agility', 'Conduction', 'Blocking', 'Learning'],
-      Vampire: ['Strength', 'Senses', 'Reflex', 'Bodily Control', 'Resilience', 'Learning'],
-      'Pillar Man': ['Strength', 'Senses', 'Reflexes', 'Bodily Control', 'Resilience', 'Learning'],
-      Spin: ['Mass', 'Control', 'Velocity', 'RPM', 'Sturdiness', 'Learning'],
-      'Armed Phenomenon': ['Strength', 'Accuracy', 'Agility', 'Evolution', 'Endurance', 'Learning'],
-      Cyborg: ['Tech Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning'],
-      Other: ['Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning']
-    };
-
-    const updateStatLabels = (type) => {
-      const labels = statLabels[type] || statLabels.Other;
-      document.querySelector('[data-stat="power"] label').textContent = labels[0];
-      document.querySelector('[data-stat="precision"] label').textContent = labels[1];
-      document.querySelector('[data-stat="speed"] label').textContent = labels[2];
-      document.querySelector('[data-stat="range"] label').textContent = labels[3];
-      document.querySelector('[data-stat="durability"] label').textContent = labels[4];
-      document.querySelector('[data-stat="learning"] label').textContent = labels[5];
-    };
-
-    typeSelect.addEventListener('change', (event) => {
-      updateStatLabels(event.target.value);
-
-      // Trigger a re-render of the sheet
-      const actorSheet = ui.windows[Object.keys(ui.windows).find(key => ui.windows[key].actor?.id === game.actors.get(ui.activeActor)?.id)];
-      if (actorSheet) actorSheet.render(true);
-    });
-
-    // Initialize labels on page load
-    updateStatLabels(typeSelect.value);
-  });
-
-  function showLearningStat(type) {
-    const buttons = document.querySelectorAll('.learning-type');
-    buttons.forEach(button => {
-      if (button.dataset.type === type) {
-        button.style.backgroundColor = 'var(--accent-light)';
-        button.style.color = 'black';
-      } else {
-        button.style.backgroundColor = 'var(--accent-dark)';
-        button.style.color = 'white';
-      }
-    });
-
-    document.querySelector('[data-stat="learning-original"]').style.display = type === 'original' ? 'block' : 'none';
-    document.querySelector('[data-stat="learning-perm"]').style.display = type === 'perm' ? 'block' : 'none';
-    document.querySelector('[data-stat="learning-temp"]').style.display = type === 'temp' ? 'block' : 'none';
-  }
-</script>

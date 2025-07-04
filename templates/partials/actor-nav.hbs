@@ -21,3 +21,11 @@
     <a class="item" data-tab="item" data-group="primary">Items</a>
   </div>
 {{/ifEquals}}
+{{#ifEquals actor.type "power"}}
+  <div class="button-container">
+    <a class="item" data-tab="stats" data-group="primary">Stats</a>
+  </div>
+  <div class="button-container">
+    <a class="item" data-tab="info" data-group="primary">Power Info</a>
+  </div>
+{{/ifEquals}}
