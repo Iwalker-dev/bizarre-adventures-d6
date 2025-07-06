@@ -88,7 +88,7 @@ async function findRoller(i) {
   }
   const owned = game.actors.filter(a => a.isOwner);
   if (owned.length === 0) {
-    ui.notifications.warn("You don't own any actors.");
+    ui.notifications.warn("You don't own any actors. A player may only roll from their owned actors.");
     return null;
   }
   if (owned.length === 1) return owned[0];
