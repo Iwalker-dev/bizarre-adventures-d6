@@ -81,7 +81,7 @@ async function findRoller(i) {
     if (canvas.tokens.controlled.length === 1) i = 0;
     const token = canvas.tokens.controlled[i];
     if (!token) {
-      ui.notifications.warn("No token selected.");
+      ui.notifications.warn("No token selected. Select up to 2.");
       return null;
     }
     return token.actor;
