@@ -55,22 +55,19 @@ activateListeners(html) {
     this.actor.update({ [`system.attributes.stats.${stat}.selected`]: valueType });
   });
 
-  // Handle the Stand-type dropdown to add/remove stats on the fly
-  html.find("#stand-type").on("change", async event => {
-    const oldType = this.actor.system.info.type;
-    const newType = event.target.value;
-    await this.actor.update({ "system.info.type": newType });
-    await this.syncStatsForStand(newType);
+    // Handle Type dropdown changes
+    html.find("#stand-type").on("change", async ev => {
+      const oldType = this.actor.system.info.type;
+      const newType = ev.target.value;
+      await this.actor.update({ "system.info.type": newType });
 
-     // Clean up old extra‐fields
+      // Remove old‐type extra fields
       const cleanup = {};
-      (typeConfigs.stand[oldType]?.fields || []).forEach(f => {
-        cleanup[`system.extra.${f.key}`] = null;
-      });
+      (typeConfigs[oldType]?.fields||[]).forEach(f => cleanup[`system.extra.${f.key}`]=null);
       if (Object.keys(cleanup).length) await this.actor.update(cleanup);
 
-     html.closest("form").trigger("render"); // re‐render to show new extras
-     });
+      this.render();
+    });
    }
 
   async syncStatsForStand(newType) {

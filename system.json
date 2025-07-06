@@ -1,12 +1,14 @@
 {
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
-  "description": "An unofficial core system for the Bizarre Adventures D6 system.",
+  "description": "A core system for the Bizarre Adventures D6 system.",
   "version": "0.8.1",
   "authors": [
     {
       "name": "LIFT",
-      "discord": "itpart"
+      "discord": "itpart",
+      "github": "Iwalker-dev",
+      "flags": {}
     }
   ],
   "compatibility": {
@@ -14,17 +16,24 @@
     "verified": "13",
     "maximum": "13"
   },
+  "flags": {
+    "hotReload": {
+      "enabled": true,
+      "files": [
+        "templates/sheets/user-actor-sheet.hbs",
+        "templates/partials/actor-nav.hbs",
+        "modules/sheets/user-actor-sheet.js",
+        "templates/partials/actor-class.hbs"
+      ]
+    }
+  },
   "esmodules": [
     "bad6.js"
   ],
-  "scripts": [
-  ],
   "styles": [
-    "bad6.css"
-  ],
-  "itemTypes": [
-    "hit", 
-    "item"
+    {
+      "src": "bad6.css"
+    }
   ],
   "socket": true,
   "primaryTokenAttribute": "hits",
@@ -33,37 +42,17 @@
     "distance": 2,
     "units": "m"
   },
-  "actors": {
-    "types": ["user", "stand", "power"],
-    "default": "user"
-  },
-  "Item": {
-    "types": ["hit", "item"],
-    "htmlFields": ["description"],
-    "hit": {
-      "description": "",
-      "quantity": 1,
-      "weight": 0,
-      "attributes": {},
-      "groups": {}
-    },
-    "item": {
-      "description": "",
-      "quantity": 1,
-      "weight": 0,
-      "attributes": {},
-      "groups": {}
-    }
-  },
-  "manifest": "https://raw.githubusercontent.com/FlexLamb-Dev/bizarre-adventures-d6/main/system.json",
-  "download": "https://github.com/FlexLamb-Dev/bizarre-adventures-d6/releases/download/v0.8.X/bizarre-adventures-d6-v0.8.X.zip",
+  "manifest": "https://raw.githubusercontent.com/Iwalker-dev/bizarre-adventures-d6/main/system.json",
+  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.8.X/bizarre-adventures-d6-v0.8.X.zip",
   "relationships": {
     "requires": [
       {
         "id": "socketlib",
         "type": "module",
         "manifest": "https://github.com/farling42/foundryvtt-socketlib/releases/latest/download/module.json",
-        "compatibility": { "verified": "11" }
+        "compatibility": {
+          "verified": "13"
+        }
       }
     ]
   }

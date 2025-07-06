@@ -77,10 +77,6 @@
             <label>Backstory:</label>
             <textarea name="system.bio.backstory" rows="5" placeholder="Enter backstory">{{system.bio.backstory}}</textarea>
           </div>
-
-          {{!-- 3)  Render any extraConfig fields for the selected Type --}}
-          {{> actor-class}}
-          {{!-- 1) User‐Type selector --}}
             <select id="user-type" name="system.info.type">
               {{#each typeConfigs}}
                 <option value="{{@key}}" {{#ifEquals ../system.info.type @key}}selected{{/ifEquals}}>
@@ -88,6 +84,8 @@
                 </option>
               {{/each}}
             </select>
+          {{> actor-class}}
+
 
         </div>
       </div>

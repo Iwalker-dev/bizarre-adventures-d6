@@ -17,51 +17,49 @@ Hooks.once("init", () => {
 });
 
 export function HueShiftControl() {
-  // Add a “Hue Shift” tool to the lighting controls
-  Hooks.on("getSceneControlButtons", (controls) => {
-    const lightingControls = controls.lighting;
-    if (!lightingControls) return;
 
-    lightingControls.tools["hueShift"] = {
-      name:   "hueShift",
-      title:  "Hue Shift Canvas",
-      icon:   "fas fa-adjust",
+  // —— A) Register the Reset-Hue keybinding here ——
+  game.keybindings.register("bizarre-adventures-d6", "resetHue", {
+    name: "Reset Canvas Hue",
+    hint: "Zero out the current scene hue filter",
+    editable: [
+      { key: "KeyH", modifiers: ["Control"] }  // default Ctrl+H
+    ],
+    restricted: true,  // GMs only
+    onDown: () => {
+      if (!game.user.isGM) return false;
+      socket.executeForEveryone("stepHueShift", -targetHue);
+      ui.controls.render();
+      return false;     // Prevent browser reload
+    }
+  });
+  // 1) Left–click via onChange (no deprecation warnings)
+  Hooks.on("getSceneControlButtons", (controls) => {
+    const lighting = controls.lighting;
+    if (!lighting) return;
+    lighting.tools.hueShift = {
+      name:    "hueShift",
+      title:   "Hue Shift Canvas",
+      icon:    "fas fa-adjust",
       visible: game.user.isGM,
       button:  true,
-      toggle:  true,
+      toggle:  false,
       active:  targetHue !== 0,
       order:   100,
-      onClick: () => {
-        socket.executeForEveryone("stepHueShift", 30);
-        ui.controls.render();
-      }
+      onChange: (_value, event) => {
+         if (event.shiftKey) {
+        // Shift+click resets
+          socket.executeForEveryone("stepHueShift", -targetHue);
+        } else {
+         // Normal click advances
+          socket.executeForEveryone("stepHueShift", 30);
+        }
+  ui.controls.render();
+}
     };
   });
 
-/* TODO: Uncomment this section to add a right-click reset option
 
-  Hooks.on("renderSceneControls", (_controls, html) => {
-    // Find our tool each render
-    const toolEl = html.querySelector('li.control-tool[data-tool="hueShift"]');
-    if (!toolEl) return;
-
-    // Avoid double-binding
-    if (toolEl._hueListener) return;
-    toolEl._hueListener = true;
-
-    // Catch the right-click on mousedown, in capture phase
-    toolEl.addEventListener("mousedown", event => {
-      if (event.button !== 2) return;      // only right-click
-      event.stopImmediatePropagation();    // kill Foundry’s listener
-      event.preventDefault();              // no browser menu
-
-      // Reset hue and refresh the controls
-      socket.executeForEveryone("stepHueShift", -targetHue);
-      ui.controls.render();
-    }, { capture: true });
-  });
-
-*/
 }
 
 // Core hue-shifting logic, run via socket on everyone

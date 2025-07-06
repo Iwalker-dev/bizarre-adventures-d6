@@ -25,7 +25,7 @@ export function outroControl() {
       visible: game.user.isGM,
       button:  true,
       order:   100,
-      onClick: () => sendOutroEffect(50, 2000)
+      onClick: () => sendOutroEffect(25, 200)
     };
   });
 }
