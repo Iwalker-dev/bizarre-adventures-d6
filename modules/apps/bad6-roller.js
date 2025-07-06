@@ -153,6 +153,9 @@ function requestStat(actor) {
       content: "<p>Select a stat:</p>",
       buttons,
       default: Object.keys(buttons)[0]
+    }, {
+      width: 400,
+      classes: ["roller-dialog"]
     }).render(true);
   });
 }
@@ -230,13 +233,18 @@ async function main() {
     });
     rollSum += roll.total;
   }
+  const ownerIds = game.users
+  .filter(u => actor.testUserPermission(u, "OWNER"))
+  .map(u => u.id);
 
   const DC = convDC(rollSum);
   ChatMessage.create({
-    speaker: ChatMessage.getSpeaker(),
-    content: `Total: ${rollSum}! ${DC}`
+    speaker: ChatMessage.getSpeaker({ actor }),
+    content: `Total: ${rollSum}! ${DC}`,
+    whisper: ownerIds
   });
 }
+
 
 // Helper to find a non-GM owner or fallback to GM
 function findOwner(actor) {

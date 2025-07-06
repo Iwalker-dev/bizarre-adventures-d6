@@ -627,3 +627,11 @@ body {
   flex: 1;               /* fill the remaining space */
   color: white;
 }
+
+
+/* ────────────────────────── Roller ────────────────────────── */
+
+.dialog.roller-dialog .dialog-buttons {
+  flex-wrap: wrap;
+  gap: 0.5em;     /* optional spacing between rows */
+}
