@@ -6,6 +6,8 @@ Changelog.md inside
 
 Actors:
 
+-Outro, Hue Shift, and Rolling functionality
+
 -Customized Sheet
 
 -Simple, Stylized Stat viewing and editing
