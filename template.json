@@ -28,7 +28,7 @@
 				    "luck":     {
                         "dtype": "Burn",
                         "group": "ustats",
-                        "label": "Learning",
+                        "label": "Luck",
                         "value": 0, "temp": 0, "perm": 0 
 				    },
 				    "menacing": { 
