@@ -81,14 +81,14 @@ async function findRoller(i) {
     if (canvas.tokens.controlled.length === 1) i = 0;
     const token = canvas.tokens.controlled[i];
     if (!token) {
-      ui.notifications.warn("No token selected.");
+      ui.notifications.warn("No token selected. Select up to 2.");
       return null;
     }
     return token.actor;
   }
   const owned = game.actors.filter(a => a.isOwner);
   if (owned.length === 0) {
-    ui.notifications.warn("You don't own any actors.");
+    ui.notifications.warn("You don't own any actors. A player may only roll from their owned actors.");
     return null;
   }
   if (owned.length === 1) return owned[0];
@@ -153,6 +153,9 @@ function requestStat(actor) {
       content: "<p>Select a stat:</p>",
       buttons,
       default: Object.keys(buttons)[0]
+    }, {
+      width: 400,
+      classes: ["roller-dialog"]
     }).render(true);
   });
 }
@@ -230,13 +233,18 @@ async function main() {
     });
     rollSum += roll.total;
   }
+  const ownerIds = game.users
+  .filter(u => actor.testUserPermission(u, "OWNER"))
+  .map(u => u.id);
 
   const DC = convDC(rollSum);
   ChatMessage.create({
-    speaker: ChatMessage.getSpeaker(),
-    content: `Total: ${rollSum}! ${DC}`
+    speaker: ChatMessage.getSpeaker({ actor }),
+    content: `Total: ${rollSum}! ${DC}`,
+    whisper: ownerIds
   });
 }
+
 
 // Helper to find a non-GM owner or fallback to GM
 function findOwner(actor) {

@@ -53,12 +53,18 @@ export class PowerSheet extends BaseActorSheet {
       this.actor.update({ [`system.attributes.stats.${stat}.selected`]: value });
     });
 
-    // When the “Type” dropdown changes:
-    html.find('#power-type').on('change', ev => {
+    // Handle Type dropdown changes
+    html.find("#power-type").on("change", async ev => {
+      const oldType = this.actor.system.info.type;
       const newType = ev.target.value;
-      // Update the actor, then re-render so getData() rebuilds statLabelMap
-      this.actor.update({ 'system.info.type': newType })
-          .then(() => this.render(true));
+      await this.actor.update({ "system.info.type": newType });
+
+      // Remove old‐type extra fields
+      const cleanup = {};
+      (typeConfigs[oldType]?.fields||[]).forEach(f => cleanup[`system.extra.${f.key}`]=null);
+      if (Object.keys(cleanup).length) await this.actor.update(cleanup);
+
+      this.render();
     });
 
     const current = this.actor.system.info.type;
