@@ -2,7 +2,7 @@
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
   "description": "A core system for the Bizarre Adventures D6 system.",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "authors": [
     {
       "name": "LIFT",
@@ -28,7 +28,8 @@
     }
   },
   "esmodules": [
-    "bad6.js"
+    "bad6.js",
+    "modules/migration.js"
   ],
   "styles": [
     {
