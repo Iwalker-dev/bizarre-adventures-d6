@@ -181,30 +181,24 @@ export class UserSheet extends BaseActorSheet {
         max:   this.actor.system.health.max
       });
       
-      // If we’re about to *activate* DD on a PC they own…
+      // If we’re about to *activate* DD on a PC, check for owned Vampire actors
       if (!ddActive && this.actor.hasPlayerOwner) {
-        // 1) Who actually owns *this* actor?
-        // Only consider real players, not the GM
         const ownerUsers = game.users.filter(u =>
           !u.isGM &&
           this.actor.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
         );
         console.log("🔍 Owners of this actor:", ownerUsers.map(u=>u.name));
 
-        // 2) Scan every other actor for a matching owner + power==="Vampire"
         const vampireActors = game.actors.filter(a => {
           if ( a.id === this.actor.id ) return false;  // skip self
           if ( !ownerUsers.some(u => a.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) ) {
             return false;
           }
-          // Safely read the power field
           const powerType = foundry.utils.getProperty(a, "system.info.type");
-          console.log(`→ Checking ${a.name}: powerType=`, powerType);
           return powerType === "Vampire";
         });
 
         if ( vampireActors.length ) {
-          console.log("⛔ Blocking DD because of:", vampireActors.map(a=>a.name));
           ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
         }
       }
