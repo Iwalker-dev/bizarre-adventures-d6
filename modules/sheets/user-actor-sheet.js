@@ -205,7 +205,7 @@ export class UserSheet extends BaseActorSheet {
 
         if ( vampireActors.length ) {
           console.log("⛔ Blocking DD because of:", vampireActors.map(a=>a.name));
-          return ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
+          ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
         }
       }
 
