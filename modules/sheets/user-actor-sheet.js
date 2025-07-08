@@ -193,7 +193,7 @@ export class UserSheet extends BaseActorSheet {
         && a.system.info.power === "Vampire"
       );
       if (vampireActor) {
-        ui.notifications.warn("Remember: A Vampire user may not activate Dark Determination.");
+        ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
       }
     }
 
