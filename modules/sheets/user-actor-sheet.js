@@ -181,29 +181,31 @@ export class UserSheet extends BaseActorSheet {
         max:   this.actor.system.health.max
       });
       
-      // ─── Early bail if they already own a Vampire ────────────────────────────
+      // If we’re about to *activate* DD on a PC they own…
       if (!ddActive && this.actor.hasPlayerOwner) {
+        // 1) Who actually owns *this* actor?
         const ownerUsers = game.users.filter(u =>
           this.actor.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
         );
-        console.log("BAD6 🔍 Owners of this actor:", ownerUsers.map(u=>u.name));
-        const hasVampire = game.actors.some(a => {
-          console.log(`BAD6 → Checking ${a.name}: powerType=`, powerType);
-          if ( a.id === this.actor.id ) return false;
-          // skip if they don’t share an owner
+        console.log("🔍 Owners of this actor:", ownerUsers.map(u=>u.name));
+
+        // 2) Scan every other actor for a matching owner + power==="Vampire"
+        const vampireActors = game.actors.filter(a => {
+          if ( a.id === this.actor.id ) return false;  // skip self
           if ( !ownerUsers.some(u => a.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) ) {
             return false;
           }
-          // SAFELY grab the “power” field
+          // Safely read the power field
           const powerType = foundry.utils.getProperty(a, "system.info.power");
+          console.log(`→ Checking ${a.name}: powerType=`, powerType);
           return powerType === "Vampire";
         });
 
-        if (hasVampire) {
-          ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
+        if ( vampireActors.length ) {
+          console.log("⛔ Blocking DD because of:", vampireActors.map(a=>a.name));
+          return ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
         }
       }
-
 
       // Switch into Dark Determination
       await this.actor.update({
