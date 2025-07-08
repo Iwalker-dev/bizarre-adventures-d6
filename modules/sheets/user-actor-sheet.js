@@ -199,7 +199,7 @@ export class UserSheet extends BaseActorSheet {
         });
 
         if (hasVampire) {
-          return ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
+          ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
         }
       }
 
