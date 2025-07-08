@@ -186,7 +186,7 @@ export class UserSheet extends BaseActorSheet {
         const ownerUsers = game.users.filter(u =>
           this.actor.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
         );
-
+        console.log("BAD6 🔍 Owners of this actor:", ownerUsers.map(u=>u.name));
         const hasVampire = game.actors.some(a => {
           if ( a.id === this.actor.id ) return false;
           // skip if they don’t share an owner
