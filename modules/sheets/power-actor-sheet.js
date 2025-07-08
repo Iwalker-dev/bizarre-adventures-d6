@@ -60,5 +60,11 @@ export class PowerSheet extends BaseActorSheet {
       const { stat, value } = ev.currentTarget.dataset;
       this.actor.update({ [`system.attributes.stats.${stat}.selected`]: value });
     });
+
+    // 1) Force the select to show the actual stored value
+    const current = this.actor.system.info?.type;
+    if (current) {
+      html.find("#power-type").val(current);
+    }
   }
 }
