@@ -60,19 +60,5 @@ export class PowerSheet extends BaseActorSheet {
       const { stat, value } = ev.currentTarget.dataset;
       this.actor.update({ [`system.attributes.stats.${stat}.selected`]: value });
     });
-
-    // Handle Type dropdown changes
-    html.find("#power-type").on("change", async ev => {
-      const oldType = this.actor.system.info.type;
-      const newType = ev.target.value;
-      await this.actor.update({ "system.info.type": newType });
-      /*
-      // Remove old‐type extra fields
-      const cleanup = {};
-      (typeConfigs[oldType]?.fields||[]).forEach(f => cleanup[`system.extra.${f.key}`]=null);
-      if (Object.keys(cleanup).length) await this.actor.update(cleanup);
-      */
-      this.render();
-    });
   }
 }
