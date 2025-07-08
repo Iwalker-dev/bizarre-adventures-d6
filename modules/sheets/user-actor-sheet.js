@@ -26,6 +26,7 @@ export class UserSheet extends BaseActorSheet {
     data.system.info.type = data.system.info.type ?? "user";     
     data.typeConfigs   = typeConfigs.user;                                             // for <select> options
     data.extraConfig   = typeConfigs[data.system.info.type] || null;              // for {{> bio-extras}}
+    data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6","darkDetermination");
 
     // Helper to pick the right star-value sub-field
     data.getSelectedValue = stat => {
@@ -33,20 +34,25 @@ export class UserSheet extends BaseActorSheet {
       return s?.[s.selected] ?? 0;
     };
 
-    // Initialize health if missing
-    this.actor.system.health ??= { min:0, max:0, value:0 };
-
-    // Compute current HP based on Hit items
-    const totalDamage = this.actor.items
-      .filter(i => i.type==="hit")
-      .reduce((sum,i)=>sum+(i.system.quantity||0),0);
-    data.system.health.value = Math.max(
-      this.actor.system.health.min,
-      this.actor.system.health.max - totalDamage
-    );
+      // Only recalc when DD is *not* active
+    if (!data.darkDetermination) {
+      const totalDamage = this.actor.items
+        .filter(i => i.type==="hit")
+        .reduce((sum,i)=>sum+(i.system.quantity||0),0);
+      // Honor the user‐set max (your “Hit Limit” input)
+      const maxHP = this.actor.system.health.max;
+      data.system.health.value = Math.max(
+        this.actor.system.health.min,
+        maxHP - totalDamage
+      );
+      // leave data.system.health.max alone!
+    }
 
     return data;
   }
+
+// Before an actor is updated, take 
+
 
   /** @override */
   activateListeners(html) {
@@ -59,6 +65,9 @@ export class UserSheet extends BaseActorSheet {
     document.documentElement.style.setProperty("--accent-color", base);
     document.documentElement.style.setProperty("--accent-light", light);
     document.documentElement.style.setProperty("--accent-dark", dark);
+
+    html.find(".dark-determination-toggle")
+      .click(this._onToggleDarkDetermination.bind(this));
 
     // Render all the stat-stars
     this.renderStars(html);
@@ -109,7 +118,22 @@ export class UserSheet extends BaseActorSheet {
   });
 
     // Create and delete Hit entries (and update health)
-    const recalc = async () => this.render();
+    /** In activateListeners, replace your recalc definition with: */
+    const recalc = async () => {
+      const dd = this.actor.getFlag("bizarre-adventures-d6","darkDetermination");
+      // bail out if in DD
+      if (dd) return;
+      // sum hits
+      const totalDamage = this.actor.items
+        .filter(i => i.type==="hit")
+        .reduce((sum,i)=>sum+(i.system.quantity||0),0);
+      // compute against the user‐editable max
+      const maxHP = this.actor.system.health.max;
+      const newValue = Math.max(this.actor.system.health.min, maxHP - totalDamage);
+      // only persist the value
+      await this.actor.update({ "system.health.value": newValue });
+      this.render();
+    };
     html.find("#create-hit").click(async ()=>{
       await this.actor.createEmbeddedDocuments("Item",[{
         name:"New Hit",type:"hit",
@@ -131,4 +155,46 @@ export class UserSheet extends BaseActorSheet {
   if ( hit ) hit.sheet.render(true);
 });
   }
+
+  /** Toggle Dark Determination on/off */
+  async _onToggleDarkDetermination(event) {
+    event.preventDefault();
+    const ddActive = this.actor.getFlag("bizarre-adventures-d6", "darkDetermination") || false;
+
+
+
+    if (!ddActive) {
+      // Store whatever the actor’s HP was before
+      await this.actor.setFlag("bizarre-adventures-d6", "origHealth", {
+        value: this.actor.system.health.value,
+        max:   this.actor.system.health.max,
+        min:   this.actor.system.health.min ?? 0
+      });
+
+      
+      // Switch into Dark Determination
+      await this.actor.update({
+        "system.health.value": -1,
+        "system.health.max":   -1,
+        "system.health.min":   -2
+      });
+      await this.actor.setFlag("bizarre-adventures-d6", "darkDetermination", true);
+    }
+    else {
+      // Restore the stored values and clear flags
+      const orig = this.actor.getFlag("bizarre-adventures-d6", "origHealth");
+      if (orig) {
+        await this.actor.update({
+          "system.health.value": orig.value,
+          "system.health.max":   orig.max,
+          "system.health.min":   orig.min
+        });
+      }
+      await this.actor.unsetFlag("bizarre-adventures-d6", "darkDetermination");
+      await this.actor.unsetFlag("bizarre-adventures-d6", "origHealth");
+    }
+     await this.render(); 
+  }
 }
+
+

@@ -27,7 +27,7 @@ Hooks.once("ready", async () => {
     return A> X || (A===X && (B>Y || (B===Y && C>Z)));
   };
 
-  // — First ever world load? —
+  // — First ever world load —
   if ( previous === "0.0.0" ) {
     ChatMessage.create({
       user:    game.user.id,
