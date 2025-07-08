@@ -67,10 +67,13 @@ export class PowerSheet extends BaseActorSheet {
       this.render();
     });
 
-    const current = this.actor.system.info.type;
-    if (!current) {
-      const defaultType = Object.keys(typeConfigs.power)[0];
-      html.find('#power-type').val(defaultType);
+  const current = this.actor.system.info.type;
+  if (!current) {
+    const defaultType = Object.keys(typeConfigs.power)[0];
+    // Write it back to the actor so future renders “remember”
+    this.actor.update({ "system.info.type": defaultType }).then(() => {
+      html.find("#power-type").val(defaultType);
+    });
   }
   }
 }
