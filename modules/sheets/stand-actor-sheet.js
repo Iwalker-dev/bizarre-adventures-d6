@@ -59,12 +59,16 @@ activateListeners(html) {
     html.find("#stand-type").on("change", async ev => {
       const oldType = this.actor.system.info.type;
       const newType = ev.target.value;
-      await this.actor.update({ "system.info.type": newType });
+      // Build a single update payload: clear out old extra fields, then set the new type
+      const updateData = {
+        "system.info.type": newType
+      };
+      for ( const f of (typeConfigs[oldType]?.fields || []) ) {
+        updateData[`system.extra.${f.key}`] = null;
+      }
 
-      // Remove old‐type extra fields
-      const cleanup = {};
-      (typeConfigs[oldType]?.fields||[]).forEach(f => cleanup[`system.extra.${f.key}`]=null);
-      if (Object.keys(cleanup).length) await this.actor.update(cleanup);
+       // One single call to write everything
+      await this.actor.update(updateData);
 
       this.render();
     });
