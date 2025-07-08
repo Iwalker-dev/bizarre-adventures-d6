@@ -16,7 +16,9 @@ export class StandSheet extends BaseActorSheet {
       navSelector: ".sheet-tabs",          // ← matches your <nav class="tabs">
       contentSelector: "section.sheet-body",
       initial: "stats"
-      }]
+      }],
+      submitOnChange: true,
+      closeOnSubmit:  false
     });
   }
 
