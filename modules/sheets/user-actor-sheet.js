@@ -198,7 +198,7 @@ export class UserSheet extends BaseActorSheet {
             return false;
           }
           // Safely read the power field
-          const powerType = foundry.utils.getProperty(a, "system.info.power");
+          const powerType = foundry.utils.getProperty(a, "system.info.type");
           console.log(`→ Checking ${a.name}: powerType=`, powerType);
           return powerType === "Vampire";
         });
