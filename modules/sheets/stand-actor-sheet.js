@@ -69,10 +69,8 @@ activateListeners(html) {
 
        // One single call to write everything
       await this.actor.update(updateData);
-      const current = this.actor.system.info?.type;
-      if (current) {
-        html.find("#stand-type").val(current);
-      }
+        html.find("#stand-type").val(newType);
+
 
       this.render();
     });
