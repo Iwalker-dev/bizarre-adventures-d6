@@ -1,6 +1,11 @@
 # Changelog – BAD6 System
 
-## [0.9.0] – 2025-07-06
+## [0.9.2] – 2025-07-06
+
+### Added
+-Basic Dark Determination Functionality
+-World Startup Mini-Tutorial
+-Version Migaration auto fixes
 
 ### Fixes
 

@@ -17,7 +17,7 @@ export class UserSheet extends BaseActorSheet {
       }]
     });
   }
-
+  static totalDamage = 0; // for Dark Determination
   /** @override */
   getData() {
     const data         = super.getData();
@@ -26,6 +26,7 @@ export class UserSheet extends BaseActorSheet {
     data.system.info.type = data.system.info.type ?? "user";     
     data.typeConfigs   = typeConfigs.user;                                             // for <select> options
     data.extraConfig   = typeConfigs[data.system.info.type] || null;              // for {{> bio-extras}}
+    data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6","darkDetermination");
 
     // Helper to pick the right star-value sub-field
     data.getSelectedValue = stat => {
@@ -33,20 +34,32 @@ export class UserSheet extends BaseActorSheet {
       return s?.[s.selected] ?? 0;
     };
 
-    // Initialize health if missing
-    this.actor.system.health ??= { min:0, max:0, value:0 };
-
-    // Compute current HP based on Hit items
-    const totalDamage = this.actor.items
-      .filter(i => i.type==="hit")
-      .reduce((sum,i)=>sum+(i.system.quantity||0),0);
-    data.system.health.value = Math.max(
-      this.actor.system.health.min,
-      this.actor.system.health.max - totalDamage
-    );
+      // Only recalc when DD is *not* active
+    if (!data.darkDetermination) {
+      const totalDamage = this.actor.items
+        .filter(i => i.type==="hit")
+        .reduce((sum,i)=>sum+(i.system.quantity||0),0);
+      // Honor the user‐set max (your “Hit Limit” input)
+      const maxHP = this.actor.system.health.max;
+      data.system.health.value = Math.max(
+        this.actor.system.health.min,
+        maxHP - totalDamage
+      );
+      // leave data.system.health.max alone!
+    }  else {
+      // see if a new hit pushed you over origDamage
+      const orig = this.actor.getFlag("bizarre-adventures-d6","origDamage")||0;
+      const now  = this.actor.items.filter(i=>i.type==="hit")
+                    .reduce((s,i)=>s+i.system.quantity,0);
+      if (now > orig) data.system.health.value = -2;
+      else data.system.health.value = -1;
+    }
 
     return data;
   }
+
+// Before an actor is updated, take 
+
 
   /** @override */
   activateListeners(html) {
@@ -59,6 +72,9 @@ export class UserSheet extends BaseActorSheet {
     document.documentElement.style.setProperty("--accent-color", base);
     document.documentElement.style.setProperty("--accent-light", light);
     document.documentElement.style.setProperty("--accent-dark", dark);
+
+    html.find(".dark-determination-toggle")
+      .click(this._onToggleDarkDetermination.bind(this));
 
     // Render all the stat-stars
     this.renderStars(html);
@@ -109,7 +125,22 @@ export class UserSheet extends BaseActorSheet {
   });
 
     // Create and delete Hit entries (and update health)
-    const recalc = async () => this.render();
+    /** In activateListeners, replace your recalc definition with: */
+    const recalc = async () => {
+      const dd = this.actor.getFlag("bizarre-adventures-d6","darkDetermination");
+      // bail out if in DD
+      if (dd) return;
+      // sum hits
+      const totalDamage = this.actor.items
+        .filter(i => i.type==="hit")
+        .reduce((sum,i)=>sum+(i.system.quantity||0),0);
+      // compute against the user‐editable max
+      const maxHP = this.actor.system.health.max;
+      const newValue = Math.max(this.actor.system.health.min, maxHP - totalDamage);
+      // only persist the value
+      await this.actor.update({ "system.health.value": newValue });
+      this.render();
+    };
     html.find("#create-hit").click(async ()=>{
       await this.actor.createEmbeddedDocuments("Item",[{
         name:"New Hit",type:"hit",
@@ -131,4 +162,63 @@ export class UserSheet extends BaseActorSheet {
   if ( hit ) hit.sheet.render(true);
 });
   }
+
+  /** Toggle Dark Determination on/off */
+  async _onToggleDarkDetermination(event) {
+    event.preventDefault();
+    const ddActive = this.actor.getFlag("bizarre-adventures-d6", "darkDetermination") || false;
+    const totalDamage = this.actor.items
+        .filter(i => i.type==="hit")
+        .reduce((sum,i)=>sum+(i.system.quantity||0),0);
+
+
+
+    if (!ddActive) {
+      await this.actor.setFlag("bizarre-adventures-d6","origDamage", totalDamage);
+      // Store whatever the actor’s HP was before
+      await this.actor.setFlag("bizarre-adventures-d6", "origHealth", {
+        value: this.actor.system.health.value,
+        max:   this.actor.system.health.max
+      });
+      
+    // ─── Early bail if you own a Vampire ──────────────────────────────────────
+    if (this.actor.hasPlayerOwner) {
+      // 1) Find all user-IDs who have OWNER on this actor
+      const ownerIds = Object.entries(this.actor.data.permission)
+        .filter(([uid, lvl]) => lvl === CONST.DOCUMENT_PERMISSION_LEVELS.OWNER)
+        .map(([uid]) => uid);
+      // 2) Locate any other actor owned by those same users whose power type is "Vampire"
+      const vampireActor = game.actors.find(a =>
+        ownerIds.some(id => a.data.permission[id] === CONST.DOCUMENT_PERMISSION_LEVELS.OWNER)
+        && a.system.info.power === "Vampire"
+      );
+      if (vampireActor) {
+        ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
+      }
+    }
+
+      // Switch into Dark Determination
+      await this.actor.update({
+        "system.health.value": -1,
+        "system.health.max":   -1
+      });
+
+      await this.actor.setFlag("bizarre-adventures-d6", "darkDetermination", true);
+    }
+    else {
+      // Restore the stored values and clear flags
+      const orig = this.actor.getFlag("bizarre-adventures-d6", "origHealth");
+      if (orig) {
+        await this.actor.update({
+          "system.health.value": orig.value,
+          "system.health.max":   orig.max
+        });
+      }
+      await this.actor.unsetFlag("bizarre-adventures-d6", "darkDetermination");
+      await this.actor.unsetFlag("bizarre-adventures-d6", "origHealth");
+    }
+     await this.render(); 
+  }
 }
+
+
