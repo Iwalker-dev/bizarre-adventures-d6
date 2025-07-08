@@ -13,7 +13,9 @@ export class PowerSheet extends BaseActorSheet {
         navSelector: ".sheet-tabs",
         contentSelector: "section.sheet-body",
         initial: "stats"
-      }]
+      }],
+      submitOnChange: true,
+      closeOnSubmit:  false
     });
   }
 
@@ -23,7 +25,13 @@ export class PowerSheet extends BaseActorSheet {
     data.system      = this.actor.system;
     data.typeConfigs = typeConfigs.power;
     data.system.info = data.system.info || {};
-    data.extraConfig = data.typeConfigs[data.system.info.type] || {};
+    console.log("BAD6 | data.system.info.type", data.system.info.type);
+    // If no type is saved yet, pretend we have one so the <select> shows it
+    if (!data.system.info.type) {
+      data.system.info.type = Object.keys(typeConfigs.power)[0];
+    }
+
+    data.extraConfig  = data.typeConfigs[data.system.info.type] || {};
 
     // —— NEW: statLabelMap —— 
     const keys = ['power','precision','speed','range','durability','learning'];
@@ -53,24 +61,10 @@ export class PowerSheet extends BaseActorSheet {
       this.actor.update({ [`system.attributes.stats.${stat}.selected`]: value });
     });
 
-    // Handle Type dropdown changes
-    html.find("#power-type").on("change", async ev => {
-      const oldType = this.actor.system.info.type;
-      const newType = ev.target.value;
-      await this.actor.update({ "system.info.type": newType });
-
-      // Remove old‐type extra fields
-      const cleanup = {};
-      (typeConfigs[oldType]?.fields||[]).forEach(f => cleanup[`system.extra.${f.key}`]=null);
-      if (Object.keys(cleanup).length) await this.actor.update(cleanup);
-
-      this.render();
-    });
-
-    const current = this.actor.system.info.type;
-    if (!current) {
-      const defaultType = Object.keys(typeConfigs.power)[0];
-      html.find('#power-type').val(defaultType);
-  }
+    // 1) Force the select to show the actual stored value
+    const current = this.actor.system.info?.type;
+    if (current) {
+      html.find("#power-type").val(current);
+    }
   }
 }

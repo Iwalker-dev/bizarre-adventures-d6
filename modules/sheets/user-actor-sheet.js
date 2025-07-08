@@ -131,4 +131,67 @@ export class UserSheet extends BaseActorSheet {
   if ( hit ) hit.sheet.render(true);
 });
   }
+
+  /** Toggle Dark Determination on/off */
+  async _onToggleDarkDetermination(event) {
+    event.preventDefault();
+    const ddActive = this.actor.getFlag("bizarre-adventures-d6", "darkDetermination") || false;
+    const totalDamage = this.actor.items
+        .filter(i => i.type==="hit")
+        .reduce((sum,i)=>sum+(i.system.quantity||0),0);
+
+
+
+    if (!ddActive) {
+      await this.actor.setFlag("bizarre-adventures-d6","origDamage", totalDamage);
+      // Store whatever the actor’s HP was before
+      await this.actor.setFlag("bizarre-adventures-d6", "origHealth", {
+        value: this.actor.system.health.value,
+        max:   this.actor.system.health.max
+      });
+      
+      // If we’re about to *activate* DD on a PC, check for owned Vampire actors
+      if (!ddActive && this.actor.hasPlayerOwner) {
+        const ownerUsers = game.users.filter(u =>
+          !u.isGM &&
+          this.actor.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
+        );
+        console.log("🔍 Owners of this actor:", ownerUsers.map(u=>u.name));
+
+        const vampireActors = game.actors.filter(a => {
+          if ( a.id === this.actor.id ) return false;  // skip self
+          if ( !ownerUsers.some(u => a.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) ) {
+            return false;
+          }
+          const powerType = foundry.utils.getProperty(a, "system.info.type");
+          return powerType === "Vampire";
+        });
+
+        if ( vampireActors.length ) {
+          ui.notifications.warn("Reminder: A Vampire user may not activate Dark Determination.");
+        }
+      }
+
+      // Switch into Dark Determination
+      await this.actor.update({
+        "system.health.value": -1,
+        "system.health.max":   -1
+      });
+
+      await this.actor.setFlag("bizarre-adventures-d6", "darkDetermination", true);
+    }
+    else {
+      // Restore the stored values and clear flags
+      const orig = this.actor.getFlag("bizarre-adventures-d6", "origHealth");
+      if (orig) {
+        await this.actor.update({
+          "system.health.value": orig.value,
+          "system.health.max":   orig.max
+        });
+      }
+      await this.actor.unsetFlag("bizarre-adventures-d6", "darkDetermination");
+      await this.actor.unsetFlag("bizarre-adventures-d6", "origHealth");
+    }
+     await this.render(); 
+  }
 }
