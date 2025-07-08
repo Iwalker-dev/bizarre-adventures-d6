@@ -184,7 +184,9 @@ export class UserSheet extends BaseActorSheet {
       // If we’re about to *activate* DD on a PC they own…
       if (!ddActive && this.actor.hasPlayerOwner) {
         // 1) Who actually owns *this* actor?
+        // Only consider real players, not the GM
         const ownerUsers = game.users.filter(u =>
+          !u.isGM &&
           this.actor.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
         );
         console.log("🔍 Owners of this actor:", ownerUsers.map(u=>u.name));
