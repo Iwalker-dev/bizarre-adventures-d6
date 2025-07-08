@@ -302,7 +302,7 @@ body {
      1px -1px 0 black,
     -1px  1px 0 black,
      1px  1px 0 black;
-  animation: none;
+  animation: dd-pulse .8s ease-in-out infinite;
 }
 
 /* 2) Pulsing accent-dark */
@@ -311,10 +311,16 @@ body {
   50%     { transform: scale(1.2); opacity: .8; }
 }
 .pulse-dd-icon {
-  font-size: 1em;
+  font-size: 2em;
   color: var(--accent-dark);
-  animation: dd-pulse 2s ease-in-out infinite;
+  animation: dd-pulse 0.4s ease-in-out infinite;
   transition: color .2s ease;
+  -webkit-text-stroke: 1px black;
+  text-shadow:
+    -1px -1px 0 black,
+     1px -1px 0 black,
+    -1px  1px 0 black,
+     1px  1px 0 black;
 }
 .pulse-dd-icon:hover,
 .pulse-dd-icon:focus {

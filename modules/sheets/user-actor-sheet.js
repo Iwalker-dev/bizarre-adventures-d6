@@ -17,7 +17,7 @@ export class UserSheet extends BaseActorSheet {
       }]
     });
   }
-
+  static totalDamage = 0; // for Dark Determination
   /** @override */
   getData() {
     const data         = super.getData();
@@ -46,6 +46,13 @@ export class UserSheet extends BaseActorSheet {
         maxHP - totalDamage
       );
       // leave data.system.health.max alone!
+    }  else {
+      // see if a new hit pushed you over origDamage
+      const orig = this.actor.getFlag("bizarre-adventures-d6","origDamage")||0;
+      const now  = this.actor.items.filter(i=>i.type==="hit")
+                    .reduce((s,i)=>s+i.system.quantity,0);
+      if (now > orig) data.system.health.value = -2;
+      else data.system.health.value = -1;
     }
 
     return data;
@@ -160,24 +167,42 @@ export class UserSheet extends BaseActorSheet {
   async _onToggleDarkDetermination(event) {
     event.preventDefault();
     const ddActive = this.actor.getFlag("bizarre-adventures-d6", "darkDetermination") || false;
+    const totalDamage = this.actor.items
+        .filter(i => i.type==="hit")
+        .reduce((sum,i)=>sum+(i.system.quantity||0),0);
 
 
 
     if (!ddActive) {
+      await this.actor.setFlag("bizarre-adventures-d6","origDamage", totalDamage);
       // Store whatever the actor’s HP was before
       await this.actor.setFlag("bizarre-adventures-d6", "origHealth", {
         value: this.actor.system.health.value,
-        max:   this.actor.system.health.max,
-        min:   this.actor.system.health.min ?? 0
+        max:   this.actor.system.health.max
       });
-
       
+    // ─── Early bail if you own a Vampire ──────────────────────────────────────
+    if (this.actor.hasPlayerOwner) {
+      // 1) Find all user-IDs who have OWNER on this actor
+      const ownerIds = Object.entries(this.actor.data.permission)
+        .filter(([uid, lvl]) => lvl === CONST.DOCUMENT_PERMISSION_LEVELS.OWNER)
+        .map(([uid]) => uid);
+      // 2) Locate any other actor owned by those same users whose power type is "Vampire"
+      const vampireActor = game.actors.find(a =>
+        ownerIds.some(id => a.data.permission[id] === CONST.DOCUMENT_PERMISSION_LEVELS.OWNER)
+        && a.system.info.power === "Vampire"
+      );
+      if (vampireActor) {
+        ui.notifications.warn("Remember: A Vampire user may not activate Dark Determination.");
+      }
+    }
+
       // Switch into Dark Determination
       await this.actor.update({
         "system.health.value": -1,
-        "system.health.max":   -1,
-        "system.health.min":   -2
+        "system.health.max":   -1
       });
+
       await this.actor.setFlag("bizarre-adventures-d6", "darkDetermination", true);
     }
     else {
@@ -186,8 +211,7 @@ export class UserSheet extends BaseActorSheet {
       if (orig) {
         await this.actor.update({
           "system.health.value": orig.value,
-          "system.health.max":   orig.max,
-          "system.health.min":   orig.min
+          "system.health.max":   orig.max
         });
       }
       await this.actor.unsetFlag("bizarre-adventures-d6", "darkDetermination");

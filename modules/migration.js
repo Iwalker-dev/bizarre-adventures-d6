@@ -65,6 +65,18 @@ Hooks.once("ready", async () => {
     console.log("BAD6 | Applied 0.9.1 migration (Luck label fixed from Learning → Luck).");
   }
 
+    // — 0.9.2 migration: “min 0” → “min -2” —
+    if ( isNewer("0.9.2", previous) && !isNewer("0.9.2", current) ) {
+        const updates = [];
+        for ( const actor of game.actors.filter(a => a.type === "user") ) {
+            if ((actor.system.health.min ?? 0) === 0) {
+            updates.push(actor.update({ "system.health.min": -2 }));
+            }
+        }
+        await Promise.all(updates);
+        console.log("BAD6 | Applied 0.9.2 migration (user minimum health → –2).");
+    }
+
   // — Record that we’re now at `current` —
   await game.settings.set("bizarre-adventures-d6", "migrationVersion", current);
 });
