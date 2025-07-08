@@ -64,12 +64,12 @@ export class PowerSheet extends BaseActorSheet {
       const oldType = this.actor.system.info.type;
       const newType = ev.target.value;
       await this.actor.update({ "system.info.type": newType });
-
+      /*
       // Remove old‐type extra fields
       const cleanup = {};
       (typeConfigs[oldType]?.fields||[]).forEach(f => cleanup[`system.extra.${f.key}`]=null);
       if (Object.keys(cleanup).length) await this.actor.update(cleanup);
-
+      */
       this.render();
     });
   }
