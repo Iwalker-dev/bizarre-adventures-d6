@@ -291,62 +291,6 @@ body {
   color: var(--accent-color);
   font-size: 2.5rem;
 }
-
-/* 1) Static white + black outline */
-.static-dd-icon {
-  font-size: 1em;
-  color: white;
-  -webkit-text-stroke: 1px black;
-  text-shadow:
-    -1px -1px 0 black,
-     1px -1px 0 black,
-    -1px  1px 0 black,
-     1px  1px 0 black;
-  animation: dd-pulse .8s ease-in-out infinite;
-}
-
-/* 2) Pulsing accent-dark */
-@keyframes dd-pulse {
-  0%,100% { transform: scale(1); opacity: 1; }
-  50%     { transform: scale(1.2); opacity: .8; }
-}
-.pulse-dd-icon {
-  font-size: 2em;
-  color: var(--accent-dark);
-  animation: dd-pulse 0.4s ease-in-out infinite;
-  transition: color .2s ease;
-  -webkit-text-stroke: 1px black;
-  text-shadow:
-    -1px -1px 0 black,
-     1px -1px 0 black,
-    -1px  1px 0 black,
-     1px  1px 0 black;
-}
-.pulse-dd-icon:hover,
-.pulse-dd-icon:focus {
-  color: var(--accent-light);
-}
-
-/* 3) Shared button resets */
-.dark-determination-toggle {
-  position: absolute;
-  top: .5em;
-  left: .5em;
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  line-height: 1;
-  appearance: none;
-}
-.dark-determination-toggle:hover,
-.dark-determination-toggle:focus {
-  background: none!important;
-  box-shadow: none!important;
-  outline: none!important;
-}
-
-
 /* Tabs */
 .jojo-sheet .tabs {
   display: flex;
@@ -581,39 +525,22 @@ body {
 /* ────────────────────────── Create Buttons ────────────────────────── */
 #create-item,
 #create-hit {
-  position: absolute;
-  top: 0.5em;
-  left: 0.5em;
-  display: inline;     /* collapse to content */
-  min-width: 0;        /* override any defaults */
-  min-height: 0;
-  padding: 0;          /* no extra space */
-  margin: 0;
-  line-height: 1;      /* exactly one glyph high */
-  font-size: 1.5em;    /* tweak to taste */
-  background: none;
-  border: none;
-  -webkit-text-stroke: 1px white;
-  outline: none;
+  background-color: black;
+  color: white;
+  border: 1px solid white;
+  padding: 5px 10px;
+  border-radius: 3px;
   cursor: pointer;
+  margin-bottom: 10px;
 }
 
 #create-item:hover,
 #create-hit:hover {
-  color: var(--accent-color);
-  background: none!important;
-  border: none!important;
-  box-shadow: none!important;
-  outline: none!important;
+  background-color: white;
+  color: black;
 }
+
 /* ────────────────────────── Input Fields in Hit Tab ────────────────────────── */
-
-.item-container,
-.hit-container {
-  position: relative;    /* keep your absolute button inside */
-  padding-top: 3em;    /* reserve that space for the + */
-}
-
 .tab[data-tab="hit"] input {
   background-color: black;
   color: white;

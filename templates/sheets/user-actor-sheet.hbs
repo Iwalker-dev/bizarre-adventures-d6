@@ -3,32 +3,12 @@
   <div class="jojo-sheet">
     <header class="sheet-header">
       <h1>{{actor.name}}</h1>
-      <div class="health-display">
-        Health:
-        <span class="health-value">{{system.health.value}}</span>
-        /
-        <span class="health-max">{{system.health.max}}</span>
-        {{#if (lte system.health.value 0)}}
-          {{!-- If DD is already active, show the “Disable” (pulsing) button --}}
-          {{#if darkDetermination}}
-            <button
-              type="button"
-              class="dark-determination-toggle"
-              title="Disable Dark Determination"
-            >
-              <i class="fas fa-fire pulse-dd-icon"></i>
-            </button>
-          {{!-- Otherwise (Health ≤ 0 but DD not yet active), show the “Enable” button --}}
-          {{else}}
-            <button
-              type="button"
-              class="dark-determination-toggle"
-              title="Enable Dark Determination"
-            >
-              <i class="fas fa-fire static-dd-icon"></i>
-            </button>
-          {{/if}}
-        {{/if}}
+      <div style="float: right; font-size: 1.2em; color: #ccc;">
+        Health: {{system.health.value}} /
+        <input type="number"
+               name="system.health.max"
+               value="{{system.health.max}}"
+               style="width: 50px;">
       </div>
     </header>
 
@@ -49,6 +29,8 @@
         data-tab="bio"
         data-group="primary">
         <div class="bio-container">
+
+          {{!-- 2) All your existing bio fields --}}
           <div class="bio-row">
             <label>Name:</label>
             <input type="text"
@@ -74,9 +56,9 @@
           <div class="bio-row">
             <label>Hit Limit:</label>
             <input type="number"
-              name="system.health.max"
+              name="system.bio.hitLimit"
               min="0"
-              value="{{system.health.max}}"
+              value="{{system.bio.hitLimit}}"
               />
           </div>
           <div class="bio-row">
@@ -112,9 +94,7 @@
       <div class="tab" data-tab="hit" data-group="primary">
         <div class="hit-container">
           <div class="hit-form">
-            <button id="create-hit" type="button" title="Create Hit">
-              <i class="fas fa-plus" aria-hidden="true"></i>
-            </button>
+            <button id="create-hit" type="button">Create Hit</button>
           </div>
 
           <div class="hit-list scrollable-list">
@@ -124,9 +104,7 @@
                   <li data-item-id="{{this.id}}">
                     <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}</span>
                     <p class="item-description">{{this.system.description}}</p>
-                    {{#unless ../darkDetermination}}
-                      <i class="fas fa-trash delete-hit" data-item-id="{{this.id}}"></i>
-                    {{/unless}}
+                    <i class="fas fa-trash delete-hit" data-item-id="{{this.id}}"></i>
                   </li>
                 {{/if}}
               {{/each}}
@@ -139,9 +117,7 @@
       <div class="tab" data-tab="item" data-group="primary">
         <div class="item-container">
           <div class="item-form">
-            <button id="create-item" type="button" title="Create Item">
-              <i class="fas fa-plus" aria-hidden="true"></i>
-            </button>
+            <button id="create-item" type="button">Create Item</button>
           </div>
 
           <div class="item-list scrollable-list">
