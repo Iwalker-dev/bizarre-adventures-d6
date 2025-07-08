@@ -23,7 +23,6 @@ export class PowerSheet extends BaseActorSheet {
     data.system      = this.actor.system;
     data.typeConfigs = typeConfigs.power;
     data.system.info = data.system.info || {};
-    data.extraConfig = data.typeConfigs[data.system.info.type] || {};
 
     // If no type is saved yet, pretend we have one so the <select> shows it
     if (!data.system.info.type) {
