@@ -30,6 +30,8 @@ export class PowerSheet extends BaseActorSheet {
       data.system.info.type = Object.keys(typeConfigs.power)[0];
     }
 
+    data.extraConfig  = data.typeConfigs[data.system.info.type] || {};
+
     // —— NEW: statLabelMap —— 
     const keys = ['power','precision','speed','range','durability','learning'];
     data.statLabelMap = {};
