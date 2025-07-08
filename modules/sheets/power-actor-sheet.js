@@ -25,6 +25,11 @@ export class PowerSheet extends BaseActorSheet {
     data.system.info = data.system.info || {};
     data.extraConfig = data.typeConfigs[data.system.info.type] || {};
 
+    // If no type is saved yet, pretend we have one so the <select> shows it
+    if (!data.system.info.type) {
+      data.system.info.type = Object.keys(typeConfigs.power)[0];
+    }
+
     // —— NEW: statLabelMap —— 
     const keys = ['power','precision','speed','range','durability','learning'];
     data.statLabelMap = {};
@@ -66,14 +71,5 @@ export class PowerSheet extends BaseActorSheet {
 
       this.render();
     });
-
-  const current = this.actor.system.info.type;
-  if (!current) {
-    const defaultType = Object.keys(typeConfigs.power)[0];
-    // Write it back to the actor so future renders “remember”
-    this.actor.update({ "system.info.type": defaultType }).then(() => {
-      html.find("#power-type").val(defaultType);
-    });
-  }
   }
 }
