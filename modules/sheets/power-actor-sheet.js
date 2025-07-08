@@ -13,7 +13,9 @@ export class PowerSheet extends BaseActorSheet {
         navSelector: ".sheet-tabs",
         contentSelector: "section.sheet-body",
         initial: "stats"
-      }]
+      }],
+      submitOnChange: true,
+      closeOnSubmit:  false
     });
   }
 
