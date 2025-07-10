@@ -1,10 +1,12 @@
-It is reccomended to run with Lancer Initiative for better control over combat intitiative.
+It is recommended to run with Lancer Initiative for better control over combat initiative.
 
 Changelog.md inside
 
 **Features:**
 
 Actors:
+
+-Outro, Hue Shift, and Rolling functionality
 
 -Customized Sheet
 
@@ -34,7 +36,7 @@ Cleaner Sheet Look
 
 Full ability types Implementation
 
-Optimization option for lower end devices
+Optimization option for lower-end devices
 
 Customized Combat
     Combat based on Lancer Initiative
@@ -42,7 +44,7 @@ Customized Combat
 
 Random Character Generator (Would require a resource)
 
-Enter system onto FoundryVTT
+Enter the system into FoundryVTT
 
 Add better item/hit description functionality
     -Currently struggles with longer descriptions
