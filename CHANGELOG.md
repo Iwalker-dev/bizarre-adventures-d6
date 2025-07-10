@@ -1,6 +1,6 @@
 # Changelog – BAD6 System
 
-## [0.9.2.1] – 2025-07-08
+## [0.9.2.1] – 2025-07-10
 
 ### Added
 -Dark Determination Functionality

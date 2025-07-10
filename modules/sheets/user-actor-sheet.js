@@ -17,7 +17,7 @@ export class UserSheet extends BaseActorSheet {
       }]
     });
   }
-  static totalDamage = 0; // for Dark Determination
+
   /** @override */
   getData() {
     const data         = super.getData();
@@ -26,7 +26,6 @@ export class UserSheet extends BaseActorSheet {
     data.system.info.type = data.system.info.type ?? "user";     
     data.typeConfigs   = typeConfigs.user;                                             // for <select> options
     data.extraConfig   = typeConfigs[data.system.info.type] || null;              // for {{> bio-extras}}
-    data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6","darkDetermination");
 
     // Helper to pick the right star-value sub-field
     data.getSelectedValue = stat => {
@@ -34,32 +33,20 @@ export class UserSheet extends BaseActorSheet {
       return s?.[s.selected] ?? 0;
     };
 
-      // Only recalc when DD is *not* active
-    if (!data.darkDetermination) {
-      const totalDamage = this.actor.items
-        .filter(i => i.type==="hit")
-        .reduce((sum,i)=>sum+(i.system.quantity||0),0);
-      // Honor the user‐set max (your “Hit Limit” input)
-      const maxHP = this.actor.system.health.max;
-      data.system.health.value = Math.max(
-        this.actor.system.health.min,
-        maxHP - totalDamage
-      );
-      // leave data.system.health.max alone!
-    }  else {
-      // see if a new hit pushed you over origDamage
-      const orig = this.actor.getFlag("bizarre-adventures-d6","origDamage")||0;
-      const now  = this.actor.items.filter(i=>i.type==="hit")
-                    .reduce((s,i)=>s+i.system.quantity,0);
-      if (now > orig) data.system.health.value = -2;
-      else data.system.health.value = -1;
-    }
+    // Initialize health if missing
+    this.actor.system.health ??= { min:0, max:0, value:0 };
+
+    // Compute current HP based on Hit items
+    const totalDamage = this.actor.items
+      .filter(i => i.type==="hit")
+      .reduce((sum,i)=>sum+(i.system.quantity||0),0);
+    data.system.health.value = Math.max(
+      this.actor.system.health.min,
+      this.actor.system.health.max - totalDamage
+    );
 
     return data;
   }
-
-// Before an actor is updated, take 
-
 
   /** @override */
   activateListeners(html) {
@@ -72,9 +59,6 @@ export class UserSheet extends BaseActorSheet {
     document.documentElement.style.setProperty("--accent-color", base);
     document.documentElement.style.setProperty("--accent-light", light);
     document.documentElement.style.setProperty("--accent-dark", dark);
-
-    html.find(".dark-determination-toggle")
-      .click(this._onToggleDarkDetermination.bind(this));
 
     // Render all the stat-stars
     this.renderStars(html);
@@ -125,22 +109,7 @@ export class UserSheet extends BaseActorSheet {
   });
 
     // Create and delete Hit entries (and update health)
-    /** In activateListeners, replace your recalc definition with: */
-    const recalc = async () => {
-      const dd = this.actor.getFlag("bizarre-adventures-d6","darkDetermination");
-      // bail out if in DD
-      if (dd) return;
-      // sum hits
-      const totalDamage = this.actor.items
-        .filter(i => i.type==="hit")
-        .reduce((sum,i)=>sum+(i.system.quantity||0),0);
-      // compute against the user‐editable max
-      const maxHP = this.actor.system.health.max;
-      const newValue = Math.max(this.actor.system.health.min, maxHP - totalDamage);
-      // only persist the value
-      await this.actor.update({ "system.health.value": newValue });
-      this.render();
-    };
+    const recalc = async () => this.render();
     html.find("#create-hit").click(async ()=>{
       await this.actor.createEmbeddedDocuments("Item",[{
         name:"New Hit",type:"hit",
@@ -226,5 +195,3 @@ export class UserSheet extends BaseActorSheet {
      await this.render(); 
   }
 }
-
-
