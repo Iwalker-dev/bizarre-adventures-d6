@@ -22,9 +22,7 @@ Actors:
 
 **Known limitations**
 
--Doesn't have a direct implementation for Dark Determination
-
--Changes to the sheet can be resource intensive for lower end devices
+-Sheet can be resource intensive for lower end devices
 
 -Limited Functionality for especially unique ability/user types
 
@@ -32,8 +30,6 @@ Actors:
 **Some Future Additions:**
 
 Cleaner Sheet Look
-
-Dark Determination Implementation
 
 Full ability types Implementation
 
