@@ -26,34 +26,32 @@
 
       <!-- ─ Biography Tab ─ -->
       <div class="tab"
-        data-tab="bio"
+        data-tab="info"
         data-group="primary">
-        <div class="bio-container">
-
-          {{!-- 2) All your existing bio fields --}}
-          <div class="bio-row">
+        <div class="info-container">
+          <div class="info-row">
             <label>Name:</label>
             <input type="text"
               name="name"
               value="{{actor.name}}"
               placeholder="Enter name" />
           </div>
-          <div class="bio-row">
+          <div class="info-row">
             <label>Gender:</label>
             <input type="text"
-              name="system.bio.gender"
-              value="{{system.bio.gender}}"
+              name="system.info.gender"
+              value="{{system.info.gender}}"
               placeholder="Enter gender"
               />
           </div>
-          <div class="bio-row">
+          <div class="info-row">
             <label>Date of Birth:</label>
             <input type="date"
-              name="system.bio.dob"
-              value="{{system.bio.dob}}"
+              name="system.info.dob"
+              value="{{system.info.dob}}"
               />
           </div>
-          <div class="bio-row">
+          <div class="info-row">
             <label>Hit Limit:</label>
             <input type="number"
               name="system.bio.hitLimit"
@@ -61,34 +59,40 @@
               value="{{system.bio.hitLimit}}"
               />
           </div>
-          <div class="bio-row">
-            <label>Appearance:</label>
-            <textarea name="system.bio.appearance" rows="3" placeholder="Describe appearance">{{system.bio.appearance}}</textarea>
-          </div>
-          <div class="bio-row">
-            <label>Personality:</label>
-            <textarea name="system.bio.personality" rows="3" placeholder="Describe personality">{{system.bio.personality}}</textarea>
-          </div>
-          <div class="bio-row">
-            <label>Life Philosophy:</label>
-            <textarea name="system.bio.philosophy" rows="3" placeholder="Enter life philosophy">{{system.bio.philosophy}}</textarea>
-          </div>
-          <div class="bio-row">
-            <label>Backstory:</label>
-            <textarea name="system.bio.backstory" rows="5" placeholder="Enter backstory">{{system.bio.backstory}}</textarea>
-          </div>
+          <div class="info-row">
+            <label>Type:</label>
             <select id="user-type" name="system.info.type">
               {{#each typeConfigs}}
-                <option value="{{@key}}" {{#ifEquals ../system.info.type @key}}selected{{/ifEquals}}>
+                <option value="{{@key}}"
+                {{#ifEquals system.info.type @key}}selected{{/ifEquals}}>
                   {{this.label}}
                 </option>
               {{/each}}
             </select>
-          {{> actor-class}}
-
-
+          </div>
+          <div class="info-row">
+            <label>Appearance:</label>
+            <textarea name="system.info.appearance" rows="3" placeholder="Describe appearance">{{system.bio.appearance}}</textarea>
+          </div>
+          <div class="info-row">
+            <label>Personality:</label>
+            <textarea name="system.info.personality" rows="3" placeholder="Describe personality">{{system.bio.personality}}</textarea>
+          </div>
+          <div class="info-row">
+            <label>Life Philosophy:</label>
+            <textarea name="system.info.philosophy" rows="3" placeholder="Enter life philosophy">{{system.bio.philosophy}}</textarea>
+          </div>
+          <div class="info-row">
+            <label>Backstory:</label>
+            <textarea name="system.info.backstory" rows="5" placeholder="Enter backstory">{{system.bio.backstory}}</textarea>
+          </div>
         </div>
       </div>
+      <!-- ───────────── Info Type Tab ───────────── -->
+      <div class="tab" data-tab="{{actor.system.info.type}}" data-group="primary">
+        <div class="ability-description">
+          {{{actor.system.info.description}}}
+        </div>
 
       <!-- ───────────── Hits Tab ───────────── -->
       <div class="tab" data-tab="hit" data-group="primary">

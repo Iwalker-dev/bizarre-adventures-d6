@@ -12,13 +12,7 @@
     <a class="item" data-tab="stats" data-group="primary">Stats</a>
   </div>
   <div class="button-container">
-    <a class="item" data-tab="bio" data-group="primary">Biography</a>
-  </div>
-  <div class="button-container">
-    <a class="item" data-tab="hit" data-group="primary">Hits</a>
-  </div>
-  <div class="button-container">
-    <a class="item" data-tab="item" data-group="primary">Items</a>
+    <a class="item" data-tab="info" data-group="primary">Biography</a>
   </div>
 {{/ifEquals}}
 {{#ifEquals actor.type "power"}}
@@ -27,5 +21,30 @@
   </div>
   <div class="button-container">
     <a class="item" data-tab="info" data-group="primary">Power Info</a>
+  </div>
+{{/ifEquals}}
+
+{{#if actor.system.info.type}}
+  {{!-- And only if the type isn’t the literal string "None" --}}
+  {{#ifEquals actor.system.info.type "None"}}
+    {{!-- nothing --}}
+  {{else}}
+    <div class="button-container">
+      <a class="item"
+         data-tab="{{actor.system.info.type}}"
+         data-group="primary">
+        {{actor.system.info.type}}
+      </a>
+    </div>
+  {{/ifEquals}}
+{{/if}}
+
+{{!-- If the actor is a user, finish also showing their hits and items --}}
+{{#ifEquals actor.type "user"}}
+  <div class="button-container">
+    <a class="item" data-tab="hit" data-group="primary">Hits</a>
+  </div>
+  <div class="button-container">
+    <a class="item" data-tab="item" data-group="primary">Items</a>
   </div>
 {{/ifEquals}}

@@ -30,9 +30,10 @@ export class StandSheet extends BaseActorSheet {
     // ensure info exists
     data.system.info = data.system.info || {};
 
-    
-    data.extraConfig = data.typeConfigs[data.system.info.type] || null;
+    data.extraConfig  = data.typeConfigs[data.system.info.type] || {};
 
+    data.system.info.description = data.extraConfig.description || "";
+    data.system.info.cost = data.extraConfig.cost || "";
     data.getSelectedValue = (stat) => {
       const statData = this.actor.system.attributes.stats[stat];
       return statData[statData.selected] || 0;
@@ -58,24 +59,10 @@ activateListeners(html) {
   });
 
     // Handle Type dropdown changes
-    html.find("#stand-type").on("change", async ev => {
-      const oldType = this.actor.system.info.type;
-      const newType = ev.target.value;
-      // Build a single update payload: clear out old extra fields, then set the new type
-      const updateData = {
-        "system.info.type": newType
-      };
-      for ( const f of (typeConfigs[oldType]?.fields || []) ) {
-        updateData[`system.extra.${f.key}`] = null;
-      }
-
-       // One single call to write everything
-      await this.actor.update(updateData);
-        html.find("#stand-type").val(newType);
-
-
-      this.render();
-    });
+    const current = this.actor.system.info?.type;
+    if (current) {
+      html.find("#stand-type").val(current);
+    }
    }
 
   async syncStatsForStand(newType) {

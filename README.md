@@ -20,9 +20,12 @@ Actors:
 
 -Direct locations to fill in character information
 
+-Dark Determination Implementation
+
 **Known limitations**
 
--The sheet can be resource-intensive for lower-end devices
+
+-Changes to the sheet can be resource intensive for lower end devices
 
 -Limited Functionality for especially unique ability/user types
 
@@ -46,18 +49,14 @@ Enter the system into FoundryVTT
 Add better item/hit description functionality
     -Currently struggles with longer descriptions
 
-Properly expand upon the Stand and Power types
-
 **Use Info**
 
-- Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue.
+Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue.
+To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called Outro and it will automatically switch to it afterwards.
+Roller - As a GM, Highlight up to 2 tokens to roll for both. As a user, choose between your owned actors to roll.
 
-- To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called Outro, and it will automatically switch to it afterwards.
+Actor Sheets - Navigate the tabs to fill in or view information related to your actor's type. Use your Foundry color to alter the color of your own sheets for all viewers.
 
-- Roller - As a GM, highlight up to 2 tokens to roll for both. As a user, choose between your owned actors to roll.
-
-- Power Sheet - For all non-stand abilities. The type correctly changes the stat names; however, it doesn't reveal any description yet.
-
-- Stand Sheet - For all stand abilities. Type cost is currently broken, but their related blurb is easily visible (unless it is particularly long.). It will become clearer in a future sheet update.
-
-- User Sheet - For all user types. Currently, the type is stored in a hard-to-read box at the bottom of the Bio tab. It will be clearer once its impact on the sheet is functional.
+Power Sheet - For all non-stand abilities.
+Stand Sheet - For all stand abilities.
+User Sheet - For all user types.
