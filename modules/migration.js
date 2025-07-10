@@ -45,7 +45,7 @@ Hooks.once("ready", async () => {
         <ul>
           <li> Dark Determination </li>
           <li> Full Type Support </li>
-          <li> Custom Combat Implementation </li>
+          <li> Custom Combat Implementation (Recommended to use Lancer Initiative as a replacement)</li>
         </ul>
         <p> Please report any bugs, ideas, or comments to itpart on Discord. I would love to make this the perfect system with your help! </p>`,
       whisper: game.users.filter(u => u.isGM).map(u => u.id)

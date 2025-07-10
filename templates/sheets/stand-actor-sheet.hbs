@@ -69,10 +69,12 @@
                    value="{{system.info.cost}}"
                    readonly>
           </div>
-
-          {{!-- Extras for any configured Stand type --}}
-          {{> actor-class}}
-
+        </div>
+      </div>
+      <!-- ─ Ability Description Tab ─ -->
+      <div class="tab" data-tab="{{actor.system.info.type}}" data-group="primary">
+        <div class="ability-description">
+          {{{actor.system.info.description}}}
         </div>
       </div>
     </section>

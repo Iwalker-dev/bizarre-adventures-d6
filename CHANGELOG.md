@@ -1,15 +1,15 @@
 # Changelog – BAD6 System
 
-## [0.9.2.1] – 2025-07-08
+## [0.9.2] – 2025-07-08
 
 ### Added
 -Dark Determination Functionality
+-Type description tab
 
 ### Fixes
-
 -Type Defaulting and Saving
+-All Type Descriptions (Not including special range uses)
 
 ### KNOWN Issues
--Powers do not currently have a description detailing abilities. Temporarily fixed by necessitating using outside sources.
--Descriptions Aren't praticularly readable in general... Temporarily fixed with outside sources.
+-Item/Hit Descriptions Aren't praticularly readable in general... Temporarily fixed with outside sources.
 
