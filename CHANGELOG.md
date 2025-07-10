@@ -1,5 +1,6 @@
 # Changelog – BAD6 System
 
+
 ## [0.9.2] – 2025-07-08
 
 ### Added

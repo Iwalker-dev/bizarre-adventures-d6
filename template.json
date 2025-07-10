@@ -13,7 +13,7 @@
                 "dtype": "Resource",
                 "label": "Health",
                 "original": 0,
-                "min": -2,
+                "min": 0,
                 "max": 0
             },
             "attributes": {

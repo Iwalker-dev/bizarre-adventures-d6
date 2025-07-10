@@ -104,7 +104,6 @@ export class UserSheet extends BaseActorSheet {
       .click(this._onToggleDarkDetermination.bind(this));
 
     // Render star ratings for stats
-    this.renderStars(html);
 
     // Handle Type dropdown changes
     const current = this.actor.system.info?.type;
