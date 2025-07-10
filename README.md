@@ -1,4 +1,4 @@
-It is reccomended to run with Lancer Initiative for better control over combat intitiative.
+It is recommended to run with Lancer Initiative for better control over combat initiative.
 
 Changelog.md inside
 
@@ -22,7 +22,7 @@ Actors:
 
 **Known limitations**
 
--Sheet can be resource intensive for lower end devices
+-The sheet can be resource-intensive for lower-end devices
 
 -Limited Functionality for especially unique ability/user types
 
@@ -33,7 +33,7 @@ Cleaner Sheet Look
 
 Full ability types Implementation
 
-Optimization option for lower end devices
+Optimization option for lower-end devices
 
 Customized Combat
     Combat based on Lancer Initiative
@@ -41,18 +41,18 @@ Customized Combat
 
 Random Character Generator (Would require a resource)
 
-Enter system onto FoundryVTT
+Enter the system into FoundryVTT
 
 Add better item/hit description functionality
     -Currently struggles with longer descriptions
 
-Properly Expand upon Stand and Power types
+Properly expand upon the Stand and Power types
 
 **Use Info**
 
 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue.
-To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called Outro and it will automatically switch to it afterwards.
-Roller - As a GM, Highlight up to 2 tokens to roll for both. As a user, choose between your owned actors to roll.
-Power Sheet - For all non-stand abilities. The type correctly changes the stat names, however doesn't reveal any description yet.
+To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called Outro, and it will automatically switch to it afterwards.
+Roller - As a GM, highlight up to 2 tokens to roll for both. As a user, choose between your owned actors to roll.
+Power Sheet - For all non-stand abilities. The type correctly changes the stat names; however, it doesn't reveal any description yet.
 Stand Sheet - For all stand abilities. Type cost is currently broken, but their related blurb is easily visible (unless it is particularly long.). It will become clearer in a future sheet update.
-User Sheet - For all user types. Currently, the type is stored in a hard to read box at the bottom of the Bio tab. It will be clearer once it's impact on the sheet is functional.
+User Sheet - For all user types. Currently, the type is stored in a hard-to-read box at the bottom of the Bio tab. It will be clearer once its impact on the sheet is functional.
