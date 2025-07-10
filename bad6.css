@@ -526,11 +526,19 @@ body {
 /* ────────────────────────── Create Buttons ────────────────────────── */
 #create-item,
 #create-hit {
-  background-color: black;
+  position: absolute;
   color: white;
-  border: 1px solid white;
-  padding: 5px 10px;
-  border-radius: 3px;
+  top: 0.5em;
+  left: 0.5em;
+  display: inline;     /* collapse to content */
+  padding: 0;          /* no extra space */
+  margin: 0;
+  line-height: 1;      /* exactly one glyph high */
+  font-size: 1.5em;    /* tweak to taste */
+  background: none;
+  border: none;
+  -webkit-text-stroke: 1px white;
+  outline: none;
   cursor: pointer;
   margin-bottom: 10px;
 }

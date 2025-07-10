@@ -93,7 +93,7 @@
         <div class="ability-description">
           {{{actor.system.info.description}}}
         </div>
-
+      </div>
       <!-- ───────────── Hits Tab ───────────── -->
       <div class="tab" data-tab="hit" data-group="primary">
         <div class="hit-container">
@@ -121,7 +121,9 @@
       <div class="tab" data-tab="item" data-group="primary">
         <div class="item-container">
           <div class="item-form">
-            <button id="create-item" type="button">Create Item</button>
+            <button id="create-item" type="button" title="Create Item">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            </button>
           </div>
 
           <div class="item-list scrollable-list">
