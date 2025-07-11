@@ -2,7 +2,7 @@ import { BaseActorSheet } from "./base-actor-sheet.js";
 import { typeConfigs }    from "../config/actor-configs.js";
 
 export class StandSheet extends BaseActorSheet {
-  static typeSpecificStats = {
+  static typeStats = {
     Independent: ["wit", "menacing"]
   };
 
@@ -58,12 +58,47 @@ activateListeners(html) {
     this.actor.update({ [`system.attributes.stats.${stat}.selected`]: valueType });
   });
 
+  html.find("#stand-type").on("change", async ev => {
+  const newType = ev.target.value;
+  const updates = {};
+
+  // Loop over every type in typeStats
+  for (const [typeName, statsArray] of Object.entries(this.constructor.typeStats)) {
+    if (typeName !== newType) {
+      // Remove those stats
+      for (const stat of statsArray) {
+        updates[`system.attributes.stats.${stat}`] = null;
+      }
+    } else {
+      // Re‐add with defaults
+      for (const stat of statsArray) {
+        updates[`system.attributes.stats.${stat}`] = {
+          label: stat.charAt(0).toUpperCase() + stat.slice(1),
+          dtype: "Number",
+          value: 0,
+          temp:  0,
+          perm:  0
+        };
+      }
+    }
+  }
+
+  await this.actor.update(updates);
+  this.render();
+});
+
+  await this.actor.update(updates);
+  this.render();
+});
+
+
     // Handle Type dropdown changes
     const current = this.actor.system.info?.type;
     if (current) {
       html.find("#stand-type").val(current);
     }
    }
+   
 
   async syncStatsForStand(newType) {
     const expected = StandSheet.typeSpecificStats[newType] || [];
