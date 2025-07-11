@@ -29,11 +29,9 @@ Actors:
 
 
 
-
 **Some Future Additions:**
 
 Cleaner Sheet Look
-
 
 
 Optimization option for lower-end devices
