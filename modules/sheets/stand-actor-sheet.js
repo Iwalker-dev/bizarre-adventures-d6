@@ -75,9 +75,7 @@ activateListeners(html) {
         updates[`system.attributes.stats.${stat}`] = {
           label: stat.charAt(0).toUpperCase() + stat.slice(1),
           dtype: "Number",
-          value: 0,
-          temp:  0,
-          perm:  0
+          value: 0
         };
       }
     }
@@ -85,19 +83,15 @@ activateListeners(html) {
 
   await this.actor.update(updates);
   this.render();
-});
-
-  await this.actor.update(updates);
-  this.render();
-});
+  });
 
 
     // Handle Type dropdown changes
-    const current = this.actor.system.info?.type;
-    if (current) {
+  const current = this.actor.system.info?.type;
+  if (current) {
       html.find("#stand-type").val(current);
-    }
-   }
+  }
+  }
    
 
   async syncStatsForStand(newType) {
