@@ -1,0 +1,25 @@
+/* ─── Sunset half-circle pattern for Hamon users ─── */
+.app.window.actor-sheet.character-sheet .jojo-sheet.type-Hamon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* 1) One radial‐gradient, bottom‐center half-circle */
+  background-image: radial-gradient(circle at 50% 100%, var(--accent-light) 25%, transparent 26%);
+  /* 2) Tile it every 60×60px in *both* axes */
+  background-size: 60px 60px;
+  background-repeat: repeat;
+  /* 3) Scroll the grid upward */
+  animation: hamonRise 30s linear infinite !important;
+  opacity: 0.2;
+}
+@keyframes hamonRise {
+  from {
+    /* start with the grid at its normal position */
+    background-position: 0px 0px;
+  }
+  to {
+    /* slide up by one full tile over the duration */
+    background-position: 0px -60px;
+  }
+}
