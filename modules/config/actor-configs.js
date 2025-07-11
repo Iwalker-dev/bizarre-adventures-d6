@@ -203,7 +203,8 @@ export const typeConfigs = {
         <p>The Pool given for these stats is (<em>Learning Ranks × 3</em>), to a maximum of 15 Points.</p>
         <p>A Stand can still have personality traits and instincts without being Independent.</p>
         <p><em>Examples: Cheap Trick, Paisley Park, Anubis, Wonder Of U.</em></p>
-      `
+      `,
+      stats: ["wit", "reason", "menacing", "pluck"]
     },
     Act: {
       label: "Act Stand",

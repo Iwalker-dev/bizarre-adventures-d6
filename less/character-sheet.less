@@ -1,8 +1,205 @@
-// main ./bad6.less
-.bad6.sheet.characterSheet {
-    // Universal Character Sheet Class
-    .sheet{
-        width: 500px;
-        height: 500px;
-    };
+@font-face {
+  font-family: "CC Wild Words Roman";
+  src: url("assets/fonts/CC Wild Words Roman.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* 1) Grab every Foundry window’s handle, restore its positioning & make it clickable */
+.window-resizable-handle {
+  z-index: 9999;
+}
+
+.bad6.sheet.characterSheet .sheet {
+  width: 500px;
+  height: 500px;
+}
+:root {
+  --accent-color: #868686;
+  --accent-light: #ffffff;
+  --accent-dark: #000000;
+}
+body {
+  margin: 0;
+  background: black;
+  font-family: "Verdana", sans-serif;
+}
+/* Remove default Foundry sheet background */
+.app.actor .window-content {
+  position: relative;
+  display: flex; /* Use flexbox to manage layout */
+  flex-direction: column; /* Stack children vertically */
+  width: 100%; /* Fill the full width of the parent */
+  height: 100%; /* Fill the full height of the parent */
+  padding: 0; /* Remove any padding */
+  margin: 0; /* Remove any margins */
+  overflow: hidden; /* Prevent scrollbars from appearing unnecessarily */
+  background: none; /* Ensure no default background interferes */
+  z-index: 1; /* Ensure it is above the background */
+}
+
+/* Add a custom background to .window-content */
+.app.actor .window-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1; /* Ensure it is behind other elements */
+  opacity: 1; /* Adjust visibility */
+  pointer-events: none; /* Ensure only the background is uninteractable */
+}
+
+/* Style the main content inside .window-content */
+.app.actor .window-content > .jojo-sheet {
+  position: relative;
+  flex: 1; /* Allow it to grow and fill the available space */
+  overflow: auto; /* Allow scrolling if content exceeds available space */
+  border: 2px solid var(--accent-color); /* Optional: Keep the border */
+  z-index: 1; /* Ensure it is above the background */
+}
+
+/* Custom sheet container */
+.jojo-sheet {
+  font-family: "CC Wild Words Roman", "Verdana", sans-serif; /* Use manga font if possible */
+  position: relative;
+  width: 100%; /* Fill the full width of the parent */
+  height: 100%; /* Fill the full height of the parent */
+  margin: 0; /* Remove any margins */
+  overflow: auto; /* Allow scrolling if content exceeds available space */
+  border: 2px solid var(--accent-color); /* Optional: Keep the border */
+  z-index: 1;
+  
+}
+
+/* Scrolling background */
+.jojo-sheet::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1; /* Ensure it is behind other elements */
+  background-image: var(--jojo-sheet-background, url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23000000'/><path d='M20 0 L40 20 L20 40 L0 20 Z' fill='%23fca311'/><path d='M20 10 L30 20 L20 30 L10 20 Z' fill='%23ffd166'/></svg>"));
+  background-size: 80px 80px;
+  animation: scrollBackground 30s linear infinite;
+  opacity: 0.2; /* Ensure full visibility */
+  pointer-events: none; /* Ensure only the background is uninteractable */
+}
+
+@keyframes scrollBackground {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+/* ────────────────────────── Header / Tabs / Body ────────────────────────── */
+.jojo-sheet.sheet-header,
+.jojo-sheet.tabs,
+.jojo-sheet.sheet-body {
+  position: relative;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+.jojo-sheet .sheet-header h1 {
+  color: white; /* Set the header text color to white */
+  font-family: "JojoFont", "Verdana", sans-serif; /* Use a Jojo-like font */
+  font-size: 2.5rem; /* Adjust font size for emphasis */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); /* Add a subtle shadow for style */
+}
+.jojo-sheet .sheet-header h1::before {
+  content: "『";
+  color: var(--accent-color);
+  font-size: 2.5rem;
+}
+.jojo-sheet .sheet-header h1::after {
+  content: "』";
+  color: var(--accent-color);
+  font-size: 2.5rem;
+}
+/* ─── Evenly distribute the primary tabs across the header ─── */
+.jojo-sheet .sheet-tabs {
+  display: flex;
+  justify-content: space-evenly;  /* spreads them with equal space around */
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* Make each “button-container” grow to fill its slot */
+.jojo-sheet .sheet-tabs .button-container {
+  flex: 1;
+  margin: 0;            /* remove any extra gutters */
+  text-align: center;   /* center the link inside */
+}
+
+
+.app.actor .window-content .tab-content.active {
+  display: block; /* Show the active tab content */
+}
+/* ────────────────────────── Stats Tab ────────────────────────── */
+/* Make every row a flex container with a small gap */
+.jojo-sheet .stat-line,
+.jojo-sheet .burn-row,
+.jojo-sheet .stat-line-number {
+  margin: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Fixed label width for the main stat names */
+.jojo-sheet .stat-line > label {
+  display: inline-block;
+  background-color: var(--accent-light);
+  color: black;
+  padding: 0.25rem 1rem;
+  border-radius: 0;
+  border: 1px solid var(--accent-dark);
+  width: 120px;
+  text-align: left;
+}
+
+/* Allow burn-type buttons to size naturally (shrink/grow) */
+.jojo-sheet .burn-row .burn-type {
+  flex: 0 1 auto;
+}
+
+/* Allow the “value” span in number stats to size naturally */
+.jojo-sheet .stat-line-number > span:first-child {
+  flex: 0 1 auto;
+  display: inline-block;
+  width: auto;
+  text-align: left;
+}
+
+/* Stars container stays inline so it sits beside its control */
+.jojo-sheet .stat-stars {
+  display: inline-flex;
+  gap: 5px;
+}
+
+/* Individual star styling */
+.jojo-sheet .stat-star {
+  width: 24px;
+  height: 24px;
+  font-size: 20px;
+  color: #999;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+/* Filled and infinite overrides */
+.jojo-sheet .stat-star.filled {
+  color: var(--accent-color);
+}
+.jojo-sheet .stat-stars.infinite .stat-star {
+  color: crimson !important;
+}
+/* ────────────────────────── Info Type Text ────────────────────────── */
+
+.jojo-sheet .ability-description {
+  display: inline-block;
+  color: white;
+  font-weight: bold;     /* make it stand out */
 }

@@ -2,7 +2,24 @@
 <form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
   <div class="jojo-sheet">
     <header class="sheet-header">
-      <h1>{{actor.name}}</h1>
+      <h1 class="sheet-header">
+        {{actor.name}}
+        {{#ifEquals actor.system.info.type "Act"}}
+          <!-- single-digit input bound to system.info.actNumber -->
+          <span class="act-label">Act:
+            <input 
+              type="text" 
+              name="system.info.actNumber" 
+              value="{{actor.system.info.actNumber}}" 
+              maxlength="1" 
+              size="1" 
+              pattern="\d" 
+              title="Enter a single digit (1–9)"
+              style="width:1ch; padding:0 0.1ch; margin-left:0.5ch; text-align:center; font-size:inherit;"
+            />
+          </span>
+        {{/ifEquals}}
+      </h1>
     </header>
 
     <nav class="sheet-tabs tabs" data-group="primary">

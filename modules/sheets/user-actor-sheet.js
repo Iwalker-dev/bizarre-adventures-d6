@@ -23,7 +23,7 @@ export class UserSheet extends BaseActorSheet {
       classes:   ["bizarre-adventures-d6","sheet","actor","user"],
       template:  "systems/bizarre-adventures-d6/templates/sheets/user-actor-sheet.hbs",
       width:     800,
-      height:    1000,
+      height:    900,
       tabs: [{
         navSelector:    ".sheet-tabs",
         contentSelector:".sheet-body",

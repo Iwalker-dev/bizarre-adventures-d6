@@ -1,7 +1,7 @@
 export class BaseActorSheet extends ActorSheet {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ["bizarre-adventures-d6", "sheet", "actor", "base"],
+      classes: ["bizarre-adventures-d6", "sheet", "actor-sheet", "character-sheet"],
       tabs: [{ navSelector: ".sheet-tabs",
         contentSelector: ".sheet-body",
         initial: "stats" }]
@@ -16,7 +16,6 @@ export class BaseActorSheet extends ActorSheet {
     "range",
     "learning"
   ];
-
 /** @override **/
   getData() {
     const data = super.getData();
@@ -82,6 +81,28 @@ export class BaseActorSheet extends ActorSheet {
         .filter(s => s.dtype === "Burn")
         .forEach(s => this.showBurnStat(s.key, 'original'));
     }
+
+    async _render(force, options) {
+    await super._render(force, options);
+
+    const $sheet = this.element.find('.jojo-sheet');
+    if (!$sheet.length) {
+        console.error('BaseActorSheet._render(): ".jojo-sheet" element not found.');
+        return;
+    }
+
+    const type = this.actor.system.info.type;
+    if (!type) {
+        console.error('BaseActorSheet._render(): actor.system.info.type is undefined.');
+        return;
+    }
+
+    console.warn(`Applying background for type-${type}`);
+
+    $sheet.removeClass((i, cls) => (cls.match(/\btype-\S+/g) || []).join(' '));
+    $sheet.addClass(`type-${type}`);
+    }
+
 
     renderStars(html) {
         html.find(".stat-stars").each((_, container) => {
