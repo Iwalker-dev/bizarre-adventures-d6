@@ -4,11 +4,7 @@
     <header class="sheet-header">
       <h1>{{actor.name}}</h1>
       <div style="float: right; font-size: 1.2em; color: #ccc;">
-        Health: {{system.health.value}} /
-        <input type="number"
-               name="system.health.max"
-               value="{{system.health.max}}"
-               style="width: 50px;">
+        Health: {{system.health.value}} / {{system.health.max}}
       </div>
     </header>
 
@@ -53,11 +49,11 @@
           </div>
           <div class="info-row">
             <label>Hit Limit:</label>
-            <input type="number"
-              name="system.bio.hitLimit"
+            <input 
+              type="number"
+              name="system.health.max"
               min="0"
-              value="{{system.bio.hitLimit}}"
-              />
+              value="{{system.health.max}}" />
           </div>
           <div class="info-row">
             <label>Type:</label>
