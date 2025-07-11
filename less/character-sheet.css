@@ -4,6 +4,10 @@
   font-weight: normal;
   font-style: normal;
 }
+/* 1) Grab every Foundry window’s handle, restore its positioning & make it clickable */
+.window-resizable-handle {
+  z-index: 9999;
+}
 .bad6.sheet.characterSheet .sheet {
   width: 500px;
   height: 500px;
@@ -33,7 +37,7 @@ body {
   /* Remove any padding */
   margin: 0;
   /* Remove any margins */
-  overflow: visible !important;
+  overflow: hidden;
   /* Prevent scrollbars from appearing unnecessarily */
   background: none;
   /* Ensure no default background interferes */
@@ -49,6 +53,8 @@ body {
   /* Ensure it is behind other elements */
   opacity: 1;
   /* Adjust visibility */
+  pointer-events: none;
+  /* Ensure only the background is uninteractable */
 }
 /* Style the main content inside .window-content */
 .app.actor .window-content > .jojo-sheet {
@@ -76,6 +82,7 @@ body {
   overflow: auto;
   /* Allow scrolling if content exceeds available space */
   border: 2px solid var(--accent-color);
+  /* Optional: Keep the border */
   z-index: 1;
 }
 /* Scrolling background */
@@ -88,7 +95,7 @@ body {
   background-image: var(--jojo-sheet-background, url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23000000'/><path d='M20 0 L40 20 L20 40 L0 20 Z' fill='%23fca311'/><path d='M20 10 L30 20 L20 30 L10 20 Z' fill='%23ffd166'/></svg>"));
   background-size: 80px 80px;
   animation: scrollBackground 30s linear infinite;
-  opacity: 0;
+  opacity: 0.2;
   /* Ensure full visibility */
   pointer-events: none;
   /* Ensure only the background is uninteractable */
@@ -152,179 +159,6 @@ body {
   display: block;
   /* Show the active tab content */
 }
-/* ────────────────────────── Sheet Container ────────────────────────── */
-.jojo-sheet {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  overflow: auto;
-  border: 2px solid var(--accent-color);
-  z-index: 1;
-}
-/* Moving diamonds background: bottom‐left → top‐right at 30s */
-.jojo-sheet::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  /* Ensure it is behind other elements */
-  background-image: var(--jojo-sheet-background, url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23000000'/><path d='M20 0 L40 20 L20 40 L0 20 Z' fill='%23fca311'/><path d='M20 10 L30 20 L20 30 L10 20 Z' fill='%23ffd166'/></svg>"));
-  background-size: 80px 80px;
-  /* Start at bottom‐left (0% 100%) and move to top‐right (100% 0%) */
-  background-position: 0% 100%;
-  animation: scrollBackground 30s linear infinite;
-  opacity: 0.2;
-  pointer-events: none;
-  /* Ensure only the background is uninteractable */
-}
-@keyframes scrollBackground {
-  0% {
-    background-position: 0% 100%;
-  }
-  100% {
-    background-position: 100% 0%;
-  }
-}
-/* ────────────────────────── Header / Tabs / Body ────────────────────────── */
-.jojo-sheet .sheet-header,
-.jojo-sheet .tabs,
-.jojo-sheet .sheet-body {
-  position: relative;
-  z-index: 1;
-  background: rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-}
-.jojo-sheet .sheet-header h1 {
-  color: white;
-  /* Set the header text color to white */
-  font-family: "JojoFont", "Verdana", sans-serif;
-  /* Use a Jojo-like font */
-  font-size: 2.5rem;
-  /* Adjust font size for emphasis */
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-  /* Add a subtle shadow for style */
-}
-.jojo-sheet .sheet-header h1::before {
-  content: "『";
-  color: var(--accent-color);
-  font-size: 2.5rem;
-}
-.jojo-sheet .sheet-header h1::after {
-  content: "』";
-  color: var(--accent-color);
-  font-size: 2.5rem;
-}
-/* Tabs */
-.jojo-sheet .tabs {
-  display: flex;
-  align-items: flex-start;
-  /* Align boxes to the left */
-  gap: 0.5rem;
-  background: none;
-  /* Remove the background box around the whole tab section */
-  border: none;
-  /* Remove the border around the whole tab section */
-  padding: 0;
-  /* Remove padding */
-  margin-bottom: 0.5rem;
-  /* Reduce spacing below the tabs */
-}
-.jojo-sheet .tabs button {
-  background: transparent;
-  border: 1px solid var(--accent-color);
-  color: white !important;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-.jojo-sheet .tabs button:hover {
-  box-shadow: none !important;
-  outline: none !important;
-  text-shadow: none !important;
-}
-.jojo-sheet .tabs button:not(.active),
-.jojo-sheet .tabs .button-container a:not(.active) {
-  color: #d1d1d1;
-}
-.jojo-sheet .tabs button.active {
-  background: var(--accent-light) !important;
-  /* Ensure it overrides other styles */
-  color: #ffffff !important;
-  /* Ensure text color changes to black */
-}
-/* Ensure specificity for button text color */
-.jojo-sheet .tabs .button-container a.active {
-  color: #ffffff !important;
-}
-/* Fallback for data-active attribute if used instead of class */
-.jojo-sheet .tabs button[data-active="true"] {
-  background: var(--accent-light) !important;
-  color: black !important;
-}
-/* Hide all tab‐content by default */
-.jojo-sheet .tab-content {
-  display: none;
-  border: 1px solid var(--accent-color);
-  margin-top: 0;
-  /* Remove unnecessary spacing above the tab content */
-}
-/* ────────────────────────── Stats Tab ────────────────────────── */
-.jojo-sheet .stat-container {
-  margin-top: 1rem;
-}
-/* Each stat line: fixed‐width label + star containers */
-.jojo-sheet .stat-line {
-  margin: 0.5rem 0;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.jojo-sheet .stat-line label {
-  display: inline-block;
-  width: 120px;
-  text-align: left;
-}
-.jojo-sheet .stat-stars {
-  display: flex;
-  gap: 5px;
-}
-.jojo-sheet .stat-star {
-  width: 24px;
-  height: 24px;
-  font-size: 20px;
-  color: #999;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-.jojo-sheet .stat-star.filled {
-  color: var(--accent-color);
-}
-.jojo-sheet .stat-stars.infinite .stat-star {
-  color: crimson !important;
-}
-/* Canvas container(s) */
-.jojo-sheet .chart-container {
-  position: relative;
-  margin-top: 1rem;
-}
-/* When multiple charts (Act), stack vertically */
-.jojo-sheet .chart-wrapper {
-  margin-bottom: 2rem;
-}
-.stats-and-chart {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1em;
-}
-.stat-list {
-  flex: 1;
-}
-.stand-chart-container {
-  width: 300px;
-  height: 300px;
-  flex-shrink: 0;
-}
 /* ────────────────────────── Stats Tab ────────────────────────── */
 /* Make every row a flex container with a small gap */
 .jojo-sheet .stat-line,
@@ -338,8 +172,8 @@ body {
 /* Fixed label width for the main stat names */
 .jojo-sheet .stat-line > label {
   display: inline-block;
-  background-color: rgba(0, 0, 0, 0.1);
-  color: #ffffff;
+  background-color: var(--accent-light);
+  color: black;
   padding: 0.25rem 1rem;
   border-radius: 0;
   border: 1px solid var(--accent-dark);
@@ -357,7 +191,6 @@ body {
   width: auto;
   text-align: left;
 }
-/* ────────────────────────── Stats Tab ────────────────────────── */
 /* Stars container stays inline so it sits beside its control */
 .jojo-sheet .stat-stars {
   display: inline-flex;
@@ -385,28 +218,4 @@ body {
   color: white;
   font-weight: bold;
   /* make it stand out */
-}
-/* 1) Grab every Foundry window’s handle, restore its positioning & make it clickable */
-.window-resizable-handle {
-  position: absolute !important;
-  /* Foundry’s default is absolute, yours was getting overridden */
-  bottom: 0 !important;
-  right: 0 !important;
-  width: 20px !important;
-  /* match or exceed the default size */
-  height: 20px !important;
-  z-index: 2 !important;
-  /* float above your sheet layers */
-  pointer-events: all !important;
-  /* make sure it can catch the mouse */
-}
-/* 2) Let it poke out instead of being chopped to one pixel */
-.window-content {
-  overflow: visible !important;
-}
-/* 3) Prevent your sheet content from sitting directly under the handle */
-.app.window.actor-sheet.character-sheet .sheet,
-.app.window.actor-sheet.character-sheet .jojo-sheet {
-  padding-bottom: 24px !important;
-  /* same as the handle’s height */
 }

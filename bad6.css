@@ -4,7 +4,10 @@
   font-weight: normal;
   font-style: normal;
 }
-
+/* 1) Grab every Foundry window’s handle, restore its positioning & make it clickable */
+.window-resizable-handle {
+  z-index: 9999;
+}
 .bad6.sheet.characterSheet .sheet {
   width: 500px;
   height: 500px;
@@ -22,62 +25,81 @@ body {
 /* Remove default Foundry sheet background */
 .app.actor .window-content {
   position: relative;
-  display: flex; /* Use flexbox to manage layout */
-  flex-direction: column; /* Stack children vertically */
-  width: 100%; /* Fill the full width of the parent */
-  height: 100%; /* Fill the full height of the parent */
-  padding: 0; /* Remove any padding */
-  margin: 0; /* Remove any margins */
-  overflow: hidden; /* Prevent scrollbars from appearing unnecessarily */
-  background: none; /* Ensure no default background interferes */
-  z-index: 1; /* Ensure it is above the background */
+  display: flex;
+  /* Use flexbox to manage layout */
+  flex-direction: column;
+  /* Stack children vertically */
+  width: 100%;
+  /* Fill the full width of the parent */
+  height: 100%;
+  /* Fill the full height of the parent */
+  padding: 0;
+  /* Remove any padding */
+  margin: 0;
+  /* Remove any margins */
+  overflow: hidden;
+  /* Prevent scrollbars from appearing unnecessarily */
+  background: none;
+  /* Ensure no default background interferes */
+  z-index: 1;
+  /* Ensure it is above the background */
 }
-
 /* Add a custom background to .window-content */
 .app.actor .window-content::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1; /* Ensure it is behind other elements */
-  opacity: 1; /* Adjust visibility */
-  pointer-events: none; /* Ensure only the background is uninteractable */
+  z-index: -1;
+  /* Ensure it is behind other elements */
+  opacity: 1;
+  /* Adjust visibility */
+  pointer-events: none;
+  /* Ensure only the background is uninteractable */
 }
-
 /* Style the main content inside .window-content */
 .app.actor .window-content > .jojo-sheet {
   position: relative;
-  flex: 1; /* Allow it to grow and fill the available space */
-  overflow: auto; /* Allow scrolling if content exceeds available space */
-  border: 2px solid var(--accent-color); /* Optional: Keep the border */
-  z-index: 1; /* Ensure it is above the background */
+  flex: 1;
+  /* Allow it to grow and fill the available space */
+  overflow: auto;
+  /* Allow scrolling if content exceeds available space */
+  border: 2px solid var(--accent-color);
+  /* Optional: Keep the border */
+  z-index: 1;
+  /* Ensure it is above the background */
 }
-
 /* Custom sheet container */
 .jojo-sheet {
-  font-family: "CC Wild Words Roman", "Verdana", sans-serif; /* Use manga font if possible */
+  font-family: "CC Wild Words Roman", "Verdana", sans-serif;
+  /* Use manga font if possible */
   position: relative;
-  width: 100%; /* Fill the full width of the parent */
-  height: 100%; /* Fill the full height of the parent */
-  margin: 0; /* Remove any margins */
-  overflow: auto; /* Allow scrolling if content exceeds available space */
-  border: 2px solid var(--accent-color); /* Optional: Keep the border */
+  width: 100%;
+  /* Fill the full width of the parent */
+  height: 100%;
+  /* Fill the full height of the parent */
+  margin: 0;
+  /* Remove any margins */
+  overflow: auto;
+  /* Allow scrolling if content exceeds available space */
+  border: 2px solid var(--accent-color);
+  /* Optional: Keep the border */
   z-index: 1;
-  
 }
-
 /* Scrolling background */
 .jojo-sheet::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1; /* Ensure it is behind other elements */
+  z-index: -1;
+  /* Ensure it is behind other elements */
   background-image: var(--jojo-sheet-background, url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23000000'/><path d='M20 0 L40 20 L20 40 L0 20 Z' fill='%23fca311'/><path d='M20 10 L30 20 L20 30 L10 20 Z' fill='%23ffd166'/></svg>"));
   background-size: 80px 80px;
   animation: scrollBackground 30s linear infinite;
-  opacity: 0; /* Ensure full visibility */
-  pointer-events: none; /* Ensure only the background is uninteractable */
+  opacity: 0.2;
+  /* Ensure full visibility */
+  pointer-events: none;
+  /* Ensure only the background is uninteractable */
 }
-
 @keyframes scrollBackground {
   0% {
     background-position: 0 0;
@@ -96,10 +118,14 @@ body {
   padding: 1rem;
 }
 .jojo-sheet .sheet-header h1 {
-  color: white; /* Set the header text color to white */
-  font-family: "JojoFont", "Verdana", sans-serif; /* Use a Jojo-like font */
-  font-size: 2.5rem; /* Adjust font size for emphasis */
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); /* Add a subtle shadow for style */
+  color: white;
+  /* Set the header text color to white */
+  font-family: "JojoFont", "Verdana", sans-serif;
+  /* Use a Jojo-like font */
+  font-size: 2.5rem;
+  /* Adjust font size for emphasis */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  /* Add a subtle shadow for style */
 }
 .jojo-sheet .sheet-header h1::before {
   content: "『";
@@ -114,23 +140,24 @@ body {
 /* ─── Evenly distribute the primary tabs across the header ─── */
 .jojo-sheet .sheet-tabs {
   display: flex;
-  justify-content: space-evenly;  /* spreads them with equal space around */
+  justify-content: space-evenly;
+  /* spreads them with equal space around */
   width: 100%;
   margin-bottom: 1rem;
   padding: 0;
   list-style: none;
 }
-
 /* Make each “button-container” grow to fill its slot */
 .jojo-sheet .sheet-tabs .button-container {
   flex: 1;
-  margin: 0;            /* remove any extra gutters */
-  text-align: center;   /* center the link inside */
+  margin: 0;
+  /* remove any extra gutters */
+  text-align: center;
+  /* center the link inside */
 }
-
-
 .app.actor .window-content .tab-content.active {
-  display: block; /* Show the active tab content */
+  display: block;
+  /* Show the active tab content */
 }
 /* ────────────────────────── Stats Tab ────────────────────────── */
 /* Make every row a flex container with a small gap */
@@ -142,7 +169,6 @@ body {
   align-items: center;
   gap: 1rem;
 }
-
 /* Fixed label width for the main stat names */
 .jojo-sheet .stat-line > label {
   display: inline-block;
@@ -154,12 +180,10 @@ body {
   width: 120px;
   text-align: left;
 }
-
 /* Allow burn-type buttons to size naturally (shrink/grow) */
 .jojo-sheet .burn-row .burn-type {
   flex: 0 1 auto;
 }
-
 /* Allow the “value” span in number stats to size naturally */
 .jojo-sheet .stat-line-number > span:first-child {
   flex: 0 1 auto;
@@ -167,13 +191,11 @@ body {
   width: auto;
   text-align: left;
 }
-
 /* Stars container stays inline so it sits beside its control */
 .jojo-sheet .stat-stars {
   display: inline-flex;
   gap: 5px;
 }
-
 /* Individual star styling */
 .jojo-sheet .stat-star {
   width: 24px;
@@ -183,7 +205,6 @@ body {
   cursor: pointer;
   transition: color 0.2s ease;
 }
-
 /* Filled and infinite overrides */
 .jojo-sheet .stat-star.filled {
   color: var(--accent-color);
@@ -191,212 +212,189 @@ body {
 .jojo-sheet .stat-stars.infinite .stat-star {
   color: crimson !important;
 }
-
-
-/* ────────────────────────── Biography Tab ────────────────────────── */
-.jojo-sheet .bio-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 600px;
-  margin-top: 1rem;
-}
-/* Each row: label + input/textarea */
-.jojo-sheet .bio-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-}
-.jojo-sheet .bio-row label {
+/* ────────────────────────── Info Type Text ────────────────────────── */
+.jojo-sheet .ability-description {
   display: inline-block;
-  width: 120px;
-  /* same width as stat labels */
   color: white;
-  margin-top: 0.25rem;
+  font-weight: bold;
+  /* make it stand out */
 }
-.jojo-sheet .bio-row input,
-.jojo-sheet .bio-row textarea {
-  flex: 1;
-  padding: 0.5rem;
-  background: #222;
-  border: 1px solid var(--accent-light);
+/* 1) Static white + black outline */
+.static-dd-icon {
+  font-size: 1em;
   color: white;
-  resize: vertical;
+  -webkit-text-stroke: 1px black;
+  text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black;
+  animation: dd-pulse 0.8s ease-in-out infinite;
 }
-/* Placeholder color */
-.jojo-sheet .bio-row input::placeholder,
-.jojo-sheet .bio-row textarea::placeholder {
-  color: #888;
-}
-.jojo-sheet body {
-  margin: 0;
-  background: black;
-  font-family: "Verdana", sans-serif;
-}
-/* ────────────────────────── Sheet Container ────────────────────────── */
-.jojo-sheet {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  overflow: auto;
-  border: 2px solid var(--accent-color);
-  z-index: 1;
-  
-}
-/* Moving diamonds background: bottom‐left → top‐right at 30s */
-.jojo-sheet::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1; /* Ensure it is behind other elements */
-  background-image: var(--jojo-sheet-background, url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23000000'/><path d='M20 0 L40 20 L20 40 L0 20 Z' fill='%23fca311'/><path d='M20 10 L30 20 L20 30 L10 20 Z' fill='%23ffd166'/></svg>"));
-  background-size: 80px 80px;
-  /* Start at bottom‐left (0% 100%) and move to top‐right (100% 0%) */
-  background-position: 0% 100%;
-  animation: scrollBackground 30s linear infinite;
-  opacity: 0.2;
-  pointer-events: none; /* Ensure only the background is uninteractable */
-}
-@keyframes scrollBackground {
-  0% {
-    background-position: 0% 100%;
-  }
+/* 2) Pulsing accent-dark */
+@keyframes dd-pulse {
+  0%,
   100% {
-    background-position: 100% 0%;
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
   }
 }
-/* ────────────────────────── Header / Tabs / Body ────────────────────────── */
-.jojo-sheet .sheet-header,
-.jojo-sheet .tabs,
-.jojo-sheet .sheet-body {
-  position: relative;
-  z-index: 1;
-  background: rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-}
-.jojo-sheet .sheet-header h1 {
-  color: white; /* Set the header text color to white */
-  font-family: "JojoFont", "Verdana", sans-serif; /* Use a Jojo-like font */
-  font-size: 2.5rem; /* Adjust font size for emphasis */
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); /* Add a subtle shadow for style */
-}
-.jojo-sheet .sheet-header h1::before {
-  content: "『";
-  color: var(--accent-color);
-  font-size: 2.5rem;
-}
-.jojo-sheet .sheet-header h1::after {
-  content: "』";
-  color: var(--accent-color);
-  font-size: 2.5rem;
-}
-/* Tabs */
-.jojo-sheet .tabs {
-  display: flex;
-  align-items: flex-start; /* Align boxes to the left */
-  gap: 0.5rem;
-  background: none; /* Remove the background box around the whole tab section */
-  border: none; /* Remove the border around the whole tab section */
-  padding: 0; /* Remove padding */
-  margin-bottom: 0.5rem; /* Reduce spacing below the tabs */
-}
-.jojo-sheet .tabs button {
-  background: transparent;
-  border: 1px solid var(--accent-color);
-  color: white;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-.jojo-sheet .tabs button:hover {
-  box-shadow: none !important; /* Remove any hover glow effect */
-}
-.jojo-sheet .tabs button.active {
-  background: var(--accent-light) !important; /* Ensure it overrides other styles */
-  color: black !important; /* Ensure text color changes to black */
-}
-
-/* Ensure specificity for button text color */
-.jojo-sheet .tabs .button-container a.active {
-  color: black !important;
-}
-
-/* Fallback for data-active attribute if used instead of class */
-.jojo-sheet .tabs button[data-active="true"] {
-  background: var(--accent-light) !important;
-  color: black !important;
-}
-/* Hide all tab‐content by default */
-.jojo-sheet .tab-content {
-  display: none;
-  border: 1px solid var(--accent-color);
-  margin-top: 0; /* Remove unnecessary spacing above the tab content */
-}
-/* ────────────────────────── Stats Tab ────────────────────────── */
-.jojo-sheet .stat-container {
-  margin-top: 1rem;
-}
-/* Each stat line: fixed‐width label + star containers */
-.jojo-sheet .stat-line {
-  margin: 0.5rem 0;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.jojo-sheet .stat-line label {
-  display: inline-block;
-  width: 120px;
-  text-align: left;
-}
-.jojo-sheet .stat-stars {
-  display: flex;
-  gap: 5px;
-}
-.jojo-sheet .stat-star {
-  width: 24px;
-  height: 24px;
-  font-size: 20px;
-  color: #999;
-  cursor: pointer;
+.pulse-dd-icon {
+  font-size: 2em;
+  color: var(--accent-dark);
+  animation: dd-pulse 0.4s ease-in-out infinite;
   transition: color 0.2s ease;
+  -webkit-text-stroke: 1px black;
+  text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black;
 }
-.jojo-sheet .stat-star.filled {
-  color: var(--accent-color);
+.pulse-dd-icon:hover,
+.pulse-dd-icon:focus {
+  color: var(--accent-light);
 }
-.jojo-sheet .stat-stars.infinite .stat-star {
-  color: crimson !important;
+/* 3) Shared button resets */
+.dark-determination-toggle {
+  position: absolute;
+  top: 0.5em;
+  left: 0.5em;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  line-height: 1;
+  appearance: none;
 }
-/* Canvas container(s) */
-.jojo-sheet .chart-container {
-  position: relative;
-  margin-top: 1rem;
+.dark-determination-toggle:hover,
+.dark-determination-toggle:focus {
+  background: none!important;
+  box-shadow: none!important;
+  outline: none!important;
 }
-/* When multiple charts (Act), stack vertically */
-.jojo-sheet .chart-wrapper {
-  margin-bottom: 2rem;
-}
-
-.stats-and-chart {
+/* ────────────────────────── Shared Styles ────────────────────────── */
+.tab[data-tab="item"] li,
+.tab[data-tab="hit"] li {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 10px;
+  margin: 1rem 0;
+  border-radius: 5px;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 1em;
+  align-items: center;
+  cursor: pointer;
 }
-
-.stat-list {
-  flex: 1;
+.tab[data-tab="item"] li:hover,
+.tab[data-tab="hit"] li:hover {
+  background-color: var(--accent-dark);
 }
-
-.stand-chart-container {
-  width: 300px;
-  height: 300px;
-  flex-shrink: 0;
+.delete-item,
+.delete-hit {
+  background-color: black;
+  color: white;
+  border: 1px solid white;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: 10px;
 }
-
+.delete-item:hover,
+.delete-hit:hover {
+  background-color: white;
+  color: black;
+}
+/* ────────────────────────── Create Buttons ────────────────────────── */
+/* ─── Create Buttons as FA icons ─── */
+/* Hide their text and size them nicely */
+/* 1) Center the form wrappers under the tabs */
+.item-form,
+.hit-form {
+  display: flex;
+  justify-content: center;
+  margin: 0.75em 0;
+  /* space above & below */
+}
+/* Center the icon both vertically and horizontally */
+#create-item,
+#create-hit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.75em auto;
+  /* still sits under the tabs, centered */
+  width: 1.5em;
+  height: 1.5em;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+/* Style the FontAwesome icon inside */
+#create-item i,
+#create-hit i {
+  font-size: 1.5em;
+  color: var(--accent-light);
+  transform: translateX(0.05em);
+}
+/* Hover effect */
+#create-item:hover i,
+#create-hit:hover i {
+  color: var(--accent-dark);
+}
+/* ────────────────────────── Input Fields in Hit Tab ────────────────────────── */
+.tab[data-tab="hit"] input {
+  background-color: black;
+  color: white;
+  border: 1px solid white;
+  padding: 5px;
+  border-radius: 3px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 5px;
+}
+.scrollable-list {
+  max-height: 300px;
+  /* Adjust this height based on your UI design */
+  overflow-y: auto;
+  padding-right: 5px;
+}
+.scrollable-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.scrollable-list li {
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  margin: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+.scrollable-list .item-entry {
+  display: flex;
+  flex-direction: column;
+  word-break: normal;
+  /* Default */
+}
+.scrollable-list .item-header {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scrollable-list .item-description {
+  margin: 4px 0 0 0;
+  font-size: 0.85em;
+  color: #ccc;
+  word-wrap: break-word;
+}
+.scrollable-list i.fa-trash {
+  margin-left: 10px;
+  color: #ff6666;
+  cursor: pointer;
+}
 /* ────────────────────────── Stand Info Tab ────────────────────────── */
 .jojo-sheet .burn-type {
   background-color: rgba(128, 128, 128, 0.116);
-  color: rgb(255, 255, 255);
+  color: #ffffff;
   border: 1px solid var(--accent-light);
   display: flex;
   align-items: center;
@@ -425,12 +423,18 @@ body {
   color: white;
   border: 1px solid var(--accent-light);
   padding: 0.5rem;
-  resize: vertical; /* Allow resizing vertically */
-  overflow-y: auto; /* Add scrollbars if content exceeds the visible area */
-  min-height: 3rem; /* Set a minimum height */
-  max-height: 15rem; /* Set a maximum height to prevent excessive growth */
-  line-height: 1.5; /* Adjust line height for better spacing */
-  box-sizing: border-box; /* Include padding and border in height calculations */
+  resize: vertical;
+  /* Allow resizing vertically */
+  overflow-y: auto;
+  /* Add scrollbars if content exceeds the visible area */
+  min-height: 3rem;
+  /* Set a minimum height */
+  max-height: 15rem;
+  /* Set a maximum height to prevent excessive growth */
+  line-height: 1.5;
+  /* Adjust line height for better spacing */
+  box-sizing: border-box;
+  /* Include padding and border in height calculations */
 }
 .jojo-sheet .info-row input,
 .jojo-sheet .info-row select {
@@ -472,155 +476,98 @@ body {
 }
 /* Style for the button container in the tabs */
 .jojo-sheet .tabs .button-container {
-  display: inline-block; /* Ensure each button container is treated as a separate box */
-  border: 2px solid var(--accent-color); /* Add a border around each button container */
-  padding: 0.5rem; /* Add padding inside each container */
-  border-radius: 0; /* Make the corners sharp */
-  background: none; /* Make the box empty when not active */
-  color: white; /* Set the text color to white */
-  margin-right: 0.5rem; /* Add spacing between the boxes */
-  transition: background 0.3s ease, color 0.3s ease; /* Smooth transition for background and text color */
+  display: inline-block;
+  /* Ensure each button container is treated as a separate box */
+  border: 2px solid var(--accent-color);
+  /* Add a border around each button container */
+  padding: 0.5rem;
+  /* Add padding inside each container */
+  border-radius: 0;
+  /* Make the corners sharp */
+  background: none;
+  /* Make the box empty when not active */
+  color: white;
+  /* Set the text color to white */
+  margin-right: 0.5rem;
+  /* Add spacing between the boxes */
+  transition: background 0.3s ease, color 0.3s ease;
+  /* Smooth transition for background and text color */
 }
-
 .jojo-sheet .tabs .button-container.active,
 .jojo-sheet .tabs .button-container[data-active="true"] {
-  background: var(--accent-dark); /* Fill the box with the darker color when active */
-  color: white; /* Ensure the text color is white when active */
-}
-/* ────────────────────────── Shared Styles ────────────────────────── */
-.tab[data-tab="item"] li,
-.tab[data-tab="hit"] li {
-  background-color: rgba(0, 0, 0, 0.5);
+  background: var(--accent-dark);
+  /* Fill the box with the darker color when active */
   color: white;
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 5px;
+  /* Ensure the text color is white when active */
+}
+/* ── Arrange stats + chart in a horizontal row ── */
+.stats-and-chart {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
+  /* lay children out in a row */
+  align-items: flex-start;
+  /* top-align both panes */
+  gap: 1rem;
+  /* space between them */
 }
-
-.tab[data-tab="item"] li:hover,
-.tab[data-tab="hit"] li:hover {
-  background-color: var(--accent-dark);
+/* Let the stats fill the remaining space */
+.stat-list {
+  flex: 1;
+  /* grow to take all leftover width */
 }
-
-.delete-item,
-.delete-hit {
-  background-color: black;
-  color: white;
-  border: 1px solid white;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  margin-left: 10px;
+/* Keep the chart container a fixed width */
+.stand-chart-container {
+  flex: 0 0 auto;
+  /* do not grow or shrink */
+  width: 300px;
+  /* match your canvas size */
+  height: 300px;
 }
-
-.delete-item:hover,
-.delete-hit:hover {
-  background-color: white;
-  color: black;
-}
-
-/* ────────────────────────── Create Buttons ────────────────────────── */
-#create-item,
-#create-hit {
+/* ─── Sunset half-circle pattern for Hamon users ─── */
+.jojo-sheet.type-Hamon::before {
+  content: "";
   position: absolute;
-  color: white;
-  top: 0.5em;
-  left: 0.5em;
-  display: inline;     /* collapse to content */
-  padding: 0;          /* no extra space */
-  margin: 0;
-  line-height: 1;      /* exactly one glyph high */
-  font-size: 1.5em;    /* tweak to taste */
-  background: none;
-  border: none;
-  -webkit-text-stroke: 1px white;
-  outline: none;
-  cursor: pointer;
-  margin-bottom: 10px;
+  inset: 0;
+  z-index: -1;
+  /* 1) One radial‐gradient, bottom‐center half-circle */
+  background-image: radial-gradient(circle at 50% 100%, var(--accent-light) 25%, transparent 26%);
+  background-size: 60px 60px;
+  background-repeat: repeat;
+  animation: hamonRise 3s linear infinite;
+  opacity: 0.2;
 }
-
-#create-item:hover,
-#create-hit:hover {
-  background-color: white;
-  color: black;
+@keyframes hamonRise {
+  from {
+    /* start with the grid at its normal position */
+    background-position: 0px 0px;
+  }
+  to {
+    /* slide up by one full tile over the duration */
+    background-position: 0px -60px;
+  }
 }
-
-/* ────────────────────────── Input Fields in Hit Tab ────────────────────────── */
-.tab[data-tab="hit"] input {
-  background-color: black;
-  color: white;
-  border: 1px solid white;
-  padding: 5px;
-  border-radius: 3px;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 5px;
+.jojo-sheet.type-Vampire::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* Upside-down half-circles, top-centered */
+  background-image: radial-gradient(circle at 50% 0%, var(--accent-dark) 25%, transparent 26%);
+  background-size: 60px 60px;
+  background-repeat: repeat;
+  animation: vampireDrip 12s linear infinite;
+  opacity: 0.2;
 }
-
-
-.scrollable-list {
-  max-height: 300px;  /* Adjust this height based on your UI design */
-  overflow-y: auto;
-  padding-right: 5px;
+@keyframes vampireDrip {
+  from {
+    background-position: 0px -60px;
+  }
+  to {
+    background-position: 0px 0px;
+  }
 }
-
-.scrollable-list ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.scrollable-list li {
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 10px;
-  margin: 5px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-}
-
-.scrollable-list .item-entry {
-  display: flex;
-  flex-direction: column;
-  word-break: normal; /* Default */
-}
-
-.scrollable-list .item-header {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.scrollable-list .item-description {
-  margin: 4px 0 0 0;
-  font-size: 0.85em;
-  color: #ccc;
-  white-space: normal;
-  word-wrap: break-word;
-}
-
-.scrollable-list i.fa-trash {
-  margin-left: 10px;
-  color: #ff6666;
-  cursor: pointer;
-}
-
-/* ────────────────────────── Info Type Text ────────────────────────── */
-
-.jojo-sheet .ability-description {
-  display: inline-block;
-  color: white;
-  font-weight: bold;     /* make it stand out */
-}
-
 /* ────────────────────────── Roller ────────────────────────── */
-
 .dialog.roller-dialog .dialog-buttons {
   flex-wrap: wrap;
-  gap: 0.5em;     /* optional spacing between rows */
+  gap: 0.5em;
+  /* optional spacing between rows */
 }
