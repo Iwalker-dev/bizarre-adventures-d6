@@ -27,14 +27,12 @@ Actors:
 
 -Changes to the sheet can be resource intensive for lower end devices
 
--Limited Functionality for especially unique ability/user types
 
 
 **Some Future Additions:**
 
 Cleaner Sheet Look
 
-Full ability types Implementation
 
 Optimization option for lower-end devices
 

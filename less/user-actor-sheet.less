@@ -1,210 +1,196 @@
 // main ./bad6.less 
 
-:root {
-  --accent-color: #fca311;   /* base orange */
-  --accent-light: #ffd166;   /* light yellow-orange */
-  --accent-dark: #c46d00;    /* deep gold / orange-brown */
+/* 1) Static white + black outline */
+.static-dd-icon {
+  font-size: 1em;
+  color: white;
+  -webkit-text-stroke: 1px black;
+  text-shadow:
+    -1px -1px 0 black,
+     1px -1px 0 black,
+    -1px  1px 0 black,
+     1px  1px 0 black;
+  animation: dd-pulse .8s ease-in-out infinite;
 }
 
-body {
-  margin: 0;
-  background: black;
-  font-family: "Verdana", sans-serif;
+/* 2) Pulsing accent-dark */
+@keyframes dd-pulse {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50%     { transform: scale(1.2); opacity: .8; }
+}
+.pulse-dd-icon {
+  font-size: 2em;
+  color: var(--accent-dark);
+  animation: dd-pulse 0.4s ease-in-out infinite;
+  transition: color .2s ease;
+  -webkit-text-stroke: 1px black;
+  text-shadow:
+    -1px -1px 0 black,
+     1px -1px 0 black,
+    -1px  1px 0 black,
+     1px  1px 0 black;
+}
+.pulse-dd-icon:hover,
+.pulse-dd-icon:focus {
+  color: var(--accent-light);
 }
 
-.window-content {
-  background: transparent !important; /* Remove the default Foundry background */
-}
-
-/* ────────────────────────── Sheet Container ────────────────────────── */
-.jojo-sheet {
-  position: relative;
-  width: 300px;
-  height: auto;      /* allow height to grow with content */
-  margin: 500px auto;
-  color: black;
-  overflow: visible;
-  border: 2px solid var(--accent-color);
-  z-index: 1;
-}
-
-.jojo-sheet::before {
-  content: "";
+/* 3) Shared button resets */
+.dark-determination-toggle {
   position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image: var(--jojo-sheet-background, url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23000000'/><path d='M20 0 L40 20 L20 40 L0 20 Z' fill='%23fca311'/><path d='M20 10 L30 20 L20 30 L10 20 Z' fill='%23ffd166'/></svg>"));
-  background-size: 80px 80px;
-  /* Start at bottom‐left (0% 100%) and move to top‐right (100% 0%) */
-  background-position: 0% 100%;
-  animation: scrollBackground 30s linear infinite;
-  opacity: 0.2;
-  pointer-events: none;
-}
-
-@keyframes scrollBackground {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 100% 100%;
-  }
-}
-
-/* ────────────────────────── Header / Tabs / Body ────────────────────────── */
-.sheet-header,
-.tabs,
-.sheet-body {
-  position: relative;
-  z-index: 1;
-  background: rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-}
-
-.sheet-header h1::before {
-  content: "『";
-  color: var(--accent-color);
-  font-size: 2.5rem;
-}
-.sheet-header h1::after {
-  content: "』";
-  color: var(--accent-color);
-  font-size: 2.5rem;
-}
-
-/* Tabs */
-.tabs {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0; /* Remove any extra margin below the tabs */
-}
-
-.tabs button {
-  background: transparent;
-  border: 1px solid var(--accent-color);
-  color: white;
-  padding: 0.5rem 1rem;
+  top: .5em;
+  left: .5em;
+  padding: 0;
+  border: none;
+  background: none;
   cursor: pointer;
+  line-height: 1;
+  appearance: none;
+}
+.dark-determination-toggle:hover,
+.dark-determination-toggle:focus {
+  background: none!important;
+  box-shadow: none!important;
+  outline: none!important;
 }
 
-.tabs button.active {
-  background: var(--accent-light);
-  color: black;
-}
-
-.tab-content {
-  display: none;
-  margin-top: 0; /* Remove any extra margin above the content */
-  padding: 0.5rem; /* Add consistent padding for better spacing */
-}
-
-.tab-content.active {
-  display: block;
-}
-
-/* ────────────────────────── Stats Tab ────────────────────────── */
-.stat-line {
-  margin: 0.5rem 0;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.stat-line label {
-  display: inline-block;
-  width: 120px; /* adjust to fit longer stat names */
-  text-align: left;
-}
-
-.stat-stars {
-  display: flex;
-  gap: 5px;
-}
-
-.stat-star {
-  display: inline-block;
-  font-size: 1.5rem;
-  color: #888;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.stat-star.filled {
-  color: var(--accent-color);
-}
-
-.stat-stars.infinite .stat-star {
-  color: crimson !important;
-}
-
-/* ────────────────────────── Biography Tab ────────────────────────── */
-.bio-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 600px;
-  margin-top: 1rem;
-}
-
-/* Each row: label + input/textarea */
-.bio-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.bio-row label {
-  display: inline-block;
-  width: 120px;  /* same width as stat labels */
-  color: white;
-  margin-top: 0.25rem;
-}
-
-.bio-row input,
-.bio-row textarea {
-  flex: 1;
-  padding: 0.5rem;
-  background: #222;
-  border: 1px solid var(--accent-light);
-  color: white;
-  resize: vertical;
-}
-
-/* Placeholder color */
-.bio-row input::placeholder,
-.bio-row textarea::placeholder {
-  color: #888;
-}
-
-/* Add styles for the Hit tab */
-.tab[data-tab="hit"] {
-  background-color: black;
+/* ────────────────────────── Shared Styles ────────────────────────── */
+.tab[data-tab="item"] li,
+.tab[data-tab="hit"] li {
+  background-color: rgba(0, 0, 0, 0.5);
   color: white;
   padding: 10px;
+  margin: 1rem 0;
   border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
 }
 
-/* Style input fields in the Hit tab */
-.tab[data-tab="hit"] input {
-  background-color: black;
-  color: white;
-  border: 1px solid white;
-  padding: 5px;
-  border-radius: 3px;
+.tab[data-tab="item"] li:hover,
+.tab[data-tab="hit"] li:hover {
+  background-color: var(--accent-dark);
 }
 
-/* Style the Add Hit button */
-.tab[data-tab="hit"] button {
+.delete-item,
+.delete-hit {
   background-color: black;
   color: white;
   border: 1px solid white;
   padding: 5px 10px;
   border-radius: 3px;
   cursor: pointer;
+  margin-left: 10px;
 }
 
-.tab[data-tab="hit"] button:hover {
+.delete-item:hover,
+.delete-hit:hover {
   background-color: white;
   color: black;
 }
+
+/* ────────────────────────── Create Buttons ────────────────────────── */
+/* ─── Create Buttons as FA icons ─── */
+/* Hide their text and size them nicely */
+/* 1) Center the form wrappers under the tabs */
+.item-form,
+.hit-form {
+  display: flex;
+  justify-content: center;
+  margin: 0.75em 0;   /* space above & below */
+}
+
+/* Center the icon both vertically and horizontally */
+#create-item,
+#create-hit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.75em auto;    /* still sits under the tabs, centered */
+  width: 1.5em;
+  height: 1.5em;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Style the FontAwesome icon inside */
+#create-item i,
+#create-hit i {
+  font-size: 1.5em;
+  color: var(--accent-light);
+  transform: translateX(0.05em);
+}
+
+/* Hover effect */
+#create-item:hover i,
+#create-hit:hover i {
+  color: var(--accent-dark);
+}
+
+
+
+
+/* ────────────────────────── Input Fields in Hit Tab ────────────────────────── */
+.tab[data-tab="hit"] input {
+  background-color: black;
+  color: white;
+  border: 1px solid white;
+  padding: 5px;
+  border-radius: 3px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 5px;
+}
+
+
+.scrollable-list {
+  max-height: 300px;  /* Adjust this height based on your UI design */
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.scrollable-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.scrollable-list li {
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  margin: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.scrollable-list .item-entry {
+  display: flex;
+  flex-direction: column;
+  word-break: normal; /* Default */
+}
+
+.scrollable-list .item-header {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scrollable-list .item-description {
+  margin: 4px 0 0 0;
+  font-size: 0.85em;
+  color: #ccc;
+  word-wrap: break-word;
+}
+
+.scrollable-list i.fa-trash {
+  margin-left: 10px;
+  color: #ff6666;
+  cursor: pointer;
+}
+
+
+
