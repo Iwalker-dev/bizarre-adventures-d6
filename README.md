@@ -67,3 +67,5 @@ I have attempted to make it capable of automatically updating sheets from the Wo
 3) Open the "world.json" file with a supporting application (text editors should work)
 4) Find "system" under packs and change it from worldbuilding to bizarre-adventures-d6
 5) Save, then close and reopen foundry. My system will automatically attempt to fix your actors to the new version. If at any point they don't render the actor sheet, reload.
+
+Remember, if you have any questions, comments, ideas, etc. let itpart know on Discord!
