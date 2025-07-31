@@ -58,3 +58,12 @@ Actor Sheets - Navigate the tabs to fill in or view information related to your 
 Power Sheet - For all non-stand abilities.
 Stand Sheet - For all stand abilities.
 User Sheet - For all user types.
+
+
+I have attempted to make it capable of automatically updating sheets from the Worldbuilding version to this system. Remember to backup your files before trying this:
+
+1) Navigate to your user data folder (doable by right clicking the foundry application)
+2) Enter data, then worlds, then click the folder of the world you're changing (note the name by default is based on the ORIGINAL name of the world)
+3) Open the "world.json" file with a supporting application (text editors should work)
+4) Find "system" under packs and change it from worldbuilding to bizarre-adventures-d6
+5) Save, then close and reopen foundry. My system will automatically attempt to fix your actors to the new version. If at any point they don't render the actor sheet, reload.
