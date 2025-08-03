@@ -303,7 +303,7 @@ export const typeConfigs = {
         </p>
 
         <p><em><u>Stats</u></em></p>
-        <p>Stats are the <em>vigor</em> of a User’s Hamon & Overdrive, applied directly to them.</p>
+        <p>Stats are the <em>vigor</em> of a User's Hamon & Overdrive, applied directly to them.</p>
         <p><strong>Power</strong> = The potency of Hamon, User’s <em>strength</em>.</p>
         <p><strong>Speed</strong> = The responsiveness of Hamon’s effects, User’s <em>agility</em>.</p>
         <p><strong>Precision</strong> = The exactness of Hamon’s output variation, User’s <em>control</em>.</p>
