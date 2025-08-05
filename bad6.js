@@ -7,8 +7,17 @@ import { rollerControl } from './modules/apps/bad6-roller.js';
 import { HueShiftControl } from "./modules/apps/hue-shift.js";
 import { outroControl } from './modules/apps/stylizedOutro.js';
 
+import { UserSheet } from "./modules/sheets/user-actor-sheet.js";
+import { StandSheet } from "./modules/sheets/stand-actor-sheet.js";
+import { PowerSheet } from "./modules/sheets/power-actor-sheet.js";
+import { HitItemSheet } from "./modules/sheets/hit-item-sheet.js";
+import { DefaultItemSheet } from "./modules/sheets/default-item-sheet.js";
+
 Hooks.once("init", async () => {
     console.log("BAD6 Core System is Initializing");
+    Hooks.on("renderActorSheet", (app) => {
+        console.log(`Rendered: ${app.actor.name}, Sheet: ${app.constructor.name}, Type: ${app.actor.type}`);
+    });
     // Load Chart.js
     await loadChartJS();
     rollerControl();
@@ -21,14 +30,14 @@ Hooks.once("init", async () => {
 
     Items.unregisterSheet("core", ItemSheet);
     Actors.unregisterSheet("core", ActorSheet);
-
+/*
     // Dynamically import and register all your sheets...
     const { UserSheet } = await import("./modules/sheets/user-actor-sheet.js");
     const { StandSheet } = await import("./modules/sheets/stand-actor-sheet.js");
     const { PowerSheet } = await import("./modules/sheets/power-actor-sheet.js");
     const { HitItemSheet } = await import("./modules/sheets/hit-item-sheet.js");
     const { DefaultItemSheet } = await import("./modules/sheets/default-item-sheet.js");
-
+*/
     CONFIG.BAD6  = BAD6;
     CONFIG.INIT  = true;
 
