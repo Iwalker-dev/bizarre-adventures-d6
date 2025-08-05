@@ -4,8 +4,7 @@
         "types": [
             "user",
             "stand",
-            "power",
-            "character"
+            "power"
         ],
 
         "user": {
