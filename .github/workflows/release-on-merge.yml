@@ -27,10 +27,32 @@ jobs:
         id: meta
         shell: pwsh
         run: |
-          $m = Get-Content system.json | ConvertFrom-Json   # swap to module.json if needed
-          "version=$($m.version)"                         | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "name=$($m.id)"                                 | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "zip=artifacts/$($m.id)-$($m.version).zip"      | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          $m = Get-Content system.json | ConvertFrom-Json
+          "version=$($m.version)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "name=$($m.id)"         | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "zip=artifacts/$($m.id)-v$($m.version).zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Update system.json download field and commit
+        env:
+          REPO: ${{ github.repository }}
+        shell: pwsh
+        run: |
+          $m = Get-Content system.json | ConvertFrom-Json
+          $owner,$repo = $env:REPO -split '/'
+          $version = "${{ steps.meta.outputs.version }}"
+          $id      = "${{ steps.meta.outputs.name }}"
+          $m.download = "https://github.com/$owner/$repo/releases/download/v$version/$id-v$version.zip"
+
+          # write back with reasonable depth to keep arrays/objects intact
+          $json = $m | ConvertTo-Json -Depth 10
+          Set-Content -Path system.json -Value $json -Encoding UTF8
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add system.json
+          git commit -m "chore(release): update download url to v$version" || echo "No changes to commit"
+          git push
+
 
       - name: Delete existing release/tag if present
         env:
@@ -45,7 +67,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
+          $changelog = Get-Content CHANGELOG.md -Raw
+          $notes = "Automated overwrite on Unreleased→main merge`n`n$changelog"
           gh release create v${{ steps.meta.outputs.version }} `
             "${{ steps.meta.outputs.zip }}" `
-           --title "${{ steps.meta.outputs.name }} ${{ steps.meta.outputs.version }}" `
-            --notes "Automated overwrite on Unreleased→main merge"
+            --title "${{ steps.meta.outputs.name }} ${{ steps.meta.outputs.version }}" `
+            --notes "$notes"
