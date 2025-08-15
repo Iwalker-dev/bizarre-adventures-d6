@@ -1,5 +1,5 @@
 Param(
-  [string]$ManifestPath = "system.json",   # or module.json
+  [string]$ManifestPath = "system.json",
   [string]$OutDir = "artifacts"
 )
 
@@ -13,14 +13,10 @@ if (-not $name)    { throw "No 'id' in $ManifestPath" }
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
-$exclude = @(
-  ".git", ".github", ".vscode", "node_modules", "artifacts", "dist",
-  "tests", "coverage", "*.log", "*.zip"
-)
-
+$exclude = @(".git",".github",".vscode","node_modules","artifacts","dist","tests","coverage","*.log","*.zip",".DS_Store",".idea")
 $items = Get-ChildItem -Force | Where-Object { $exclude -notcontains $_.Name }
 
-$zipPath = Join-Path $OutDir "$($name)-$($version).zip"
+$zipPath = Join-Path $OutDir "$($name)-v$($version).zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
 Compress-Archive -Path $items -DestinationPath $zipPath
