@@ -1,13 +1,8 @@
 # Changelog – BAD6 System
 
 
-## [0.9.3] – 2025-07-08
-
-### Added
--Optimized CSS
--Special Type Functionality (Act, Independent)
+## [0.9.3.1] – 2025-08-03
 
 ### Fixes
--Type Defaulting and Saving
--All Type Descriptions (Not including special range uses)
-
+-Potential fix to Actor's sheets sometimes not properly rendering on load.
+*Will continue to be monitored
