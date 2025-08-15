@@ -22,7 +22,6 @@ jobs:
       - name: Pack ZIP
         shell: pwsh
         run: ./scripts/pack.ps1 -ManifestPath system.json -OutDir artifacts
-        # Swap to module.json if needed
 
       - name: Read manifest metadata
         id: meta
@@ -35,13 +34,13 @@ jobs:
 
       - name: Delete existing release/tag if present
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete v${{ steps.meta.outputs.version }} -y --cleanup-tag || true
 
       - name: Recreate release at current commit
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release create v${{ steps.meta.outputs.version }} \
             "${{ steps.meta.outputs.zip }}" \
