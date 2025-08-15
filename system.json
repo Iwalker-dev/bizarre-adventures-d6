@@ -2,7 +2,7 @@
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
   "description": "A core system for the Bizarre Adventures D6 system.",
-  "version": "0.9.3.1",
+  "version": "0.9.3.2",
   "authors": [
     {
       "name": "LIFT",
@@ -74,7 +74,7 @@
         "type": "module",
         "manifest": "https://github.com/farling42/foundryvtt-socketlib/releases/latest/download/module.json",
         "compatibility": {
-          "verified": "13"
+          "verified": "1.1.3"
         }
       }
     ]

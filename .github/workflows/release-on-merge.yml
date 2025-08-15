@@ -1,0 +1,49 @@
+name: Package & Release on Unreleased→main merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'Unreleased'
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pack ZIP
+        shell: pwsh
+        run: ./scripts/pack.ps1 -ManifestPath system.json -OutDir artifacts
+        # Swap to module.json if needed
+
+      - name: Read manifest metadata
+        id: meta
+        shell: pwsh
+        run: |
+          $m = Get-Content system.json | ConvertFrom-Json   # swap to module.json if needed
+          "version=$($m.version)"                         | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "name=$($m.id)"                                 | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "zip=artifacts/$($m.id)-$($m.version).zip"      | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Delete existing release/tag if present
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete v${{ steps.meta.outputs.version }} -y --cleanup-tag || true
+
+      - name: Recreate release at current commit
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v${{ steps.meta.outputs.version }} \
+            "${{ steps.meta.outputs.zip }}" \
+            --title "${{ steps.meta.outputs.name }} ${{ steps.meta.outputs.version }}" \
+            --notes "Automated overwrite on Unreleased→main merge"

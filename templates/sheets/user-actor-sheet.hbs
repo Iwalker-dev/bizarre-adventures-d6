@@ -1,12 +1,25 @@
 {{!-- systems/bizarre-adventures-d6/templates/sheets/user-actor-sheet.hbs --}}
 <form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
   <div class="jojo-sheet">
-    <header class="sheet-header">
+    <header class="sheet-header dd-header">
       <h1>{{actor.name}}</h1>
-      <div style="float: right; font-size: 1.2em; color: #ccc;">
+      <div style="float:right; font-size:1.2em; color:#ccc;">
         Health: {{system.health.value}} / {{system.health.max}}
       </div>
+
+      {{#if (lte system.health.value 0)}}
+        <button type="button"
+                class="dark-determination-toggle dd-in-header"
+                aria-pressed="{{#if darkDetermination}}true{{else}}false{{/if}}"
+                title="Toggle Dark Determination">
+          <i class="fas fa-fire {{#if darkDetermination}}pulse-dd-icon{{else}}static-dd-icon{{/if}}"></i>
+          <span class="sr-only">
+            {{#if darkDetermination}}Dark Determination active{{else}}Dark Determination inactive{{/if}}
+          </span>
+        </button>
+      {{/if}}
     </header>
+
 
     <nav class="sheet-tabs tabs" data-group="primary">
       {{> actor-nav}}
