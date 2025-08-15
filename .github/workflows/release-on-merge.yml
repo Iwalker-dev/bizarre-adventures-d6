@@ -71,5 +71,5 @@ jobs:
           $notes = "Automated overwrite on Unreleased→main merge`n`n$changelog"
           gh release create v${{ steps.meta.outputs.version }} `
             "${{ steps.meta.outputs.zip }}" `
-            --title "${{ steps.meta.outputs.name }} ${{ steps.meta.outputs.version }}" `
+            --title "v${{ steps.meta.outputs.version }}" `
             --notes "$notes"
