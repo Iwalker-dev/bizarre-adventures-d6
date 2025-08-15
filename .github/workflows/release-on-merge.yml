@@ -35,14 +35,17 @@ jobs:
       - name: Delete existing release/tag if present
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: pwsh
         run: |
+          gh auth status
           gh release delete v${{ steps.meta.outputs.version }} -y --cleanup-tag || true
 
       - name: Recreate release at current commit
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: pwsh
         run: |
-          gh release create v${{ steps.meta.outputs.version }} \
-            "${{ steps.meta.outputs.zip }}" \
-            --title "${{ steps.meta.outputs.name }} ${{ steps.meta.outputs.version }}" \
+          gh release create v${{ steps.meta.outputs.version }} `
+            "${{ steps.meta.outputs.zip }}" `
+           --title "${{ steps.meta.outputs.name }} ${{ steps.meta.outputs.version }}" `
             --notes "Automated overwrite on Unreleased→main merge"
