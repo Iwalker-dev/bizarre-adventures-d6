@@ -61,7 +61,7 @@ export function setupStats() {
     sheetRoot.style.setProperty("--accent-color", userColor);
     sheetRoot.style.setProperty("--accent-light", lightColor);
     sheetRoot.style.setProperty("--accent-dark", darkColor);
-
+/*
     // ===================== STAND TYPE LABELS =====================
     const statLabels = {
       Hamon: ['Strength', 'Accuracy', 'Agility', 'Conduction', 'Blocking', 'Learning'],
@@ -89,7 +89,7 @@ export function setupStats() {
 
     const initialType = html.find('#stand-type').val();
     updateStatLabels(initialType);
-
+*/
     // ===================== CUSTOM BUTTON HANDLERS =====================
     const bioButton = html.find(".tabs a[data-tab='bio']");
     const hitButton = html.find(".tabs a[data-tab='hit']");

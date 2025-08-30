@@ -68,8 +68,9 @@ activateListeners(html) {
         if (typeName !== newType) {
           // if this isn’t the chosen type, remove those stats
           for (const stat of statsArray) {
-            updates[`system.attributes.stats.${stat}`] = null;
+            updates[`system.attributes.stats.-=${stat}`] = null;
           }
+          
         } else {
           // if it is the chosen type, re-add with defaults
           for (const stat of statsArray) {
