@@ -378,11 +378,11 @@ export const typeConfigs = {
       label: "Spin",
       statlabels: [
         "Mass (Power)",
-        "Control (Precision)",
+        "Manuverability (Precision)",
         "Velocity (Speed)",
-        "RPM (Range)",
+        "Inertia (Range)",
         "Sturdiness (Durability)",
-        "Learning (Learning)"
+        "Vision (Learning)"
       ],
       description: `
         <p><em><u>Spin Master 🌀</u></em></p>
