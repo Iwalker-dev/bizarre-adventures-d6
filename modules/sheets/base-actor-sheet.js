@@ -83,6 +83,22 @@ export class BaseActorSheet extends ActorSheet {
     }
 
     async _render(force, options) {
+      // 0) Look for any null‐valued stats and schedule their deletion
+      const stats     = this.actor.system.attributes.stats || {};
+      const deletions = {};
+      for (const [ key, val ] of Object.entries(stats)) {
+        if (val === null) {
+          const path = `system.attributes.stats.-=${key}`;
+          deletions[`${path}`] = null;
+        }
+      }
+
+      // 1) If there are any deletions, apply them and re‐render once
+      if (Object.keys(deletions).length) {
+        await this.actor.update(deletions);
+      }
+
+  // 2) No nulls to delete: proceed with your normal render logic
     await super._render(force, options);
 
     const $sheet = this.element.find('.jojo-sheet');
@@ -90,10 +106,10 @@ export class BaseActorSheet extends ActorSheet {
         console.error('BaseActorSheet._render(): ".jojo-sheet" element not found.');
         return;
     }
-
-    const type = this.actor.system.info.type;
+    const info = this.actor.system.info || {};
+    const type = info.type;
     if (!type) {
-        console.error('BaseActorSheet._render(): actor.system.info.type is undefined.');
+        console.warn('BaseActorSheet._render(): actor.system.info.type is undefined. Default background applied');
         return;
     }
 
