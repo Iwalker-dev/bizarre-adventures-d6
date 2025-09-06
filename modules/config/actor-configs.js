@@ -1,31 +1,31 @@
 // systems/bizarre-adventures-d6/scripts/sheets/type-configs.js
 
 export const typeConfigs = {
-  user: {
-    None: {
-      label: "",
-      cost: "None",
-      description: "A non-stand user, with no special powers or abilities."
-    },
-    Natural: {
-      label: "Natural User",
-      cost: "None",
-      description: "A Natural-born stand user, drawn by fate for a mysterious purpose."
-    },
-    Freak: {
-      label: "Freak",
-      cost: "1-3 User Points",
-      description: `
+	user: {
+		None: {
+			label: ""
+			, cost: "None"
+			, description: "A non-stand user, with no special powers or abilities."
+		}
+		, Natural: {
+			label: "Natural User"
+			, cost: "None"
+			, description: "A Natural-born stand user, drawn by fate for a mysterious purpose."
+		}
+		, Freak: {
+			label: "Freak"
+			, cost: "1-3 User Points"
+			, description: `
         <p><em><u>Freak ⚕</u></em></p>
         <p>Someone with anomalous powers that defy explanation, not tied to a Power Source.</p>
         <p>Traits that are just <em>strange</em> do not need to be paid for; they can be included in a Bio.</p>
         <p><em>Ex. Bruford's Danse Macab-Hair, Mrs. Robinson's bugs, Diavolo's dual souls.</em></p>
       `
-    },
-    Ghost: {
-      label: "Ghost",
-      cost: "2 User Points",
-      description: `
+		}
+		, Ghost: {
+			label: "Ghost"
+			, cost: "2 User Points"
+			, description: `
         <p><em><u>Ghost 👻</u></em></p>
         <p>A spirit of the dead, tied to the mortal world by an <em>unfulfilled purpose</em>.</p>
         <p>They typically keep whatever injury caused their death as a <em>Mark</em>.</p>
@@ -41,11 +41,11 @@ export const typeConfigs = {
           <li>Ghosts may only enter a room if let inside, or it is empty.</li>
         </ol>
       `
-    },
-    Alien: {
-      label: "Alien",
-      cost: "2 User Points",
-      description: `
+		}
+		, Alien: {
+			label: "Alien"
+			, cost: "2 User Points"
+			, description: `
         <p><em><u>Alien 🛸</u></em></p>
         <p>A shapeshifting <em>extraterrestrial</em>, hailing from the Magellanic Clouds and lost on Earth.</p>
         <p>These beings can <u>Shapeshift</u> into any non-complex object, of equal or lesser mass.</p>
@@ -53,12 +53,12 @@ export const typeConfigs = {
         <p>While exposed to sound, the alien's form will be <em>unstable</em>, and change rapidly.</p>
         <p>Aliens may also have access to foreign <em>technologies</em> and weapons based on setting.</p>
         <p>This section is made under the assumption that <u>Mikitaka</u> is <em>not</em> a Stand User.</p>
-      `,
-    },
-    Rock: {
-      label: "Rock Human",
-      cost: "1 User Point",
-      description: `
+      `
+		, }
+		, Rock: {
+			label: "Rock Human"
+			, cost: "1 User Point"
+			, description: `
         <p><em><u>Rock Human 🪨</u></em></p>
         <p>A counterpart to <em>Homo Sapiens</em>, in tune with nature and attracted to '<em>sacred ground</em>'.</p>
         <p><u>Rock Form</u> is used for months-long <u>hibernation</u>, resisting extreme conditions.</p>
@@ -70,12 +70,12 @@ export const typeConfigs = {
         <p>All Rock Organisms can turn parts of their body into a chosen <u>Material</u>.</p>
         <p>Rock Animals/Insects are known to <u>Masquerade</u> as human-made objects.</p>
         <p>Rock Humans are more <em>sophisticated</em> at this, opting for identity theft and fake jobs.</p>
-      `,
-    },
-    Pillar: {
-      label: "Pillar Man",
-      cost: "4 User/4 Stand, Vampire, GM Approval",
-      description: `
+      `
+		, }
+		, Pillar: {
+			label: "Pillar Man"
+			, cost: "4 User/4 Stand, Vampire, GM Approval"
+			, description: `
         <p><em><u>Pillar Man 🗿</u></em></p>
         <p>A mesoamerican <em>ultra-vampire</em>, horned apex predators from a bygone era.</p>
 
@@ -90,88 +90,88 @@ export const typeConfigs = {
         <p>Functions evolve into <em>Modes</em> based on an <em>element</em>.</p>
         <p><u>Vampirification</u> - Creates <em>Vampires</em> with <em>Learning</em>, all Abilities, and (Ranks * 5) Points.</p>
       `
-    },
-    // …other user types…
-  },
+		},
+		// …other user types…
+	},
 
-  stand: {
-    None: {
-      label: "",
-    },
-    Natural: {
-      label: "Natural Stand",
-      cost: "None",
-      description: `
+	stand: {
+		None: {
+			label: ""
+		, }
+		, Natural: {
+			label: "Natural Stand"
+			, cost: "None"
+			, description: `
         <p><em><u>Natural 🍃</u></em></p>
         <p>A standard Stand type, with a majorly human or animal physiology with limbs.</p>
         <p>Examples: Star Platinum, Hierophant Green, Grateful Dead, Clash.</p>
       `
-    },
-    Artificial: {
-      label: "Artificial Stand",
-      cost: "None",
-      description: `
+		}
+		, Artificial: {
+			label: "Artificial Stand"
+			, cost: "None"
+			, description: `
       <p><em><u>Artificial 🤖</u></em></p>
       <p>As opposed to <em>Natural</em>, these Stands have a more abstract or mechanical body.</p>
       <p>Examples: Hermit Purple, Ratt, Aerosmith, Manhattan Transfer.</p>
     `
-    },
-    Object: {
-      label: "Object Stand",
-      cost: "None",
-      description: `
+		}
+		, Object: {
+			label: "Object Stand"
+			, cost: "None"
+			, description: `
         <p><em><u>Object 🎁</u></em></p>
         <p>Tools with the Ability tied to them, which can be <em>summoned & withdrawn</em> at will.</p>
         <p>These Stands are known to <em>survive past</em> even the User's death.</p>
         <p><em>Examples: Emperor, Thoth, Cream Starter, Beach Boy.</em></p>
       `
-    },
-    Bound: {
-      label: "Bound Stand",
-      cost: "None",
-      description: `
+		}
+		, Bound: {
+			label: "Bound Stand"
+			, cost: "None"
+			, description: `
         A Stand Ability that assimilates itself into another physical, tangible thing at will.
         Non-users can interact with it, as it's not a pure Stand-type manifestation.
         The enhanced substance is generally manipulable, & cannot be withdrawn.
         Examples: The Fool, Super Fly, Strength, Les Feuilles.
       `
-    },
-    Wearable: {
-      label: "Wearable Stand",
-      cost: "None",
-      description: `
+		}
+		, Wearable: {
+			label: "Wearable Stand"
+			, cost: "None"
+			, description: `
         Stands worn by the User, often as a suit or accessory.
         These Stands, as with Object Stands, are usually immobile.
         Others can wear the Stand, though Range restricts distance from the User.
         Examples: Oasis, White Album, Catch The Rainbow, Mandom.
       `
-    },
-    Swarm: {
-      label: "Swarm Stand",
-      cost: "1 Stand Point",
-      description: `
+		}
+		, Swarm: {
+			label: "Swarm Stand"
+			, cost: "1 Stand Point"
+			, description: `
         <p><em><u>Swarm 🐜</u></em></p>
         <p>Swarm Stands are a <em>conglomerate</em> of units, operated by the User at once.</p>
         <p><strong>Power</strong> & <strong>Durability</strong> stats are for the swarm as a <em>whole</em>, partial groups have lower stats.</p>
         <p>Single-unit death does not harm the User, only substantial amounts of lost units do.</p>
         <p><em>Examples: Harvest, Bad Company, Pearl Jam, Metallica, Sex Pistols.</em></p>
       `
-    },
-    Integrated: {
-      label: "Integrated Stand",
-      cost: "Adds: +2 Stand Points",
-      description: `
+		}
+		, Integrated: {
+			label: "Integrated Stand"
+			, cost: "Adds: +2 Stand Points"
+			, description: `
         <p><em><u>Integrated ⚙</u></em></p>
         <p>These Stands have no or minimal manifestation.</p>
         <p>Integrated Abilities are applied to the User <em>directly</em>, without a punchghost.</p>
         <p><strong>Durability</strong> & <strong>Range</strong> are often of lesser use without a Stand body.</p>
         <p><em>Examples: Khnum, Stray Cat, Mr. President, Tatoo You!, Oh! Lonesome Me.</em></p>
       `
-    },
-    Automatic: {
-      label: "Automatic Stand",
-      cost: "Loss of control",
-      description: `
+		}
+		, Automatic: {
+			label: "Automatic Stand"
+			, cost: "Loss of control"
+			, description: `
         <p><em><u>Automatic 🎧</u></em></p>
         <p>Stands with <em>simple AI-style behavior</em>, instead of having the User in direct command.</p>
         <p>The manifestation itself typically has no <em>range leash</em>.</p>
@@ -179,11 +179,11 @@ export const typeConfigs = {
         <p><u>Precision</u> is often of lesser use, as Automatics choose targets based on a condition.</p>
         <p><em>Examples: Black Sabbath, Marilyn Manson, Born This Way.</em></p>
       `
-    },
-    Detached: {
-      label: "Detached Stand",
-      cost: "Stand desync",
-      description: `
+		}
+		, Detached: {
+			label: "Detached Stand"
+			, cost: "Stand desync"
+			, description: `
         <p><em><u>Detached 🧲</u></em></p>
         <p>Stands that do <strong>not</strong> synchronize <em>senses</em> or <em>injuries</em> with their User.</p>
         <p>Most Detached <em>Automatic</em> and <em>Object</em> Stands can respawn when destroyed.</p>
@@ -192,24 +192,24 @@ export const typeConfigs = {
         <p>While a Stand is Broken, its manifestation and ability are unusable.</p>
         <p><em>Examples: Highway Star, Sheer Heart Attack, Baby Face.</em></p>
       `
-    },
-    Indepdendent: {
-      label: "Independent Stand",
-      cost: "Learning Costs Double (2/4/6/8/10)",
-      description: `
+		}
+		, Indepdendent: {
+			label: "Independent Stand"
+			, cost: "Learning Costs Double (2/4/6/8/10)"
+			, description: `
         <p><em><u>Independent 🐱‍👤</u></em></p>
         <p>Stands capable of sentient thought & action, having a mind of their own.</p>
         <p>These Stands get <em>User Stats, excluding Luck & Body</em> (Wit/Reason/Menacing/Pluck).</p>
         <p>The Pool given for these stats is (<em>Learning Ranks × 3</em>), to a maximum of 15 Points.</p>
         <p>A Stand can still have personality traits and instincts without being Independent.</p>
         <p><em>Examples: Cheap Trick, Paisley Park, Anubis, Wonder Of U.</em></p>
-      `,
-      stats: ["wit", "reason", "menacing", "pluck"]
-    },
-    Act: {
-      label: "Act Stand",
-      cost: "Minimum Learning B, Lower Point Pools",
-      description: `
+      `
+			, stats: ["wit", "reason", "menacing", "pluck"]
+		}
+		, Act: {
+			label: "Act Stand"
+			, cost: "Minimum Learning B, Lower Point Pools"
+			, description: `
         <p><em><u>Act 🎭</u></em></p>
         <p>Stands that have <em>alternative forms</em>, each with their own stats & related abilities.</p>
         <p>These Stands start at <strong>Act 1</strong>, gaining new <em>Acts</em> as the character develops.</p>
@@ -238,33 +238,33 @@ export const typeConfigs = {
 
         <p><em>Examples: Echoes, Tusk.</em></p>
       `
-    },
-    Other: {
-      label: "Other Stand",
-      cost: "Variable",
-      description: `
+		}
+		, Other: {
+			label: "Other Stand"
+			, cost: "Variable"
+			, description: `
         <p><em><u>Other 🔮</u></em></p>
         <p>Niche Types that often only apply to one or two Stands, or no prior precedent.</p>
         <p><em>Examples: Range-Irrelevant, Sub-Stands, Combined, Harmful, Shared, Posthumous, Room, Wounds, Beyonds, Requiem, Mass Hysterias, Homebrewed Types.</em></p>
       `
-    }
-  },
+		}
+	},
 
-  power: {
-    None: {
-      label: "",
-    },
-    Hamon: {
-      label: "Hamon Warrior",
-      statlabels: [
-        "Strength (Power)",
-        "Accuracy (Precision)",
-        "Agility (Speed)",
-        "Conduction (Range)",
-        "Blocking (Durability)",
-        "Learning (Learning)"
-      ],
-      description:  `
+	power: {
+		None: {
+			label: ""
+		, }
+		, Hamon: {
+			label: "Hamon Warrior"
+			, statlabels: [
+        "Strength (Power)"
+        , "Accuracy (Precision)"
+        , "Agility (Speed)"
+        , "Conduction (Range)"
+        , "Blocking (Durability)"
+        , "Learning (Learning)"
+      ]
+			, description: `
         <p><em><u>Hamon Warrior ⟳</u></em></p>
         <p>An ancient <em>breathing technique</em>, Hamon is drawn from the User's vital energy.</p>
         <p>A Hamon User must maintain a consistent <em>rhythm</em> of breathing to use Hamon.</p>
@@ -311,18 +311,18 @@ export const typeConfigs = {
         <p><strong>Range</strong> = The conduction of the Hamon, from flesh-only to steel bars to the intangible.</p>
         <p><strong>Learning</strong> = Lung capacity. Temporarily burnt when the Basic Abilities are used.</p>
       `
-    },
-    Vampire: {
-      label: "Vampire",
-      statlabels: [
-        "Strength (Power)",
-        "Senses (Precision)",
-        "Reflex (Speed)",
-        "Bodily Control (Range)",
-        "Resilience (Durability)",
-        "Learning (Learning)"
-      ],
-      description: `
+		}
+		, Vampire: {
+			label: "Vampire"
+			, statlabels: [
+        "Strength (Power)"
+        , "Senses (Precision)"
+        , "Reflex (Speed)"
+        , "Bodily Control (Range)"
+        , "Resilience (Durability)"
+        , "Learning (Learning)"
+      ]
+			, description: `
         <p><em><u>Vampire 🦇</u></em></p>
         <p>A former human who came in contact with a <em>Stone Mask</em>, and rejected their humanity.</p>
         <p>Through <em>brain acupuncture</em>, these people have unlocked their <em>inner potential</em>.</p>
@@ -373,18 +373,18 @@ export const typeConfigs = {
         <p><strong>Range</strong> = The bodily control of the vampire; number of systems in voluntary command.</p>
         <p><strong>Learning</strong> = Vampiric essence.</p>
       `
-    },
-    Spin: {
-      label: "Spin",
-      statlabels: [
-        "Mass (Power)",
-        "Manuverability (Precision)",
-        "Velocity (Speed)",
-        "Inertia (Range)",
-        "Sturdiness (Durability)",
-        "Vision (Learning)"
-      ],
-      description: `
+		}
+		, Spin: {
+			label: "Spin"
+			, statlabels: [
+        "Mass (Power)"
+        , "Manuverability (Precision)"
+        , "Velocity (Speed)"
+        , "Inertia (Range)"
+        , "Sturdiness (Durability)"
+        , "Vision (Learning)"
+      ]
+			, description: `
         <p><em><u>Spin Master 🌀</u></em></p>
         <p>Spin is drawn from the User's <em>life energy</em> as a battery, much like Hamon.</p>
         <p>However, <em>certain objects</em> infused with Spin can <em>maintain the charge indefinitely</em>.</p>
@@ -431,18 +431,18 @@ export const typeConfigs = {
         <p><strong>Range</strong> = The Device's inertia and ability to maintain Spin in unfavorable conditions.</p>
         <p><strong>Learning</strong> = Vision. Both temporarily and permanently burnt.</p>
       `
-    },
-    Armed: {
-      label: "Armed Phenomenon",
-      statlabels: [
-        "Strength (Power)",
-        "Accuracy (Precision)",
-        "Agility (Speed)",
-        "Evolution (Range)",
-        "Endurance (Durability)",
-        "Learning (Learning)"
-      ],
-      description: `
+		}
+		, Armed: {
+			label: "Armed Phenomenon"
+			, statlabels: [
+        "Strength (Power)"
+        , "Accuracy (Precision)"
+        , "Agility (Speed)"
+        , "Evolution (Range)"
+        , "Endurance (Durability)"
+        , "Learning (Learning)"
+      ]
+			, description: `
         <p><em><u>Armed Phenomenon ⚙</u></em></p>
         <p>A lifeform infected with a <em>Parasite</em>, gaining power in exchange for a <em>doomed future</em>.</p>
 
@@ -488,18 +488,18 @@ export const typeConfigs = {
         <p><strong>Range</strong> = The parasite's evolution. Used for their point buy.</p>
         <p><strong>Learning</strong> = The parasite's <em>adaptability</em>. Burnt for instant regeneration and adaptation.</p>
       `
-    },
-    Cyborg: {
-      label: "Cyborg",
-      statlabels: [
-        "Tech Power (Power)",
-        "Precision (Precision)",
-        "Speed (Speed)",
-        "Range (Range)",
-        "Durability (Durability)",
-        "Learning (Learning)"
-      ],
-      description : `
+		}
+		, Cyborg: {
+			label: "Cyborg"
+			, statlabels: [
+        "Tech Power (Power)"
+        , "Precision (Precision)"
+        , "Speed (Speed)"
+        , "Range (Range)"
+        , "Durability (Durability)"
+        , "Learning (Learning)"
+      ]
+			, description: `
       <p><em><u>Cyborg 🤖</u></em></p>
       <p>A <em>mechanized being</em>, surpassing their limits with the <em>power of science</em>.</p>
 
@@ -542,18 +542,18 @@ export const typeConfigs = {
       <p><strong>Range</strong> = How advanced the Cyborg's Experiments are.</p>
       <p><strong>Learning</strong> = Resources. How quickly a Cyborg can surpass their limits.</p>
     `
-    },
-    Other: {
-      label: "Other Power",
-      statlabels: [
-        "Power (Power)",
-        "Precision (Precision)",
-        "Speed (Speed)",
-        "Range (Range)",
-        "Durability (Durability)",
-        "Learning (Learning)"
+		}
+		, Other: {
+			label: "Other Power"
+			, statlabels: [
+        "Power (Power)"
+        , "Precision (Precision)"
+        , "Speed (Speed)"
+        , "Range (Range)"
+        , "Durability (Durability)"
+        , "Learning (Learning)"
       ]
-    }
+		}
 
-  }
+	}
 };
