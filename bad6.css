@@ -351,7 +351,7 @@ body {
 }
 .scrollable-list {
   max-height: 300px;
-  /* Adjust this height based on your UI design */
+  /* Adjust this height based on UI design */
   overflow-y: auto;
   padding-right: 5px;
 }
