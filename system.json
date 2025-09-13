@@ -64,7 +64,7 @@
     }
   },
   "manifest": "https://raw.githubusercontent.com/Iwalker-dev/bizarre-adventures-d6/main/system.json",
-  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.9.4/bizarre-adventures-d6-v0.9.4.zip",
+  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.9.3.2/bizarre-adventures-d6-v0.9.3.2.zip",
   "relationships": {
     "requires": [
       {
