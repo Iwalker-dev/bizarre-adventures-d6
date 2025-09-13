@@ -1,55 +1,88 @@
-name: Release BAD6 to Foundry
+name: Package & Release on Unreleased→main merge
 
 on:
-  release:
-    types: [published]   # fires when you publish a GitHub Release
-  workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: foundry-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build-and-publish:
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: write    # needed to upload the zip to the release
+  build-and-release:
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'Unreleased' &&
+      github.actor != 'github-actions[bot]'
+    runs-on: windows-latest
+    timeout-minutes: 20
 
     steps:
-      - name: Checkout
+      - name: Checkout EXACT merge commit
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      # (Optional) validate/pack your system before zipping, if you have scripts
+      - name: Pack ZIP
+        shell: pwsh
+        run: ./scripts/pack.ps1 -ManifestPath system.json -OutDir artifacts
 
-      - name: Build ZIP (system only files)
+      - name: Read manifest metadata
+        id: meta
+        shell: pwsh
         run: |
-          set -e
-          rm -f bad6.zip
-          zip -r bad6.zip \
-            system.json \
-            system/ \
-            module/ \
-            lang/ \
-            templates/ \
-            packs/ \
-            assets/ \
-            styles/ \
-            dist/ \
-            LICENSE README.md \
-            -x "*.git*" "node_modules/*" ".github/*"
+          $m = Get-Content system.json | ConvertFrom-Json
+          "version=$($m.version)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "name=$($m.id)"         | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "zip=artifacts/$($m.id)-v$($m.version).zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
-      - name: Attach ZIP to the GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: bad6.zip
+      # Update manifest.download to the release asset URL *for v{version}*
+      - name: Update system.json download field and commit
+        env:
+          REPO: ${{ github.repository }}
+        shell: pwsh
+        run: |
+          $m = Get-Content system.json | ConvertFrom-Json
+          $owner,$repo = $env:REPO -split '/'
+          $version = "${{ steps.meta.outputs.version }}"
+          $id      = "${{ steps.meta.outputs.name }}"
+          $m.download = "https://github.com/$owner/$repo/releases/download/v$version/$id-v$version.zip"
+          $json = $m | ConvertTo-Json -Depth 10
+          Set-Content -Path system.json -Value $json -Encoding UTF8
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add system.json
+          git commit -m "chore(release): update download url to v$version [skip ci]" || echo "No changes to commit"
+          git push
 
-      # Publish to Foundry via the Package Release API
-      # (uses cs96and/FoundryVTT-release-package which wraps the official API)
-      - name: Publish to FoundryVTT
+      - name: Delete existing release/tag if present
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release delete v${{ steps.meta.outputs.version }} -y --cleanup-tag || true
+
+      - name: Recreate release at current commit (zip + notes)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $changelog = Get-Content CHANGELOG.md -Raw
+          $notes = "Automated overwrite on Unreleased→main merge`n`n$changelog"
+          gh release create v${{ steps.meta.outputs.version }} `
+            "${{ steps.meta.outputs.zip }}" `
+            --title "v${{ steps.meta.outputs.version }}" `
+            --notes "$notes"
+
+      # Publish to Foundry (use RAW tag URL for manifest so we don't need to upload system.json as an asset)
+      - name: Publish to FoundryVTT Package Release API
         uses: cs96and/FoundryVTT-release-package@v1
         with:
           package-token: ${{ secrets.FOUNDRY_PACKAGE_TOKEN }}
-          # Point to the manifest *for this specific release tag*
-          manifest-url: https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/system.json
-          # Optional: override Foundry-facing version/notes; if omitted, it reads from system.json
-          # version: ${{ github.event.release.tag_name }}
-          notes-url: https://github.com/${{ github.repository }}/releases/tag/${{ github.event.release.tag_name }}
+          manifest-url: https://raw.githubusercontent.com/${{ github.repository }}/v${{ steps.meta.outputs.version }}/system.json
