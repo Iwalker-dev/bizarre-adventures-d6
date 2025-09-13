@@ -81,3 +81,11 @@ jobs:
             --notes "$notes" `
             --target $head
 
+  foundry-publish:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: cs96and/FoundryVTT-release-package@v1.0.3
+        with:
+          package-token: ${{ secrets.FOUNDRY_PACKAGE_TOKEN }}
+          manifest-url: https://raw.githubusercontent.com/${{ github.repository }}/v${{ needs.build-and-release.outputs.version }}/system.json
