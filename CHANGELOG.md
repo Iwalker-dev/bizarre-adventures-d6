@@ -13,8 +13,8 @@
 - Cleaned up bad6.js
 - Cleaned up utils.js
 
-### Automatic
-- FoundryVTT Release (testing.......)
+### Automation
+- FoundryVTT Release 
 
 
 # What's left?
