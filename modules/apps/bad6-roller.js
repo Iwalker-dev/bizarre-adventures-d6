@@ -1,13 +1,13 @@
 // roller.js
 let socket;
 
-// 1) Register your socket function as soon as socketlib is ready
+// Register socket function as soon as socketlib is ready
 Hooks.once("socketlib.ready", () => {
 	socket = socketlib.registerSystem("bizarre-adventures-d6");
 	socket.register("pCheck", readyCheck);
 });
 
-// 2) Inject your scene button on init
+// Inject button on init
 Hooks.once("init", () => {
 	rollerControl();
 });
@@ -29,7 +29,7 @@ export function rollerControl() {
 	});
 }
 
-// 3) The remote helper: takes an actorId, not an Actor instance
+// Takes an actorId, not an Actor instance
 async function readyCheck(actorId, formula, statLabel, advantage, data) {
 	const actor = game.actors.get(actorId);
 	if (!actor) return null;
@@ -69,7 +69,7 @@ async function readyCheck(actorId, formula, statLabel, advantage, data) {
 	return roll.total;
 }
 
-// 4) Utility dialogs (unchanged)
+// Utility dialogs
 function chooseAdvantage() {
 	return new Promise(resolve => {
 		new Dialog({

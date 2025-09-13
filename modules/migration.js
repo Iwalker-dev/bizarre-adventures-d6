@@ -1,5 +1,4 @@
 // modules/migration.js
-// TODO: actor type doesn't properly update
 Hooks.once("init", () => {
 	game.settings.register("bizarre-adventures-d6", "migrationVersion", {
 		name: "Last migration version"
@@ -77,14 +76,14 @@ Hooks.once("ready", async () => {
 			, content: `<h2>Welcome to BAD6!</h2>
       <p> Controls: </p>
         <ul>
-          <li>🎲 The macro has not been tested for functionality. Instead, use the "D6 Roller" in token controls.</li>
+          <li>🎲 Use the "D6 Roller" in token controls for rolls.</li>
           <li>🎲 As a GM, highlight up to 2 tokens then run the roller to roll their stats.</li>
           <li>🎲 As a player, select from your owned tokens for each roll.</li>
           <li>🔧 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue</li>
           <li>🌟 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called "Outro" and it will automatically switch to it afterwards.</li>
           <li>🧑 Old Actors - On each load, actors will be automatically moved to a type (if set up properly in the Worldbuilding version.).</li>
         </ul>
-        <p> This product is unfinished! Certain features are not yet implemented such as...</p>
+        <p> This system is unfinished! Certain features are not yet implemented such as...</p>
         <ul>
           <li> Custom Combat Implementation (Recommended to use Lancer Initiative as a replacement)</li>
         </ul>

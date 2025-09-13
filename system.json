@@ -2,7 +2,7 @@
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
   "description": "A core system for the Bizarre Adventures D6 system.",
-  "version": "0.9.3.3",
+  "version": "0.9.4",
   "authors": [
     {
       "name": "LIFT",
@@ -64,7 +64,7 @@
     }
   },
   "manifest": "https://raw.githubusercontent.com/Iwalker-dev/bizarre-adventures-d6/main/system.json",
-  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.9.3.2/bizarre-adventures-d6-v0.9.3.2.zip",
+  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.9.4/bizarre-adventures-d6-v0.9.4.zip",
   "relationships": {
     "requires": [
       {

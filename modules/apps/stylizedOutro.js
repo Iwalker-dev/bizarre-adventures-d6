@@ -1,13 +1,13 @@
 // outro.js
 let socket;
 
-// 1) Register your socket handler
+// Register socket handler
 Hooks.once("socketlib.ready", () => {
 	socket = socketlib.registerSystem("bizarre-adventures-d6");
 	socket.register("triggerOutroEffect", triggerOutroEffect);
 });
 
-// 2) Wire up your scene button on init
+// Wire up scene button on init
 Hooks.once("init", () => {
 	outroControl();
 });

@@ -45,7 +45,7 @@ export function renderStatChart(app, html, data) {
     , stats.precision?.value ?? 0
     , stats.range?.value ?? 0
     , stats.durability?.value ?? 0
-    , stats.learning?.temp ?? 0 // default to temp view for chart
+    , stats.learning?.orig ?? 0 // default to temp view for chart
   ];
 	requestAnimationFrame(() => {
 		const accentLight = getComputedStyle(document.documentElement)

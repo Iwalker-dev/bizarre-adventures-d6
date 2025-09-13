@@ -5,20 +5,20 @@ let currentHue = 0;
 let targetHue = 0;
 let animTicker = null;
 
-// 1) Register your socket handler
+// 1) Register socket handler
 Hooks.once("socketlib.ready", () => {
 	socket = socketlib.registerSystem("bizarre-adventures-d6");
 	socket.register("stepHueShift", stepHueShift);
 });
 
-// 2) Ensure your control hooks are bound on init
+// 2) Ensure control hooks are bound on init
 Hooks.once("init", () => {
 	HueShiftControl();
 });
 
 export function HueShiftControl() {
 
-	// —— A) Register the Reset-Hue keybinding here ——
+	// Register the Reset-Hue keybinding here ——
 	game.keybindings.register("bizarre-adventures-d6", "resetHue", {
 		name: "Reset Canvas Hue"
 		, hint: "Zero out the current scene hue filter"
@@ -36,7 +36,7 @@ export function HueShiftControl() {
 			return false; // Prevent browser reload
 		}
 	});
-	// 1) Left–click via onChange (no deprecation warnings)
+	// Create button in Lighting tab (fixed for depreciations)
 	Hooks.on("getSceneControlButtons", (controls) => {
 		const lighting = controls.lighting;
 		if (!lighting) return;
@@ -50,13 +50,10 @@ export function HueShiftControl() {
 			, active: targetHue !== 0
 			, order: 100
 			, onChange: (_value, event) => {
-				if (event.shiftKey) {
-					// Shift+click resets
-					socket.executeForEveryone("stepHueShift", -targetHue);
-				} else {
-					// Normal click advances
+          if (targetHue == 0) ui.notifications.info("Reset hue through its keybind (Ctrl+H by default)")
+          if (targetHue == 330) ui.notifications.warn("Next click will reset hue")
 					socket.executeForEveryone("stepHueShift", 30);
-				}
+          
 				ui.controls.render();
 			}
 		};
@@ -66,7 +63,7 @@ export function HueShiftControl() {
 }
 
 // Core hue-shifting logic, run via socket on everyone
-function stepHueShift(step = 30) {
+function stepHueShift(step) {
 	if (!canvas.scene) return;
 
 	// Create & attach the filter if needed

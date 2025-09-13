@@ -5,11 +5,11 @@ export function setupStats() {
 	Hooks.on("renderActorSheet", (app, html, data) => {
 		console.log("Actor sheet rendered. Updating UI and background...");
 
-		// ===================== STAR + CHART RENDERING =====================
+		// Star + Chart rendering
 		renderStars(html, app.actor);
 		renderStatChart(app, html, data);
 
-		// ===================== TABS =====================
+		// Tab rendering
 		if (!app.activeTab) app.activeTab = "stats";
 
 		html.find(".tabs a").removeClass("active");
@@ -35,7 +35,7 @@ export function setupStats() {
 		html.find(".tabs .button-container").removeClass("active");
 		html.find(`.tabs .button-container:has(a[data-tab='${app.activeTab}'])`).addClass("active");
 
-		// ===================== COLOR THEMING =====================
+		// Color theming
 		let userColor;
 		const ownerUser = game.users.players.find(u => app.actor.testUserPermission(u, "OWNER"));
 		if (ownerUser?.color) {
@@ -61,36 +61,8 @@ export function setupStats() {
 		sheetRoot.style.setProperty("--accent-color", userColor);
 		sheetRoot.style.setProperty("--accent-light", lightColor);
 		sheetRoot.style.setProperty("--accent-dark", darkColor);
-		/*
-		    // ===================== STAND TYPE LABELS =====================
-		    const statLabels = {
-		      Hamon: ['Strength', 'Accuracy', 'Agility', 'Conduction', 'Blocking', 'Learning'],
-		      Vampire: ['Strength', 'Senses', 'Reflex', 'Bodily Control', 'Resilience', 'Learning'],
-		      'Pillar Man': ['Strength', 'Senses', 'Reflexes', 'Bodily Control', 'Resilience', 'Learning'],
-		      Spin: ['Mass', 'Control', 'Velocity', 'RPM', 'Sturdiness', 'Learning'],
-		      'Armed Phenomenon': ['Strength', 'Accuracy', 'Agility', 'Evolution', 'Endurance', 'Learning'],
-		      Cyborg: ['Tech Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning'],
-		      Other: ['Power', 'Precision', 'Speed', 'Range', 'Durability', 'Learning']
-		    };
 
-		    const updateStatLabels = (type) => {
-		      const labels = statLabels[type] || statLabels.Other;
-		      html.find('[data-stat="power"] label').text(labels[0]);
-		      html.find('[data-stat="precision"] label').text(labels[1]);
-		      html.find('[data-stat="speed"] label').text(labels[2]);
-		      html.find('[data-stat="range"] label').text(labels[3]);
-		      html.find('[data-stat="durability"] label').text(labels[4]);
-		      html.find('[data-stat="learning"] label').text(labels[5]);
-		    };
-
-		    html.find('#stand-type').on('change', (event) => {
-		      updateStatLabels(event.target.value);
-		    });
-
-		    const initialType = html.find('#stand-type').val();
-		    updateStatLabels(initialType);
-		*/
-		// ===================== CUSTOM BUTTON HANDLERS =====================
+		// Cutsom Button Handling
 		const bioButton = html.find(".tabs a[data-tab='bio']");
 		const hitButton = html.find(".tabs a[data-tab='hit']");
 		const hitTabContent = html.find(".tab[data-tab='hit']");
