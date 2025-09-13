@@ -14,7 +14,7 @@
 - Cleaned up utils.js
 
 ### Automatic
-- FoundryVTT Release (testing...)
+- FoundryVTT Release (testing.....)
 
 
 # What's left?
