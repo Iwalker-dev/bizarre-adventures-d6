@@ -4,8 +4,7 @@
 ## [0.9.4] – 2025-09-06
 
 ## Readability fixes
-
-### Beautified All (owned) JS
+- Beautified All (owned) JS.
 
 ### Notifications
 - Hue shift now reminds you of its keybind, and warns when it will reset.
