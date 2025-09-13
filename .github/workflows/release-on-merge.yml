@@ -59,17 +59,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          gh auth status
           gh release delete v${{ steps.meta.outputs.version }} -y --cleanup-tag || true
 
-      - name: Recreate release at current commit
+      - name: Clean local tag & sync with origin
+        shell: pwsh
+        run: |
+          git tag -d v${{ steps.meta.outputs.version }} 2>$null | Out-Null
+          git fetch --tags --prune --force
+
+      - name: Recreate release at current commit (zip + notes)
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
           $changelog = Get-Content CHANGELOG.md -Raw
           $notes = "Automated overwrite on Unreleased→main merge`n`n$changelog"
+          $head = (git rev-parse HEAD)
           gh release create v${{ steps.meta.outputs.version }} `
             "${{ steps.meta.outputs.zip }}" `
             --title "v${{ steps.meta.outputs.version }}" `
-            --notes "$notes"
+            --notes "$notes" `
+            --target $head
+
