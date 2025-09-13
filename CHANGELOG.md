@@ -14,6 +14,9 @@
 - Cleaned up bad6.js
 - Cleaned up utils.js
 
+### Automatic
+- FoundryVTT Release
+
 
 # What's left?
 - Create different backgrounds for all user types
