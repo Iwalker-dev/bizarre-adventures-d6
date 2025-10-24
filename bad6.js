@@ -13,7 +13,11 @@ import { PowerSheet } from "./modules/sheets/power-actor-sheet.js";
 import { HitItemSheet } from "./modules/sheets/hit-item-sheet.js";
 import { DefaultItemSheet } from "./modules/sheets/default-item-sheet.js";
 
+
+
+
 Hooks.once("init", async () => {
+	
 	console.log("BAD6 Core System is Initializing");
 	Hooks.on("renderActorSheet", (app) => {
 		console.log(`Rendered: ${app.actor.name}, Sheet: ${app.constructor.name}, Type: ${app.actor.type}`);
@@ -29,38 +33,37 @@ Hooks.once("init", async () => {
 	registerHandlebarsHelpers();
 
 	// Replace default sheet registry
-	Items.unregisterSheet("core", ItemSheet);
-	Actors.unregisterSheet("core", ActorSheet);
+	foundry.documents.collections.Items.unregisterSheet("core", foundry.appv1.sheets.ItemSheet);
+	foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
+
+
+
 	CONFIG.BAD6 = BAD6;
 	CONFIG.INIT = true;
 
 
 
-	Actors.registerSheet("bizarre-adventures-d6", UserSheet, {
+	foundry.documents.collections.Actors.registerSheet("bizarre-adventures-d6", UserSheet, {
 		types: ["user"]
 		, makeDefault: true
 	});
-	Actors.registerSheet("bizarre-adventures-d6", StandSheet, {
+	foundry.documents.collections.Actors.registerSheet("bizarre-adventures-d6", StandSheet, {
 		types: ["stand"]
 		, makeDefault: true
 	});
-	Actors.registerSheet("bizarre-adventures-d6", PowerSheet, {
+	foundry.documents.collections.Actors.registerSheet("bizarre-adventures-d6", PowerSheet, {
 		types: ["power"]
 		, makeDefault: true
 	});
-	Items.registerSheet("bizarre-adventures-d6", HitItemSheet, {
+	foundry.documents.collections.Items.registerSheet("bizarre-adventures-d6", HitItemSheet, {
 		types: ["hit"]
 		, makeDefault: true
 	});
-	Items.registerSheet("bizarre-adventures-d6", DefaultItemSheet, {
+	foundry.documents.collections.Items.registerSheet("bizarre-adventures-d6", DefaultItemSheet, {
 		types: ["item"]
 		, makeDefault: true
 	});
 
-	CONFIG.Item.documentClasses = {
-		hit: HitItemSheet
-		, item: DefaultItemSheet
-	};
 });
 
 Hooks.once("ready", async () => {

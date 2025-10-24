@@ -1,4 +1,4 @@
-export class HitItemSheet extends ItemSheet {
+export class HitItemSheet extends foundry.appv1.sheets.ItemSheet {
 	/**
 	 * Default options for the Hit Item Sheet
 	 */

@@ -16,6 +16,11 @@
 ### Automation
 - FoundryVTT Release 
 
+## [0.9.5] - 2025-10-10
+
+## Actor Sheet Functionality
+- Added Images to sheets
+
 
 # What's left?
 - Create different backgrounds for all user types
@@ -23,4 +28,5 @@
 - Clean up code
 - Make more User-Friendly
 - Remove Depreciated methods
-- Add to FoundryVTT
+- Add to FoundryVTT browser
+- Fix issue with sidebar buttons appearing as "SIDEBAR.ACTIONS.CREATE"

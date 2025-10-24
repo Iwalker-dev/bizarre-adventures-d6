@@ -1,5 +1,5 @@
 // modules/migration.js
-Hooks.once("init", () => {
+Hooks.once("ready", () => {
 	game.settings.register("bizarre-adventures-d6", "migrationVersion", {
 		name: "Last migration version"
 		, scope: "world"

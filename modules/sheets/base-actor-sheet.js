@@ -1,4 +1,4 @@
-export class BaseActorSheet extends ActorSheet {
+export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 	static get defaultOptions() {
 		return foundry.utils.mergeObject(super.defaultOptions, {
 			classes: ["bizarre-adventures-d6", "sheet", "actor-sheet", "character-sheet"]

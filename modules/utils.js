@@ -81,7 +81,7 @@ export async function preloadHandlebarsTemplates() {
   
 	, ];
 
-	const [shellTpl, navTpl, classTpl, statsTp1] = await loadTemplates(templatePaths);
+	const [shellTpl, navTpl, classTpl, statsTp1] = await foundry.applications.handlebars.loadTemplates(templatePaths);
 
 	// Register based on hbs naming convention
 	Handlebars.registerPartial("actor-shell", shellTpl);

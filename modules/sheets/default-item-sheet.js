@@ -1,4 +1,4 @@
-export class DefaultItemSheet extends ItemSheet {
+export class DefaultItemSheet extends foundry.appv1.sheets.ItemSheet {
 	/**
 	 * Default options for the Default Item Sheet
 	 */
