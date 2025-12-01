@@ -99,13 +99,11 @@
   		document.documentElement.style.setProperty("--accent-light", light);
   		document.documentElement.style.setProperty("--accent-dark", dark);
 
-  		// Dark Determination toggle button
-  		html.find(".dark-determination-toggle")
-  			.click(this._onToggleDarkDetermination.bind(this));
+		// Dark Determination toggle button
+		html.find(".dark-determination-toggle")
+			.click(this._onToggleDarkDetermination.bind(this));
 
-  		// Render star ratings for stats
-
-  		// Handle Type dropdown changes
+		// Render star ratings for stats  		// Handle Type dropdown changes
   		const current = this.actor.system.info?.type;
   		if (current) {
   			html.find("#stand-type").val(current);

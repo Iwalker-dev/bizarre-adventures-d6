@@ -5,7 +5,10 @@
       <div class="character-image-box">
         <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
       </div>
-      <h1>{{actor.name}}</h1>
+      <h1 class="sheet-header">
+        <span class="name-display">{{actor.name}}</span>
+        <input class="name-edit" value="{{actor.name}}" style="display:none;" />
+      </h1>
       <div style="float:right; font-size:1.2em; color:#ccc;">
         Health: {{system.health.value}} / {{system.health.max}}
       </div>
@@ -44,8 +47,8 @@
           <div class="info-row">
             <label>Name:</label>
             <input type="text"
-              name="name"
-              value="{{actor.name}}"
+              name="system.bio.name"
+              value="{{system.bio.name}}"
               placeholder="Enter name" />
           </div>
           <div class="info-row">
@@ -84,19 +87,19 @@
           </div>
           <div class="info-row">
             <label>Appearance:</label>
-            <textarea name="system.info.appearance" rows="3" placeholder="Describe appearance">{{system.bio.appearance}}</textarea>
+            <textarea name="system.bio.appearance" rows="3" placeholder="Describe appearance">{{system.bio.appearance}}</textarea>
           </div>
           <div class="info-row">
             <label>Personality:</label>
-            <textarea name="system.info.personality" rows="3" placeholder="Describe personality">{{system.bio.personality}}</textarea>
+            <textarea name="system.bio.personality" rows="3" placeholder="Describe personality">{{system.bio.personality}}</textarea>
           </div>
           <div class="info-row">
             <label>Life Philosophy:</label>
-            <textarea name="system.info.philosophy" rows="3" placeholder="Enter life philosophy">{{system.bio.philosophy}}</textarea>
+            <textarea name="system.bio.philosophy" rows="3" placeholder="Enter life philosophy">{{system.bio.philosophy}}</textarea>
           </div>
           <div class="info-row">
             <label>Backstory:</label>
-            <textarea name="system.info.backstory" rows="5" placeholder="Enter backstory">{{system.bio.backstory}}</textarea>
+            <textarea name="system.bio.backstory" rows="5" placeholder="Enter backstory">{{system.bio.backstory}}</textarea>
           </div>
         </div>
       </div>

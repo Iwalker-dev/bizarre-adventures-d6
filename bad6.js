@@ -41,8 +41,6 @@ Hooks.once("init", async () => {
 	CONFIG.BAD6 = BAD6;
 	CONFIG.INIT = true;
 
-
-
 	foundry.documents.collections.Actors.registerSheet("bizarre-adventures-d6", UserSheet, {
 		types: ["user"]
 		, makeDefault: true

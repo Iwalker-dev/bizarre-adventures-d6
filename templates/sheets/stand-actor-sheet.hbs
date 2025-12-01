@@ -6,7 +6,8 @@
         <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
       </div>
       <h1 class="sheet-header">
-        {{actor.name}}
+        <span class="name-display">{{actor.name}}</span>
+        <input class="name-edit" value="{{actor.name}}" style="display:none;" />
         {{#ifEquals actor.system.info.type "Act"}}
           <!-- single-digit input bound to system.info.actNumber -->
           <span class="act-label">Act:
@@ -48,8 +49,8 @@
           <div class="info-row">
             <label>Stand:</label>
             <input type="text"
-                   name="name"
-                   value="{{actor.name}}"
+                   name="system.info.standName"
+                   value="{{system.info.standName}}"
                    placeholder="Enter stand name">
           </div>
           <div class="info-row">

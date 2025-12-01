@@ -4,7 +4,10 @@
       <div class="character-image-box">
         <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
       </div>
-      <h1>{{actor.name}}</h1>
+      <h1>
+        <span class="name-display">{{actor.name}}</span>
+        <input class="name-edit" value="{{actor.name}}" style="display:none;" />
+      </h1>
     </header>
 
     <nav class="sheet-tabs tabs" data-group="primary">
@@ -24,8 +27,8 @@
             <label>Name:</label>
             <input
               type="text"
-              name="name"
-              value="{{actor.name}}"
+              name="system.info.powerName"
+              value="{{system.info.powerName}}"
               placeholder="Enter power name"
             />
           </div>

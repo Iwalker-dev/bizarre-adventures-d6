@@ -39,13 +39,13 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 				data.system.info.type = types[0];
 			}
 		}
-		// 1) Sort by dtype (Burn first, then Number)
+		// 1) Sort by data type (Burn first, then Number)
 		const dtypeOrder = {
 			Burn: 0
 			, Number: 1
 		};
 
-		// 2) Then by your static key order
+		// 2) Then by key order
 		const keyOrder = this.constructor.statOrder;
 
 		stats.sort((a, b) => {
@@ -66,7 +66,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 	/**
 	 * Renders the clickable star‐rating widgets for a given sheet.
 	 *
-	 * @param {jQuery<HTMLElement>} html    The jQuery‐wrapped root element of the sheet.
+	 * @param {jQuery<HTMLElement>} html    Root element of the sheet.
 	 * @returns {void}
 	 */
 
@@ -81,14 +81,62 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			this.showBurnStat(statKey, valueType);
 		});
 
-		// Optionally, pre-display the “original” stars for each Burn stat:
+		// Pre-display the "original" stars for each Burn stat:
 		this.getData().stats
 			.filter(s => s.dtype === "Burn")
 			.forEach(s => this.showBurnStat(s.key, 'original'));
+
+		// Setup inline name editing for all actor sheets
+		this._activateInlineNameEdit(html);
+	}
+
+	/**
+	 * Activates inline-edit behavior for actor names.
+	 * Allows clicking the name in the header to toggle edit mode.
+	 * Saves on blur/Enter, cancels on Escape.
+	 * @param {jQuery<HTMLElement>} html - The sheet HTML element.
+	 * @private
+	 */
+	_activateInlineNameEdit(html) {
+		if (!this.actor.isOwner) return;
+
+		const $nameDisplay = html.find('.name-display');
+		const $nameInput = html.find('.name-edit');
+
+		if (!$nameDisplay.length || !$nameInput.length) return;
+
+		$nameDisplay.on('click', ev => {
+			$nameDisplay.hide();
+			$nameInput.show().focus().select();
+		});
+
+		$nameInput.on('blur', async ev => {
+			const newName = ev.target.value?.trim() || "";
+			if (newName && newName !== this.actor.name) {
+				try {
+					await this.actor.update({ name: newName });
+				} catch (err) {
+					console.error('Failed to update actor name', err);
+				}
+			}
+			$nameInput.hide();
+			$nameDisplay.text(this.actor.name).show();
+		});
+
+		$nameInput.on('keydown', ev => {
+			if (ev.key === 'Enter') {
+				ev.preventDefault();
+				$nameInput[0].blur();
+			} else if (ev.key === 'Escape') {
+				ev.preventDefault();
+				$nameInput.hide();
+				$nameDisplay.show();
+			}
+		});
 	}
 
 	async _render(force, options) {
-		// 0) Look for any null‐valued stats and schedule their deletion
+		// Look for any null‐valued stats and schedule their deletion
 		const stats = this.actor.system.attributes.stats || {};
 		const deletions = {};
 		for (const [key, val] of Object.entries(stats)) {
@@ -98,12 +146,12 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			}
 		}
 
-		// 1) If there are any deletions, apply them and re‐render once
+		// If there are any deletions, apply them and re‐render once
 		if (Object.keys(deletions).length) {
 			await this.actor.update(deletions);
 		}
 
-		// 2) No nulls to delete: proceed with your normal render logic
+		// No nulls to delete: proceed with your normal render logic
 		await super._render(force, options);
 
 		const $sheet = this.element.find('.jojo-sheet');

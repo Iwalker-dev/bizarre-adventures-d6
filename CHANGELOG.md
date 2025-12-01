@@ -18,9 +18,15 @@
 
 ## [0.9.5] - 2025-10-10
 
-## Actor Sheet Functionality
+#### Actor Sheet Functionality
 - Added Images to sheets
 
+### - 2025-11-28
+#### Bug Fixes
+- Fixed an error with user input rendering
+
+#### Features
+- Added basic direct Actor name changing support for owners (Click the name)
 
 # What's left?
 - Create different backgrounds for all user types
@@ -30,3 +36,5 @@
 - Remove Depreciated methods
 - Add to FoundryVTT browser
 - Fix issue with sidebar buttons appearing as "SIDEBAR.ACTIONS.CREATE"
+
+
