@@ -1,6 +1,6 @@
   // systems/bizarre-adventures-d6/scripts/sheets/user-actor-sheet.js
   import { BaseActorSheet } from "./base-actor-sheet.js";
-  import { typeConfigs }    from "../config/actor-configs.js";
+  import { typeConfigs }    from "../config.js";
 
   /**
    * The UserSheet class manages the actor sheet for 'user' type actors.

@@ -28,6 +28,9 @@
 #### Features
 - Added basic direct Actor name changing support for owners (Click the name)
 
+#### Optimization
+- Moved actor-configs.js to config.js
+
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option

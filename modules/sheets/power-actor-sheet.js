@@ -1,5 +1,5 @@
 import { BaseActorSheet } from "./base-actor-sheet.js";
-import { typeConfigs }    from "../config/actor-configs.js";
+import { typeConfigs }    from "../config.js";
 const mergeObject = foundry.utils.mergeObject;
 
 export class PowerSheet extends BaseActorSheet {
@@ -36,7 +36,7 @@ export class PowerSheet extends BaseActorSheet {
 		// Set description
 		data.system.info.description = data.extraConfig.description || "";
 
-		// —— NEW: statLabelMap —— 
+
 		const keys = ['power', 'precision', 'speed', 'range', 'durability', 'learning'];
 		data.statLabelMap = {};
 		if (Array.isArray(data.extraConfig.statlabels)) {
@@ -45,7 +45,7 @@ export class PowerSheet extends BaseActorSheet {
 				if (key) data.statLabelMap[key] = lbl;
 			});
 		}
-		// ————————————————
+
 
 		data.getSelectedValue = stat => {
 			const s = this.actor.system.attributes.stats[stat];
@@ -69,7 +69,7 @@ export class PowerSheet extends BaseActorSheet {
 			});
 		});
 
-		// 1) Force the select to show the actual stored value
+		// Force the select to show the actual stored value
 		const current = this.actor.system.info?.type;
 		if (current) {
 			html.find("#power-type").val(current);

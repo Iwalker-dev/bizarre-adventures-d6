@@ -1,5 +1,5 @@
 import { BaseActorSheet } from "./base-actor-sheet.js";
-import { typeConfigs }    from "../config/actor-configs.js";
+import { typeConfigs }    from "../config.js";
 
 export class StandSheet extends BaseActorSheet {
 
@@ -10,7 +10,7 @@ export class StandSheet extends BaseActorSheet {
 			, width: 800
 			, height: 800
 			, tabs: [{
-				navSelector: ".sheet-tabs", // ← matches your <nav class="tabs">
+				navSelector: ".sheet-tabs", // ← matches <nav class="tabs">
 				contentSelector: "section.sheet-body"
 				, initial: "stats"
       }]
@@ -46,12 +46,12 @@ export class StandSheet extends BaseActorSheet {
 		// Render all of the “star” click‐to‐set listeners
 		this.renderStars(html);
 
-		// Handle any custom “switch-value” buttons you have (e.g. Burn vs Live, Original vs Temp, etc.)
+		// Handle any custom “switch-value” buttons have (e.g. Burn vs Live, Original vs Temp, etc.)
 		html.find(".switch-value").click(ev => {
 			const button = ev.currentTarget;
 			const stat = button.dataset.stat;
 			const valueType = button.dataset.value;
-			// Toggle the selected sub-value on your actor’s stats
+			// Toggle the selected sub-value on actor’s stats
 			this.actor.update({
 				[`system.attributes.stats.${stat}.selected`]: valueType
 			});
@@ -61,10 +61,10 @@ export class StandSheet extends BaseActorSheet {
 			const newType = ev.target.value;
 			const updates = {};
 
-			// 1) pull in your full map of stand‐type configs
+			// Map of stand‐type configs
 			const configs = typeConfigs.stand;
 
-			// 2) loop every entry in that map
+			// Loop every entry in that map
 			for (const [typeName, config] of Object.entries(configs)) {
 				const statsArray = config.stats || [];
 				if (typeName !== newType) {
