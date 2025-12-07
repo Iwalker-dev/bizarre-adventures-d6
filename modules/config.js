@@ -25,7 +25,20 @@ export const typeConfigs = {
 		}
 		, Freak: {
 			label: "Freak"
-			, cost: "1-3 User Points"
+      , fields: [
+        {
+          name: "cost"
+          , label: "Trait Cost"
+          , type: "text"
+          , placeholder: "1-3 User Points"
+        }
+        , {
+          name: "Trait"
+          , label: "Trait Description"
+          , type: "textarea"
+        }
+      ]
+      , cost: "1-3 User Points"
 			, description: `
         <p><em><u>Freak ⚕</u></em></p>
         <p>Someone with anomalous powers that defy explanation, not tied to a Power Source.</p>

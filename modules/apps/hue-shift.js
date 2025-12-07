@@ -50,7 +50,7 @@ export function HueShiftControl() {
 			, active: targetHue !== 0
 			, order: 100
 			, onChange: (_value, event) => {
-          if (targetHue == 0) ui.notifications.info("Reset hue through its keybind (Ctrl+H by default)")
+          if (targetHue == 30) ui.notifications.info("Reset hue through its keybind (Ctrl+H by default)")
           if (targetHue == 330) ui.notifications.warn("Next click will reset hue")
 					socket.executeForEveryone("stepHueShift", 30);
           

@@ -1,4 +1,3 @@
-// roller.js
 let socket;
 
 // Register socket function as soon as socketlib is ready
@@ -223,7 +222,14 @@ function convDC(value) {
 	return map[value] || "Literally Impossible";
 }
 
-// 5) The main entrypoint
+// Helper to find a non-GM owner or fallback to GM
+function findOwner(actor) {
+	return game.users.find(u => !u.isGM && actor.testUserPermission(u, "OWNER")) ||
+		game.users.find(u => u.isGM);
+}
+
+
+// The main entrypoint
 async function main() {
 	let rollSum = 0;
 	let advantage, actor, stat;
@@ -286,11 +292,4 @@ async function main() {
 		, content: `Total: ${rollSum}! ${DC}`
 		, whisper: ownerIds
 	});
-}
-
-
-// Helper to find a non-GM owner or fallback to GM
-function findOwner(actor) {
-	return game.users.find(u => !u.isGM && actor.testUserPermission(u, "OWNER")) ||
-		game.users.find(u => u.isGM);
 }

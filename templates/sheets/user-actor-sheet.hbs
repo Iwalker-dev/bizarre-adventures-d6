@@ -85,6 +85,38 @@
               {{/each}}
             </select>
           </div>
+          {{!-- Render any additional fields defined by the selected type's config --}}
+          {{#if extraConfig.fields}}
+            {{#each extraConfig.fields}}
+              <div class="info-row">
+                <label>{{this.label}}:</label>
+                {{!-- textarea --}}
+                {{#ifEquals this.type "textarea"}}
+                  <textarea data-noautosubmit="true" name="system.info.{{this.name}}" rows="{{this.rows}}">{{lookup ../system.info this.name}}</textarea>
+                {{else}}
+                  {{!-- select --}}
+                  {{#ifEquals this.type "select"}}
+                    <select data-noautosubmit="true" name="system.info.{{this.name}}">
+                      {{#each this.options}}
+                        <option value="{{this.value}}" {{#ifEquals (lookup ../../system.info ../this.name) this.value}}selected{{/ifEquals}}>{{this.label}}</option>
+                      {{/each}}
+                    </select>
+                  {{else}}
+                    {{!-- default input (text/number/etc) --}}
+                    <input
+                      data-noautosubmit="true"
+                      type="{{this.type}}"
+                      name="system.info.{{this.name}}"
+                      value="{{lookup ../system.info this.name}}"
+                      {{#if this.placeholder}}placeholder="{{this.placeholder}}"{{/if}}
+                      {{#if this.min}}min="{{this.min}}"{{/if}}
+                      {{#if this.max}}max="{{this.max}}"{{/if}}
+                    />
+                  {{/ifEquals}}
+                {{/ifEquals}}
+              </div>
+            {{/each}}
+          {{/if}}
           <div class="info-row">
             <label>Appearance:</label>
             <textarea name="system.bio.appearance" rows="3" placeholder="Describe appearance">{{system.bio.appearance}}</textarea>

@@ -104,7 +104,7 @@
 		// Render star ratings for stats  		// Handle Type dropdown changes
   		const current = this.actor.system.info?.type;
   		if (current) {
-  			html.find("#stand-type").val(current);
+  			html.find("#user-type").val(current);
   		}
 
   		// Health max input change updates actor

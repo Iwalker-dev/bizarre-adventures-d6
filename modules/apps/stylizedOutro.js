@@ -54,7 +54,7 @@ function sendOutroEffect(wiggleAmount, wiggleDuration) {
 	}, 2500);
 }
 
-// 4) Client-side effect: tint, arrow, shake
+// Client-side effect: tint, arrow, shake
 function triggerOutroEffect(wiggleAmount, wiggleDuration) {
 	console.log("Outro received, everybody freeze!");
 

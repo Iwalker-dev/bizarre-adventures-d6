@@ -9,6 +9,8 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 				, contentSelector: ".sheet-body"
 				, initial: "stats"
 			}]
+			, submitOnChange: true
+			, closeOnSubmit: false
 		});
 	}
 
