@@ -177,6 +177,38 @@
   			const hit = this.actor.items.get(id);
   			if (hit) hit.sheet.render(true);
   		});
+
+		// Prevent autosubmit from stealing focus while typing in special fields
+		// Marked in templates with `data-noautosubmit="true"`.
+		html.find('[data-noautosubmit="true"]').on("input", ev => {
+			ev.stopImmediatePropagation();
+		});
+
+		// Persist any `system.info.*` fields on change/blur so dynamic fields save reliably
+		html.find('[name^="system.info."]').on("change blur", async ev => {
+			// Prevent other handlers (like autosubmit) from firing first
+			ev.stopImmediatePropagation();
+			const el = ev.currentTarget;
+			const path = el.name;
+			let value;
+			if (el.type === "checkbox") value = el.checked;
+			else value = el.value;
+
+			// Coerce number inputs to numbers
+			if (el.type === "number") {
+				const n = parseFloat(value);
+				if (!Number.isNaN(n)) value = n;
+			}
+
+			console.debug("UserSheet: saving field", path, value);
+			// Update the actor with the single changed path
+			try {
+				await this.actor.update({ [path]: value });
+				console.debug("UserSheet: saved field", path);
+			} catch (err) {
+				console.error("UserSheet: Failed to save user sheet field", path, err);
+			}
+		});
   	}
 
   	/**
