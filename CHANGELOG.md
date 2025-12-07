@@ -36,6 +36,11 @@
 #### Features
 - Added custom default images for Power types
 
+### - 2025-12-6
+#### Features
+- Added fields for Freak types
+- Added scalability for future types
+
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option
