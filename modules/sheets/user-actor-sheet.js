@@ -45,8 +45,11 @@
   		data.system.info.type = data.system.info.type ?? "user";
   		data.typeConfigs = typeConfigs.user; // Options for <select>
 		data.extraConfig = data.typeConfigs[data.system.info.type] || {};
-		data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");  		data.system.info.description = data.extraConfig.description || "";
-  		data.system.info.cost = data.extraConfig.cost || "";
+		data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
+		// Only apply type defaults when the actor doesn't already have values
+		data.system.info.description = data.system.info.description ?? data.extraConfig.description ?? "";
+		// Do not copy human-readable config 'cost' into actor data (it can be non-numeric).
+		// Use placeholders in the template instead (template already supports `placeholder`).
   		data.getSelectedValue = (stat) => {
   			const statData = this.actor.system.attributes.stats[stat];
   			return statData[statData.selected] || 0;
@@ -201,10 +204,12 @@
 			}
 
 			console.debug("UserSheet: saving field", path, value);
-			// Update the actor with the single changed path
+			// Update the actor with the single changed path. If this sheet is a synthetic
+			// token actor, update the base Actor document so changes persist.
+			const baseActor = game.actors.get(this.actor.id) || this.actor;
 			try {
-				await this.actor.update({ [path]: value });
-				console.debug("UserSheet: saved field", path);
+				await baseActor.update({ [path]: value });
+				console.debug("UserSheet: saved field", path, baseActor === this.actor ? "(self)" : "(base)");
 			} catch (err) {
 				console.error("UserSheet: Failed to save user sheet field", path, err);
 			}
