@@ -124,6 +124,20 @@ Hooks.once("ready", async () => {
 		console.log("BAD6 | Applied 0.9.3 migration (-learning-original,temp,perm on power users).");
 	}
 
+	// — 0.9.5 migration: apply default type images to power actors with mystery man
+	if (isNewer(current, previous) &&
+		isNewer("0.9.5", previous) &&
+		!isNewer("0.9.5", current)
+	) {
+		for (const actor of game.actors.filter(a => a.type === "power")) {
+			const typeKey = actor.system.info?.type;
+			await actor.update({ "system.info.type": typeKey });
+			console.log(`Updated ${actor.name}`);
+			updated++;
+		}
+		console.log("BAD6 | Applied 0.9.5 migration (default type images for power actors) x", updated);
+	}
+
 	// — Record that we’re now at `current` —
 	await game.settings.set("bizarre-adventures-d6", "migrationVersion", current);
 });

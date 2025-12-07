@@ -44,10 +44,8 @@
   		data.system.info = data.system.info ?? {};
   		data.system.info.type = data.system.info.type ?? "user";
   		data.typeConfigs = typeConfigs.user; // Options for <select>
-  		data.extraConfig = data.typeConfigs[data.system.info.type] || {};
-  		data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
-
-  		data.system.info.description = data.extraConfig.description || "";
+		data.extraConfig = data.typeConfigs[data.system.info.type] || {};
+		data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");  		data.system.info.description = data.extraConfig.description || "";
   		data.system.info.cost = data.extraConfig.cost || "";
   		data.getSelectedValue = (stat) => {
   			const statData = this.actor.system.attributes.stats[stat];

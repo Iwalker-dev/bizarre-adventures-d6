@@ -31,6 +31,11 @@
 #### Optimization
 - Moved actor-configs.js to config.js
 
+### - 2025-12-3
+
+#### Features
+- Added custom default images for Power types
+
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option
@@ -39,5 +44,6 @@
 - Remove Depreciated methods
 - Add to FoundryVTT browser
 - Fix issue with sidebar buttons appearing as "SIDEBAR.ACTIONS.CREATE"
+- Add cutom images for user and stand type actors
 
 

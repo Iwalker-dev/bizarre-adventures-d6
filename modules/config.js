@@ -267,6 +267,15 @@ export const typeConfigs = {
 		, }
 		, Hamon: {
 			label: "Hamon Warrior"
+      , image: "systems/bizarre-adventures-d6/assets/icons/powers/energy-breath.svg"
+      , fields: [
+        {
+          name: "overdrive",
+          label: "Overdrive",
+          type: "textarea",
+          placeholder: "e.g. Ripple Strike"
+        }
+      ]
 			, statlabels: [
         "Strength (Power)"
         , "Accuracy (Precision)"
@@ -325,6 +334,7 @@ export const typeConfigs = {
 		}
 		, Vampire: {
 			label: "Vampire"
+      , image: "systems/bizarre-adventures-d6/assets/icons/powers/cracked-mask.svg"
 			, statlabels: [
         "Strength (Power)"
         , "Senses (Precision)"
@@ -387,6 +397,7 @@ export const typeConfigs = {
 		}
 		, Spin: {
 			label: "Spin"
+      , image: "systems/bizarre-adventures-d6/assets/icons/powers/ink-swirl.svg"
 			, statlabels: [
         "Mass (Power)"
         , "Manuverability (Precision)"
@@ -445,6 +456,7 @@ export const typeConfigs = {
 		}
 		, Armed: {
 			label: "Armed Phenomenon"
+      , image: "systems/bizarre-adventures-d6/assets/icons/powers/tadpole.svg"
 			, statlabels: [
         "Strength (Power)"
         , "Accuracy (Precision)"
@@ -502,6 +514,14 @@ export const typeConfigs = {
 		}
 		, Cyborg: {
 			label: "Cyborg"
+      , image: "systems/bizarre-adventures-d6/assets/icons/powers/cyborg-face.svg"
+        , fields: [
+          {
+            name: "Upgrades",
+            label: "Upgrade Description",
+            type: "textarea"
+          }
+        ]
 			, statlabels: [
         "Tech Power (Power)"
         , "Precision (Precision)"

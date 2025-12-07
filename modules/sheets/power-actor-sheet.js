@@ -58,6 +58,12 @@ export class PowerSheet extends BaseActorSheet {
 		super.activateListeners(html);
 		this.renderStars(html);
 
+		// Prevent auto-submit handlers from interrupting typing in configured fields
+		// Inputs marked with `data-noautosubmit="true"` will not bubble their input/change
+		html.find('[data-noautosubmit="true"]').on('input change', ev => {
+			ev.stopImmediatePropagation();
+		});
+
 		// Burn‐type toggles
 		html.find(".switch-value").click(ev => {
 			const {

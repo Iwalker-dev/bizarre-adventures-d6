@@ -1,3 +1,5 @@
+import { typeConfigs } from "../config.js";
+
 export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 	static get defaultOptions() {
 		return foundry.utils.mergeObject(super.defaultOptions, {
@@ -18,12 +20,36 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
     , "range"
     , "learning"
   ];
+
+    static {
+        Hooks.on('preUpdateActor', (actor, update, options) => {
+			// Use custom default image based on type (Currently only for Power)
+            if (update.system?.info?.type) {
+                const typeKey = update.system.info.type;
+                const actorType = actor.type;
+                const typeConfigsForActorType = typeConfigs[actorType] || {};
+                const typeConfig = typeConfigsForActorType[typeKey];
+				console.error("BaseActorSheet | typeConfig", typeConfig?.image);
+
+                const isKnownTypeImage = Object.values(typeConfigsForActorType).some(config => config.image === actor.img);
+				if (actor.img == "icons/svg/mystery-man.svg" || isKnownTypeImage) {
+					if (typeConfig?.image) {
+						update.img = typeConfig.image;
+						console.error(update.img);
+					} else {
+						update.img = "icons/svg/mystery-man.svg";
+					}
+				}
+            }
+        });
+    }
+
 	/** @override **/
 	getData() {
 		const data = super.getData();
 		const statsObj = data.actor.system.attributes.stats || {};
 
-		// Build the flat array
+		// flat array
 		const stats = Object.entries(statsObj).map(([key, stat]) => ({
 			key
 			, dtype: stat.dtype
@@ -39,13 +65,13 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 				data.system.info.type = types[0];
 			}
 		}
-		// 1) Sort by data type (Burn first, then Number)
+		// Sort by data type (Burn first, then Number)
 		const dtypeOrder = {
 			Burn: 0
 			, Number: 1
 		};
 
-		// 2) Then by key order
+		// Then by key order
 		const keyOrder = this.constructor.statOrder;
 
 		stats.sort((a, b) => {
@@ -58,6 +84,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			// missing keys go to the end
 			return (ai < 0 ? Infinity : ai) - (bi < 0 ? Infinity : bi);
 		});
+
 
 		data.stats = stats;
 		return data;
