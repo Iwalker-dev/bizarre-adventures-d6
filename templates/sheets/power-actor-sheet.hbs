@@ -27,8 +27,8 @@
             <label>Name:</label>
             <input
               type="text"
-              name="system.info.powerName"
-              value="{{system.info.powerName}}"
+              name="system.bio.powerName"
+              value="{{system.bio.powerName}}"
               placeholder="Enter power name"
             />
           </div>
@@ -36,24 +36,24 @@
             <label>User:</label>
             <input
               type="text"
-              name="system.info.master"
-              value="{{system.info.master}}"
+              name="system.bio.master"
+              value="{{system.bio.master}}"
               placeholder="Enter user name"
             />
           </div>
           <div class="info-row">
             <label>Design:</label>
             <textarea
-              name="system.info.design"
+              name="system.bio.design"
               rows="3"
               placeholder="Enter design"
-            >{{system.info.design}}</textarea>
+            >{{system.bio.design}}</textarea>
           </div>
           <div class="info-row">
             <label>Type:</label>
-            <select id="power-type" name="system.info.type">
+            <select id="power-type" name="system.bio.type">
               {{#each typeConfigs}}
-                <option value="{{@key}}" {{#ifEquals system.info.type @key}}selected{{/ifEquals}}>
+                <option value="{{@key}}" {{#ifEquals system.bio.type @key}}selected{{/ifEquals}}>
                   {{this.label}}
                 </option>
               {{/each}}
@@ -66,13 +66,13 @@
                 <label>{{this.label}}:</label>
                 {{!-- textarea --}}
                   {{#ifEquals this.type "textarea"}}
-                  <textarea data-noautosubmit="true" name="system.info.{{this.name}}" rows="{{this.rows}}">{{lookup ../system.info this.name}}</textarea>
+                  <textarea data-noautosubmit="true" name="system.bio.{{this.name}}" rows="{{this.rows}}">{{lookup ../system.bio this.name}}</textarea>
                 {{else}}
                   {{!-- select --}}
                   {{#ifEquals this.type "select"}}
-                    <select data-noautosubmit="true" name="system.info.{{this.name}}">
+                    <select data-noautosubmit="true" name="system.bio.{{this.name}}">
                       {{#each this.options}}
-                        <option value="{{this.value}}" {{#ifEquals (lookup ../../system.info ../this.name) this.value}}selected{{/ifEquals}}>{{this.label}}</option>
+                        <option value="{{this.value}}" {{#ifEquals (lookup ../../system.bio ../this.name) this.value}}selected{{/ifEquals}}>{{this.label}}</option>
                       {{/each}}
                     </select>
                   {{else}}
@@ -80,8 +80,8 @@
                     <input
                       data-noautosubmit="true"
                       type="{{this.type}}"
-                      name="system.info.{{this.name}}"
-                      value="{{lookup ../system.info this.name}}"
+                      name="system.bio.{{this.name}}"
+                      value="{{lookup ../system.bio this.name}}"
                       {{#if this.min}}min="{{this.min}}"{{/if}}
                       {{#if this.max}}max="{{this.max}}"{{/if}}
                     />
@@ -93,9 +93,9 @@
         </div>
       </div>
       <!-- ─────────────────────── Ability Description Tab ─────────────────────── -->
-      <div class="tab" data-tab="{{actor.system.info.type}}" data-group="primary">
+      <div class="tab" data-tab="{{actor.system.bio.type}}" data-group="primary">
         <div class="ability-description">
-          {{{actor.system.info.description}}}
+          {{{actor.system.bio.description}}}
       </div>
     </div>
     </section>

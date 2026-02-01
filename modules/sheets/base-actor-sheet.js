@@ -26,8 +26,8 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
     static {
         Hooks.on('preUpdateActor', (actor, update, options) => {
 			// Use custom default image based on type (Currently only for Power)
-            if (update.system?.info?.type) {
-                const typeKey = update.system.info.type;
+            if (update.system?.bio?.type) {
+                const typeKey = update.system.bio.type;
                 const actorType = actor.type;
                 const typeConfigsForActorType = typeConfigs[actorType] || {};
                 const typeConfig = typeConfigsForActorType[typeKey];
@@ -63,8 +63,8 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		}));
 		if (data.typeConfigs && typeof data.typeConfigs === "object") {
 			const types = Object.keys(data.typeConfigs);
-			if (!data.system.info.type && types.length) {
-				data.system.info.type = types[0];
+			if (!data.system.bio.type && types.length) {
+				data.system.bio.type = types[0];
 			}
 		}
 		// Sort by data type (Burn first, then Number)
@@ -117,6 +117,13 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 
 		// Setup inline name editing for all actor sheets
 		this._activateInlineNameEdit(html);
+
+		// Handle dropping actors to link abilities
+		html.find('[data-drop="ability"]').on('drop', this._onDropActor.bind(this));
+		html.find('[data-drop="ability"]').on('dragover', ev => ev.preventDefault());
+		
+		// Handle removing linked actors
+		html.find('.remove-link').on('click', this._onRemoveLink.bind(this));
 	}
 
 	/**
@@ -188,10 +195,10 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			console.error('BaseActorSheet._render(): ".jojo-sheet" element not found.');
 			return;
 		}
-		const info = this.actor.system.info || {};
+		const info = this.actor.system.bio || {};
 		const type = info.type;
 		if (!type) {
-			console.warn('BaseActorSheet._render(): actor.system.info.type is undefined. Default background applied');
+			console.warn('BaseActorSheet._render(): actor.system.bio.type is undefined. Default background applied');
 			return;
 		}
 
@@ -305,6 +312,79 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		const B = Math.min(255, (num & 0x0000FF) + amt);
 		return `rgb(${R}, ${G}, ${B})`;
 	}
+
+/**
+ * Handle dropping an actor to link as an ability
+ * @param {DragEvent} event - The drop event
+ * @private
+ */
+async _onDropActor(event) {
+    event.preventDefault();
+    
+    const data = TextEditor.getDragEventData(event);
+    
+    // Only accept Actor drops
+    if (data.type !== "Actor") {
+        ui.notifications.warn("You can only drop Actors here!");
+        return;
+    }
+    
+    const actor = await fromUuid(data.uuid);
+    if (!actor) {
+        ui.notifications.error("Could not find the dropped actor!");
+        return;
+    }
+    
+    // Get current linked actors or initialize empty array
+    const linkedActors = this.actor.system.bio.linkedActors?.value || [];
+    
+    // Check if already linked
+    if (linkedActors.some(linked => linked.uuid === data.uuid)) {
+        ui.notifications.warn(`${actor.name} is already linked!`);
+        return;
+    }
+    
+    // Add new linked actor
+    linkedActors.push({
+        uuid: data.uuid,
+        name: actor.name,
+        type: actor.type
+    });
+    
+    // Update the actor
+    await this.actor.update({
+        "system.bio.linkedActors.value": linkedActors
+    });
+    
+    ui.notifications.info(`Linked ${actor.name} as an ability!`);
+}
+
+/**
+ * Handle removing a linked actor
+ * @param {MouseEvent} event - The click event
+ * @private
+ */
+async _onRemoveLink(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const uuid = event.currentTarget.dataset.uuid;
+    const linkedActors = this.actor.system.bio.linkedActors?.value || [];
+    
+    // Find the actor name for the notification
+    const removed = linkedActors.find(linked => linked.uuid === uuid);
+    
+    // Filter out the removed actor
+    const updated = linkedActors.filter(linked => linked.uuid !== uuid);
+    
+    await this.actor.update({
+        "system.bio.linkedActors.value": updated
+    });
+    
+    if (removed) {
+        ui.notifications.info(`Removed ${removed.name} from abilities`);
+    }
+}
 
 
 }

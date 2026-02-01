@@ -24,17 +24,18 @@ export class PowerSheet extends BaseActorSheet {
 		const data = super.getData();
 		data.system = this.actor.system;
 		data.typeConfigs = typeConfigs.power;
-		data.system.info = data.system.info || {};
-		console.log("BAD6 | data.system.info.type", data.system.info.type);
+		data.system.bio = data.system.bio || {};
+		data.linkedActors = data.system.bio.linkedActors?.value || [];
+		console.log("BAD6 | data.system.bio.type", data.system.bio.type);
 		// If no type is saved yet, pretend we have one so the <select> shows it
-		if (!data.system.info.type) {
-			data.system.info.type = Object.keys(typeConfigs.power)[0];
+		if (!data.system.bio.type) {
+			data.system.bio.type = Object.keys(typeConfigs.power)[0];
 		}
 
-		data.extraConfig = data.typeConfigs[data.system.info.type] || {};
+		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
 
 		// Set description
-		data.system.info.description = data.extraConfig.description || "";
+		data.system.bio.description = data.extraConfig.description || "";
 
 
 		const keys = ['power', 'precision', 'speed', 'range', 'durability', 'learning'];
@@ -76,7 +77,7 @@ export class PowerSheet extends BaseActorSheet {
 		});
 
 		// Force the select to show the actual stored value
-		const current = this.actor.system.info?.type;
+		const current = this.actor.system.bio?.type;
 		if (current) {
 			html.find("#power-type").val(current);
 		}

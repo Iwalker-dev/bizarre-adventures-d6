@@ -97,15 +97,61 @@ function chooseAdvantage() {
 	});
 }
 
-async function findRoller(i) {
+async function findRoller(i, reaction = false) {
 	if (game.user.isGM) {
+		console.warn("BAD6 | reaction:", reaction);
+		let token;
+		let roller;
+		// Roll the same actor for both rolls if only one token is selected
 		if (canvas.tokens.controlled.length === 1) i = 0;
-		const token = canvas.tokens.controlled[i];
+		token = canvas.tokens.controlled[i];
+		roller = token.actor;
+		// If there are valid remaining targets, use them instead
+		if (reaction) {
+			// Roll the same reactor for both rolls if only one token is selected
+			if (game.user.targets.size === 1) i = 0;
+			token = Array.from(game.user.targets)[i];
+			roller = token.actor;
+		}
+		// If no token, warn and null
 		if (!token) {
 			ui.notifications.warn("No token selected. Select up to 2.");
 			return null;
 		}
-		return token.actor;
+		console.warn("BAD6 | Roller chosen:", roller.name);
+		// Otherwise use the controlled token
+		return new Promise(async (resolve, reject) => {
+				// Get linked actors from the actor's bio
+				const linkedActors = roller.system.bio.linkedActors?.value || [];
+				console.warn("BAD6 | Linked actors:", linkedActors);
+				if (linkedActors.length === 0) {
+					ui.notifications.warn("No linked abilities found. Defaulting to original roller.");
+					return resolve(roller);
+				}
+				let buttons = {
+					[roller.id]: {
+						label: roller.name
+						, callback: () => resolve(roller)
+					}
+				};
+				// Fetch each linked actor and create a button
+				for (let linked of linkedActors) {
+					const actor = await fromUuid(linked.uuid);
+					if (actor) {
+						buttons[linked.uuid] = {
+							label: `${linked.name} (${linked.type})`
+							, callback: () => resolve(actor)
+						};
+					}
+				}
+				new Dialog({
+					title: "Choose Roller"
+					, content: "<p>Select an ability to use:</p>"
+					, buttons
+					, default: Object.keys(buttons)[0]
+					, close: () => resolve(null)  // Handle X button click
+				}).render(true);
+		});
 	}
 	const owned = game.actors.filter(a => a.isOwner);
 	if (owned.length === 0) {
@@ -222,6 +268,20 @@ function convDC(value) {
 	return map[value] || "Literally Impossible";
 }
 
+function convHit(value) {
+	const map = {
+		0: "None"
+		, 1: "Minor"
+		, 2: "Moderate"
+		, 3: "Serious"
+		, 4: "Debilitating"
+		, 5: "Critical"
+		, 6: "Macabre"
+	};
+	if (value > 6) return "Grindhouse";
+	return map[value] || "Invalid Hit";
+}
+
 // Helper to find a non-GM owner or fallback to GM
 function findOwner(actor) {
 	return game.users.find(u => !u.isGM && actor.testUserPermission(u, "OWNER")) ||
@@ -229,67 +289,111 @@ function findOwner(actor) {
 }
 
 
-// The main entrypoint
+// Entrypoint
 async function main() {
 	let rollSum = 0;
 	let advantage, actor, stat;
+	let targetCount = game.user.targets.size;
+	let reactSum = null;
+	let reactor = null;
+	let reaction = false;
+	if (targetCount > 0) {
+		if (!game.user.isGM) {
+			ui.notifications.warn("Currently, only GMs can automate reactions. Proceeding as a normal roll.");
+			targetCount = 0;
+		} else if (targetCount > 2) {
+			ui.notifications.warn("You can only target up to 2 tokens for reactions. Proceeding as a normal roll.");
+			targetCount = 0;
+		} else {
+			reaction = true;
+		}
+	}
+	// As a GM, if you are targeting 1-2 tokens, trigger a contest.
+	do {
+		if (targetCount <= 0) reaction = false;
+		// Reactor (Targets) rolls first
+		// 2 rolls
+		for (let i = 0; i < 2; i++) {
+			// Select advantage
+			advantage = advantage ?? await chooseAdvantage();	
+// TODO: link ability and user sheets for identification of roller regardless of 'dual-heat'
+// Use the linked actor to give options for which actor to roll with
+			actor = await findRoller(i, reaction);
+			if (!actor) return;
+			--targetCount;
 
-	for (let i = 0; i < 2; i++) {
-		advantage = advantage ?? await chooseAdvantage();
-		actor = await findRoller(i);
-		if (!actor) return;
+			const hasOwner = Object.entries(actor.ownership || {})
+				.some(([uid, lvl]) => {
+					const u = game.users.get(uid);
+					return u?.active && !u.isGM && lvl >= CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+				});
 
-		const hasOwner = Object.entries(actor.ownership || {})
-			.some(([uid, lvl]) => {
-				const u = game.users.get(uid);
-				return u?.active && !u.isGM && lvl >= CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+			stat = await requestStat(actor);
+			if (!stat) {
+				ui.notifications.warn("Stat selection cancelled.");
+				return;
+			}
+
+			// Let the player roll if desired
+			if (game.user.isGM && hasOwner && await confirmRoller(actor)) {
+				rollSum += await socket.executeAsUser(
+					"pCheck"
+					, findOwner(actor).id
+					, actor.id
+					, `(${stat[1]}d6cs>=${5-advantage})`
+					, stat[0]
+					, advantage
+					, actor.getRollData()
+				);
+				continue;
+			}
+
+			// Otherwise roll here
+			const formula = `(${stat[1]}d6cs>=${5-advantage})`;
+			const data = actor.getRollData();
+			const roll = new Roll(formula, data);
+			await roll.evaluate({
+				async: true
 			});
-
-		stat = await requestStat(actor);
-		if (!stat) {
-			ui.notifications.warn("Stat selection cancelled.");
-			return;
+			roll.toMessage({
+				speaker: ChatMessage.getSpeaker({
+					actor
+				})
+				, flavor: `★ <em>${stat[0]}</em> Challenge ★<br>Advantage: <strong>${advantage}</strong>`
+			});
+			rollSum += roll.total;
 		}
+		const ownerIds = game.users
+			.filter(u => actor.testUserPermission(u, "OWNER"))
+			.map(u => u.id);
 
-		// Let the player roll if desired
-		if (game.user.isGM && hasOwner && await confirmRoller(actor)) {
-			rollSum += await socket.executeAsUser(
-				"pCheck"
-				, findOwner(actor).id
-				, actor.id
-				, `(${stat[1]}d6cs>=${5-advantage})`
-				, stat[0]
-				, advantage
-				, actor.getRollData()
-			);
-			continue;
-		}
-
-		// Otherwise roll here
-		const formula = `(${stat[1]}d6cs>=${5-advantage})`;
-		const data = actor.getRollData();
-		const roll = new Roll(formula, data);
-		await roll.evaluate({
-			async: true
-		});
-		roll.toMessage({
+		const DC = convDC(rollSum);
+		ChatMessage.create({
 			speaker: ChatMessage.getSpeaker({
 				actor
 			})
-			, flavor: `★ <em>${stat[0]}</em> Challenge ★<br>Advantage: <strong>${advantage}</strong>`
+			, content: `Total: ${rollSum}! ${DC}`
+			, whisper: ownerIds
 		});
-		rollSum += roll.total;
-	}
-	const ownerIds = game.users
-		.filter(u => actor.testUserPermission(u, "OWNER"))
-		.map(u => u.id);
-
-	const DC = convDC(rollSum);
-	ChatMessage.create({
-		speaker: ChatMessage.getSpeaker({
-			actor
-		})
-		, content: `Total: ${rollSum}! ${DC}`
-		, whisper: ownerIds
-	});
+		if (!reactSum) {
+			reactSum = rollSum;
+			reactor = actor;
+		} else {
+			let diff = Math.abs(reactSum - rollSum);
+			if (diff < 0) diff = 0;
+			const hit = convHit(diff);
+			ChatMessage.create({
+				speaker: ChatMessage.getSpeaker({
+					actor: reactor
+				})
+				, content: `Hit: ${hit} (${diff})`
+				, whisper: ownerIds
+			});
+		}
+		// Reset for next roller
+		rollSum = 0;
+		advantage = null;
+		actor = null;
+		stat = null;
+	} while (reaction);
 }

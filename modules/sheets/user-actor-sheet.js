@@ -41,13 +41,14 @@
   	getData() {
   		const data = super.getData();
   		data.system = this.actor.system;
-  		data.system.info = data.system.info ?? {};
-  		data.system.info.type = data.system.info.type ?? "user";
+  		data.system.bio = data.system.bio ?? {};
+  		data.system.bio.type = data.system.bio.type ?? "user";
   		data.typeConfigs = typeConfigs.user; // Options for <select>
-		data.extraConfig = data.typeConfigs[data.system.info.type] || {};
+		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
 		data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
 		// Only apply type defaults when the actor doesn't already have values
-		data.system.info.description = data.system.info.description ?? data.extraConfig.description ?? "";
+		data.system.bio.description = data.system.bio.description ?? data.extraConfig.description ?? "";
+		data.linkedActors = data.system.bio.linkedActors?.value || [];
 		// Do not copy human-readable config 'cost' into actor data (it can be non-numeric).
 		// Use placeholders in the template instead (template already supports `placeholder`).
   		data.getSelectedValue = (stat) => {
@@ -105,7 +106,7 @@
 			.click(this._onToggleDarkDetermination.bind(this));
 
 		// Render star ratings for stats  		// Handle Type dropdown changes
-  		const current = this.actor.system.info?.type;
+  		const current = this.actor.system.bio?.type;
   		if (current) {
   			html.find("#user-type").val(current);
   		}
@@ -187,8 +188,8 @@
 			ev.stopImmediatePropagation();
 		});
 
-		// Persist any `system.info.*` fields on change/blur so dynamic fields save reliably
-		html.find('[name^="system.info."]').on("change blur", async ev => {
+		// Persist any `system.bio.*` fields on change/blur so dynamic fields save reliably
+		html.find('[name^="system.bio."]').on("change blur", async ev => {
 			// Prevent other handlers (like autosubmit) from firing first
 			ev.stopImmediatePropagation();
 			const el = ev.currentTarget;
@@ -243,7 +244,7 @@
   				const vampireActors = game.actors.filter(a =>
   					a.id !== this.actor.id &&
   					ownerUsers.some(u => a.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) &&
-  					foundry.utils.getProperty(a, "system.info.type") === "Vampire"
+  					foundry.utils.getProperty(a, "system.bio.type") === "Vampire"
   				);
   				if (vampireActors.length) ui.notifications.warn(
   					"Reminder: A Vampire user may not activate Dark Determination."

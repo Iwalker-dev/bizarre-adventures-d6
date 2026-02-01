@@ -41,6 +41,11 @@
 - Added fields for Freak types
 - Added scalability for future types
 
+### - 2026-1-31
+#### Features
+- GM Controlled contests (your targets become the reactors when rolling)
+- Added user-ability linking
+
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option
@@ -49,6 +54,8 @@
 - Remove Depreciated methods
 - Add to FoundryVTT browser
 - Fix issue with sidebar buttons appearing as "SIDEBAR.ACTIONS.CREATE"
-- Add cutom images for user and stand type actors
-
+- Add custom images for user and stand type actors
+- Automate Contests
+- Implement Luck/Learning automation
+- Add scalabillity for in-system hit effects
 

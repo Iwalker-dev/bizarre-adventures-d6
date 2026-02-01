@@ -58,6 +58,11 @@
             },
             "bio": {
                 "name": "",
+                "linkedActors": {
+                    "dtype": "Array",
+                    "label": "Abilities",
+                    "value": []
+                },
                 "gender": "",
                 "dob": "",
                 "hitLimit": 0,
@@ -108,9 +113,13 @@
                     }
                 }
             },
-            "info": {
+            "bio": {
                 "standName": "",
-                "master": "",
+                "linkedActors": {
+                    "dtype": "Array",
+                    "label": "Users",
+                    "value": []
+                },
                 "type": "",
                 "design": "",
                 "ability": "",
@@ -158,9 +167,13 @@
                     }
                 }
             },
-            "info": {
+            "bio": {
                 "powerName": "",
-                "master": "",
+                "linkedActors": {
+                    "dtype": "Array",
+                    "label": "Users",
+                    "value": []
+                },
                 "type": "",
                 "design": "",
                 "ability": ""
@@ -186,7 +199,7 @@
                 "type": "hit",
                 "description": "",
                 "quantity": 1,
-                "weight": 0
+                "severity": 0
             }
         }
 }

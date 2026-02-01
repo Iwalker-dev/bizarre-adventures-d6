@@ -51,19 +51,32 @@
               value="{{system.bio.name}}"
               placeholder="Enter name" />
           </div>
+          <div class="info-row" data-drop="ability">
+            <label>Abilities:</label>
+            {{#each system.bio.linkedActors.value as |linked|}}
+                <div class="linked-ability" data-uuid="{{linked.uuid}}">
+                    <span>{{linked.name}} ({{linked.type}})</span>
+                    <a class="remove-link" data-uuid="{{linked.uuid}}">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            {{else}}
+                <p class="hint">Drag actors here to link abilities</p>
+            {{/each}}
+          </div>
           <div class="info-row">
             <label>Gender:</label>
             <input type="text"
-              name="system.info.gender"
-              value="{{system.info.gender}}"
+              name="system.bio.gender"
+              value="{{system.bio.gender}}"
               placeholder="Enter gender"
               />
           </div>
           <div class="info-row">
             <label>Date of Birth:</label>
             <input type="date"
-              name="system.info.dob"
-              value="{{system.info.dob}}"
+              name="system.bio.dob"
+              value="{{system.bio.dob}}"
               />
           </div>
           <div class="info-row">
@@ -76,10 +89,10 @@
           </div>
           <div class="info-row">
             <label>Type:</label>
-            <select id="user-type" name="system.info.type">
+            <select id="user-type" name="system.bio.type">
               {{#each typeConfigs}}
                 <option value="{{@key}}"
-                {{#ifEquals system.info.type @key}}selected{{/ifEquals}}>
+                {{#ifEquals system.bio.type @key}}selected{{/ifEquals}}>
                   {{this.label}}
                 </option>
               {{/each}}
@@ -92,13 +105,13 @@
                 <label>{{this.label}}:</label>
                 {{!-- textarea --}}
                 {{#ifEquals this.type "textarea"}}
-                  <textarea data-noautosubmit="true" name="system.info.{{this.name}}" rows="{{this.rows}}">{{lookup ../system.info this.name}}</textarea>
+                  <textarea data-noautosubmit="true" name="system.bio.{{this.name}}" rows="{{this.rows}}">{{lookup ../system.bio this.name}}</textarea>
                 {{else}}
                   {{!-- select --}}
                   {{#ifEquals this.type "select"}}
-                    <select data-noautosubmit="true" name="system.info.{{this.name}}">
+                    <select data-noautosubmit="true" name="system.bio.{{this.name}}">
                       {{#each this.options}}
-                        <option value="{{this.value}}" {{#ifEquals (lookup ../../system.info ../this.name) this.value}}selected{{/ifEquals}}>{{this.label}}</option>
+                        <option value="{{this.value}}" {{#ifEquals (lookup ../../system.bio ../this.name) this.value}}selected{{/ifEquals}}>{{this.label}}</option>
                       {{/each}}
                     </select>
                   {{else}}
@@ -106,8 +119,8 @@
                     <input
                       data-noautosubmit="true"
                       type="{{this.type}}"
-                      name="system.info.{{this.name}}"
-                      value="{{lookup ../system.info this.name}}"
+                      name="system.bio.{{this.name}}"
+                      value="{{lookup ../system.bio this.name}}"
                       {{#if this.placeholder}}placeholder="{{this.placeholder}}"{{/if}}
                       {{#if this.min}}min="{{this.min}}"{{/if}}
                       {{#if this.max}}max="{{this.max}}"{{/if}}
@@ -136,9 +149,9 @@
         </div>
       </div>
       <!-- ───────────── Info Type Tab ───────────── -->
-      <div class="tab" data-tab="{{actor.system.info.type}}" data-group="primary">
+      <div class="tab" data-tab="{{actor.system.bio.type}}" data-group="primary">
         <div class="ability-description">
-          {{{actor.system.info.description}}}
+          {{{actor.system.bio.description}}}
         </div>
       </div>
       <!-- ───────────── Hits Tab ───────────── -->

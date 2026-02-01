@@ -23,14 +23,15 @@ export class StandSheet extends BaseActorSheet {
 		const data = super.getData();
 		data.system = this.actor.system;
 		data.typeConfigs = typeConfigs.stand;
+		data.linkedActors = data.system.bio.linkedActors?.value || [];
 
 		// ensure info exists
-		data.system.info = data.system.info || {};
+		data.system.bio = data.system.bio || {};
 
-		data.extraConfig = data.typeConfigs[data.system.info.type] || {};
+		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
 
-		data.system.info.description = data.extraConfig.description || "";
-		data.system.info.cost = data.extraConfig.cost || "";
+		data.system.bio.description = data.extraConfig.description || "";
+		data.system.bio.cost = data.extraConfig.cost || "";
 		data.getSelectedValue = (stat) => {
 			const statData = this.actor.system.attributes.stats[stat];
 			return statData[statData.selected] || 0;
@@ -93,7 +94,7 @@ export class StandSheet extends BaseActorSheet {
 
 
 		// Handle Type dropdown changes
-		const current = this.actor.system.info?.type;
+		const current = this.actor.system.bio?.type;
 		if (current) {
 			html.find("#stand-type").val(current);
 		}

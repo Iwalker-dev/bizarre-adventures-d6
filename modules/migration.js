@@ -138,6 +138,33 @@ Hooks.once("ready", async () => {
 		console.log("BAD6 | Applied 0.9.5 migration (default type images for power actors) x", updated);
 	}
 
+	//— 0.9.6 migration: move "info" to "bio" for universal linkedActors field —
+	if (isNewer(current, previous) &&
+		isNewer("0.9.6", previous) &&
+		!isNewer("0.9.6", current)
+	) {
+		for (const actor of game.actors.filter(a => a.type === "power")) {
+			if (actor.system.info) {
+				const info = actor.system.info || {};
+				const bio = actor.system.bio || {};
+				await actor.update({
+					"system.bio": info,
+					"system.-=info": null
+				});
+			}
+		}
+		for (const actor of game.actors.filter(a => a.type === "stand")) {
+			if (actor.system.info) {
+				const info = actor.system.info || {};
+				const bio = actor.system.bio || {};
+				await actor.update({
+					"system.bio": info,
+					"system.-=info": null
+				});
+			}
+		}
+		console.log("BAD6 | Applied 0.9.6 migration (moved info to bio) x", updated);
+	}
 	// — Record that we’re now at `current` —
 	await game.settings.set("bizarre-adventures-d6", "migrationVersion", current);
 });
