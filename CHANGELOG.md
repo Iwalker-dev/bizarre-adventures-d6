@@ -48,7 +48,7 @@
 
 ### - 2026-2-3
 #### Features
-- Added simple formula customization based on hits/items
+- Added simple formula customization based on items (hopefully hits before release aswell)
 
 # What's left?
 - Create different backgrounds for all user types
@@ -61,4 +61,6 @@
 - Add custom images for user and stand type actors
 - Fully Automate Contests
 - Implement Luck/Learning automation
+- Optimize hit (make it directly an extension of item)
+- Allow clicking a linked actor to open their sheet (also create css for linked actors)
 
