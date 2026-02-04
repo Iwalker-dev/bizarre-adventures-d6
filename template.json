@@ -36,7 +36,7 @@
                         "value": 0, 
                         "group": "ustats" 
                     },
-                        "pluck":    { 
+                    "pluck":    { 
                         "dtype": "Number",   
                         "label": "Pluck",    
                         "value": 0, 

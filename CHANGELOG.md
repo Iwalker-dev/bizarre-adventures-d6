@@ -46,6 +46,10 @@
 - GM Controlled contests (your targets become the reactors when rolling)
 - Added user-ability linking
 
+### - 2026-2-3
+#### Features
+- Added simple formula customization based on hits/items
+
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option
@@ -55,7 +59,6 @@
 - Add to FoundryVTT browser
 - Fix issue with sidebar buttons appearing as "SIDEBAR.ACTIONS.CREATE"
 - Add custom images for user and stand type actors
-- Automate Contests
+- Fully Automate Contests
 - Implement Luck/Learning automation
-- Add scalabillity for in-system hit effects
 

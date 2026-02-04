@@ -14,4 +14,90 @@
       <textarea id="item-description" name="system.description" rows="4">{{item.system.description}}</textarea>
     </div>
   </div>
+
+   <div class="formula-body">
+    <h2>Formula</h2>
+
+    <div class="formula-row header">
+      <div class="col order">Optional | Stat | Variable | Operand | Value | Actions</div>
+    </div>
+
+    <div class="formula-rows">
+      {{#each item.system.formula.lines}}
+        <div class="formula-row" data-index="{{@index}}">
+          <div class="col optional">
+            <input type="checkbox" name="system.formula.lines.{{@index}}.optional" {{#if optional}}checked{{/if}} />
+          </div>
+
+          <div class="col stat">
+            <select name="system.formula.lines.{{@index}}.stat">
+              <option value="" {{#unless stat}}selected{{/unless}}>—Any / Global—</option>
+              {{!-- If a variable list becomes necessary, it can be populated like...
+              {{#if ../system.variables}}
+                {{#each ../system.variables}}
+                  <option value="{{this.key}}">{{this.label}}</option>
+                {{/each}}
+                -- current hardcoded options (allows ignoring of linked actor conflicts):
+                'power', 'precision', 'speed', 'range', 'durability', 'learning'
+                "body", "luck", "menacing", "pluck", "reason", "wit"
+              --}}
+                <option value="power" {{#ifEquals stat "power"}}selected{{/ifEquals}}>Power</option>
+                <option value="precision" {{#ifEquals stat "precision"}}selected{{/ifEquals}}>Precision</option>
+                <option value="speed" {{#ifEquals stat "speed"}}selected{{/ifEquals}}>Speed</option>
+                <option value="range" {{#ifEquals stat "range"}}selected{{/ifEquals}}>Range</option>
+                <option value="durability" {{#ifEquals stat "durability"}}selected{{/ifEquals}}>Durability</option>
+                <option value="learning" {{#ifEquals stat "learning"}}selected{{/ifEquals}}>Learning</option>
+                <option value="body" {{#ifEquals stat "body"}}selected{{/ifEquals}}>Body</option>
+                <option value="luck" {{#ifEquals stat "luck"}}selected{{/ifEquals}}>Luck</option>
+                <option value="menacing" {{#ifEquals stat "menacing"}}selected{{/ifEquals}}>Menacing</option>
+                <option value="pluck" {{#ifEquals stat "pluck"}}selected{{/ifEquals}}>Pluck</option>
+                <option value="reason" {{#ifEquals stat "reason"}}selected{{/ifEquals}}>Reason</option>
+                <option value="wit" {{#ifEquals stat "wit"}}selected{{/ifEquals}}>Wit</option>
+            </select>
+          </div>
+
+          <div class="col variable">
+            <select name="system.formula.lines.{{@index}}.variable">
+              {{!-- example formula: (@stat)d(@sides)cs>=(@advantage) + (@modifier) --}}
+                <option value="stat" {{#ifEquals variable "stat"}}selected{{/ifEquals}}>Stat</option>
+                <option value="sides" {{#ifEquals variable "sides"}}selected{{/ifEquals}}>Sides</option>
+                <option value="advantage" {{#ifEquals variable "advantage"}}selected{{/ifEquals}}>Advantage</option>
+                <option value="modifier" {{#ifEquals variable "modifier"}}selected{{/ifEquals}}>Result</option>
+
+            </select>
+          </div>
+
+          <div class="col operand">
+            <select name="system.formula.lines.{{@index}}.operand">
+              <option value="+" {{#ifEquals operand "+"}}selected{{/ifEquals}}>+</option>
+              <option value="-" {{#ifEquals operand "-"}}selected{{/ifEquals}}>-</option>
+              <option value="*" {{#ifEquals operand "*"}}selected{{/ifEquals}}>*</option>
+              <option value="/" {{#ifEquals operand "/"}}selected{{/ifEquals}}>/</option>
+              <option value="=" {{#ifEquals operand "="}}selected{{/ifEquals}}>=</option>
+            </select>
+          </div>
+
+          <div class="col value">
+            <input type="number" name="system.formula.lines.{{@index}}.value" value="{{value}}" step="1" />
+          </div>
+
+          <div class="col actions">
+            <button type="button" class="remove-formula-line" data-index="{{@index}}">Remove</button>
+          </div>
+        </div>
+      {{/each}}
+
+    {{#unless item.system.formula.lines}}
+      <div class="formula-row empty">
+        <em>No formula lines yet. Use Add Line to create one.</em>
+      </div>
+    {{/unless}}
+
+    </div>
+
+    <div class="formula-controls">
+      <button type="button" class="add-formula-line">Add Line</button>
+    </div>
+  </div>
+
 </form>

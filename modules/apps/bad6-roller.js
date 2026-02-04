@@ -1,5 +1,7 @@
 let socket;
 
+import { prepareFormula } from "../dice.js";
+
 // Register socket function as soon as socketlib is ready
 Hooks.once("socketlib.ready", () => {
 	socket = socketlib.registerSystem("bizarre-adventures-d6");
@@ -29,12 +31,14 @@ export function rollerControl() {
 }
 
 // Takes an actorId, not an Actor instance
-async function readyCheck(actorId, formula, statLabel, advantage, data) {
+async function readyCheck(actorId, baseFormula, statKey, statLabel, advantage, data) {
 	const actor = game.actors.get(actorId);
 	if (!actor) return null;
 
 	const advantagePhrase = advantage > 0 ? ` with +${advantage} advantage` : "";
-	const content = `<p>Roll <strong>${statLabel}</strong>${advantagePhrase}? <code>(${formula})</code></p>`;
+	// Let dice helpers prepare the final formula using items on the actor
+	const finalFormula = await prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data);
+	const content = `<p>Roll <strong>${statLabel}</strong>${advantagePhrase}? <code>${finalFormula}</code></p>`;
 
 	const confirmed = await new Promise(resolve => {
 		new Dialog({
@@ -55,7 +59,7 @@ async function readyCheck(actorId, formula, statLabel, advantage, data) {
 	});
 	if (!confirmed) return null;
 
-	const roll = new Roll(formula, data);
+	const roll = new Roll(finalFormula, data);
 	await roll.evaluate({
 		async: true
 	});
@@ -206,7 +210,7 @@ function requestStat(actor) {
 					const label = `${k === "sstats" ? `【${name}】` : name} (${stat.value})`;
 					buttons[`${k}-${key}`] = {
 						label
-						, callback: () => resolve([name, stat.value])
+						, callback: () => resolve({ key, label: name, value: stat.value })
 					};
 				}
 			}
@@ -336,12 +340,14 @@ async function main() {
 
 			// Let the player roll if desired
 			if (game.user.isGM && hasOwner && await confirmRoller(actor)) {
+				const base = `(${stat.value}d6cs>=5)`;
 				rollSum += await socket.executeAsUser(
 					"pCheck"
 					, findOwner(actor).id
 					, actor.id
-					, `(${stat[1]}d6cs>=${5-advantage})`
-					, stat[0]
+					, base
+					, stat.key
+					, stat.label
 					, advantage
 					, actor.getRollData()
 				);
@@ -349,9 +355,10 @@ async function main() {
 			}
 
 			// Otherwise roll here
-			const formula = `(${stat[1]}d6cs>=${5-advantage})`;
+			const baseFormula = `(${stat.value}d6cs>=5)`;
 			const data = actor.getRollData();
-			const roll = new Roll(formula, data);
+			const finalFormula = await prepareFormula(actor, baseFormula, stat.key, stat.label, advantage, data);
+			const roll = new Roll(finalFormula, data);
 			await roll.evaluate({
 				async: true
 			});
@@ -359,7 +366,7 @@ async function main() {
 				speaker: ChatMessage.getSpeaker({
 					actor
 				})
-				, flavor: `★ <em>${stat[0]}</em> Challenge ★<br>Advantage: <strong>${advantage}</strong>`
+				, flavor: `★ <em>${stat.label}</em> Challenge ★<br>Advantage: <strong>${advantage}</strong>`
 			});
 			rollSum += roll.total;
 		}

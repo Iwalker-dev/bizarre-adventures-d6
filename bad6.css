@@ -351,7 +351,7 @@ body {
 }
 .scrollable-list {
   max-height: 300px;
-  /* Adjust this height based on UI design */
+  /* Adjust this height based on your UI design */
   overflow-y: auto;
   padding-right: 5px;
 }
@@ -570,4 +570,53 @@ body {
   flex-wrap: wrap;
   gap: 0.5em;
   /* optional spacing between rows */
+}
+/* Formula rows: show columns inline */
+.formula-body {
+  margin-top: 0.75rem;
+}
+.formula-rows .formula-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  box-sizing: border-box;
+  flex-wrap: nowrap;
+}
+/* Header styling */
+.formula-row.header {
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+/* Column widths (adjust percentages as needed) */
+.formula-row .col.optional {
+  width: 6%;
+  justify-content: center;
+}
+.formula-row .col.operand {
+  width: 12%;
+}
+.formula-row .col.variable {
+  width: 44%;
+}
+.formula-row .col.value {
+  width: 18%;
+}
+.formula-row .col.actions {
+  width: 20%;
+  justify-content: flex-end;
+}
+/* Make form controls fill their column */
+.formula-row .col input[type="number"],
+.formula-row .col select,
+.formula-row .col input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Empty state */
+.formula-row.empty {
+  font-style: italic;
+  color: #666;
 }
