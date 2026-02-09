@@ -48,7 +48,31 @@
 
 ### - 2026-2-3
 #### Features
-- Added simple formula customization based on items (hopefully hits before release aswell)
+- Added simple formula customization based on items
+
+### - 2026-2-8
+#### Fixes
+Fix issue with sidebar buttons appearing as "SIDEBAR.ACTIONS.CREATE"
+(When it tried to concatenate that object, it got coerced to [object Object])
+#### Features
+Added Luck Automation (Requires more testing)
+Allow clicking a linked actor to open their sheet (also create css for linked actors)
+
+## [0.9.6] - 2026-2-9
+
+
+### - 2026-2-9
+#### Features
+- Contest roller overhaul: single-roll flow with chat-message quadrant buttons
+- Action/Reaction contest layout with in-message results and separators
+- Dice So Nice animation support via direct roll animation
+- Luck automation expanded: Feint, Fudge (applies to next roll), Mulligan, Persist
+- Fudge/Modifier dialog now appears even with no optional formula lines
+- Linked actor quality-of-life: open sheets on click, reciprocal linking, and sheet UI
+
+#### Fixes
+- Persist now replays roll pair correctly
+- Fudge cancel now aborts roll
 
 # What's left?
 - Create different backgrounds for all user types
@@ -57,10 +81,7 @@
 - Make more User-Friendly
 - Remove Depreciated methods
 - Add to FoundryVTT browser
-- Fix issue with sidebar buttons appearing as "SIDEBAR.ACTIONS.CREATE"
 - Add custom images for user and stand type actors
 - Fully Automate Contests
-- Implement Luck/Learning automation
-- Optimize hit (make it directly an extension of item)
-- Allow clicking a linked actor to open their sheet (also create css for linked actors)
+- Implement Learning automation
 

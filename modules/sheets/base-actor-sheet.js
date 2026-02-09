@@ -124,6 +124,18 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		
 		// Handle removing linked actors
 		html.find('.remove-link').on('click', this._onRemoveLink.bind(this));
+
+		// Open linked actor sheet on click
+		html.find('.linked-ability').on('click', async ev => {
+			const uuid = ev.currentTarget?.dataset?.uuid;
+			if (!uuid) return;
+			try {
+				const linkedActor = await fromUuid(uuid);
+				if (linkedActor) linkedActor.sheet.render(true);
+			} catch (e) {
+				// ignore missing linked actor
+			}
+		});
 	}
 
 	/**
@@ -323,13 +335,12 @@ async _onDropActor(event) {
     
     const data = TextEditor.getDragEventData(event);
     
-    // Only accept Actor drops
-    if (data.type !== "Actor") {
-        ui.notifications.warn("You can only drop Actors here!");
-        return;
-    }
-    
-    const actor = await fromUuid(data.uuid);
+	const actor = data?.uuid ? await fromUuid(data.uuid) : null;
+	// Only accept Actor drops (resolve by UUID if possible)
+	if (!actor || actor.documentName !== "Actor") {
+		ui.notifications.warn("You can only drop Actors here!");
+		return;
+	}
     if (!actor) {
         ui.notifications.error("Could not find the dropped actor!");
         return;
@@ -355,6 +366,20 @@ async _onDropActor(event) {
     await this.actor.update({
         "system.bio.linkedActors.value": linkedActors
     });
+
+	// Also add reciprocal link on the dropped actor
+	const otherLinked = actor.system.bio.linkedActors?.value || [];
+	const selfUuid = this.actor.uuid;
+	if (!otherLinked.some(linked => linked.uuid === selfUuid)) {
+		otherLinked.push({
+			uuid: selfUuid,
+			name: this.actor.name,
+			type: this.actor.type
+		});
+		await actor.update({
+			"system.bio.linkedActors.value": otherLinked
+		});
+	}
     
     ui.notifications.info(`Linked ${actor.name} as an ability!`);
 }
@@ -380,6 +405,23 @@ async _onRemoveLink(event) {
     await this.actor.update({
         "system.bio.linkedActors.value": updated
     });
+
+	// Also remove reciprocal link from the other actor
+	if (uuid) {
+		try {
+			const otherActor = await fromUuid(uuid);
+			if (otherActor) {
+				const otherLinked = otherActor.system.bio.linkedActors?.value || [];
+				const selfUuid = this.actor.uuid;
+				const otherUpdated = otherLinked.filter(linked => linked.uuid !== selfUuid);
+				await otherActor.update({
+					"system.bio.linkedActors.value": otherUpdated
+				});
+			}
+		} catch (e) {
+			// ignore missing linked actor
+		}
+	}
     
     if (removed) {
         ui.notifications.info(`Removed ${removed.name} from abilities`);

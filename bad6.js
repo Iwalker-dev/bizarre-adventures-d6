@@ -61,12 +61,19 @@ Hooks.once("init", async () => {
 		types: ["item"]
 		, makeDefault: true
 	});
-
 });
 
 Hooks.once("ready", async () => {
 	CONFIG.INIT = false;
 	if (!game.user.isGM) return;
+	const lancerModule = game.modules.get("lancer-initiative");
+	const libWrapperModule = game.modules.get("lib-wrapper");
+	if (!libWrapperModule?.active) {
+		ui.notifications.warn("BAD6: Optional module lib-wrapper is not active. Lancer Initiative will not function without it.");
+	}
+	if (!lancerModule?.active) {
+		ui.notifications.info("BAD6: Optional module Lancer Initiative is not active. Enable it for popcorn-style combat initiative.");
+	}
 });
 
 setupStats();

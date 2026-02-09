@@ -1,4 +1,3 @@
-{{!-- systems/bizarre-adventures-d6/templates/sheets/stand-actor-sheet.hbs --}}
 <form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
   <div class="jojo-sheet">
     <header class="sheet-header">
@@ -53,13 +52,19 @@
                    value="{{system.bio.standName}}"
                    placeholder="Enter stand name">
           </div>
-          <div class="info-row">
+            <div class="info-row" data-drop="ability">
             <label>Master:</label>
-            <input type="text"
-                   name="system.bio.master"
-                   value="{{system.bio.master}}"
-                   placeholder="Enter master name">
-          </div>
+            {{#each linkedActors as |linked|}}
+              <div class="linked-ability" data-uuid="{{linked.uuid}}">
+                <span>{{linked.name}} ({{linked.type}})</span>
+                <a class="remove-link" data-uuid="{{linked.uuid}}">
+                  <i class="fas fa-times"></i>
+                </a>
+              </div>
+            {{else}}
+              <p class="hint">Drag a user here to link a master</p>
+            {{/each}}
+            </div>
           <div class="info-row">
             <label>Type:</label>
             <select id="stand-type" name="system.bio.type">
