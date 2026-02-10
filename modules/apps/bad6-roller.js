@@ -57,9 +57,17 @@ function buildRollSnapshot(roll, formula, advantage) {
 }
 
 async function playDiceAnimation(roll) {
-	if (game?.dice3d?.showForRoll) {
-		await game.dice3d.showForRoll(roll, game.user, true, { synchronize: true });
-	}
+    const dice3d = game?.dice3d;
+    if (!dice3d?.showForRoll) return;
+
+    const users = game.users
+        .filter(u => u.active)
+        .map(u => u.id);
+
+    await dice3d.showForRoll(roll, game.user, {
+        synchronize: true,
+        users
+    });
 }
 
 export function rollerControl() {
@@ -1000,7 +1008,6 @@ async function main() {
 	if (targetCount > 0) {
 			hasReaction = true;
 		}
-	}
 	if (game.user.isGM) {
 		if (canvas.tokens.controlled.length < 1) {
 			ui.notifications.warn("Select at least one token to start an Action roll.");
