@@ -74,6 +74,15 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Persist now replays roll pair correctly
 - Fudge cancel now aborts roll
 
+### - 2026-2-11
+#### Features
+- Contest roller order updated to Reaction 1 → Reaction 2 → Action 1 → Action 2
+- Contest roll buttons now stay visible; order enforced on stat selection with warnings
+- Feint available for all rolls; roll 2 allows Feint/Fudge only for same/linked actors
+
+#### Fixes
+- Closing stat dialog (X) now behaves like Cancel and clears Feint state
+
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option

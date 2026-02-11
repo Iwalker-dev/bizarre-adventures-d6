@@ -127,7 +127,7 @@ async function readyCheck(actorId, baseFormula, statKey, statLabel, advantage, d
 		}
 	}
 
-	// Handle Fudge cost deduction (only on the first roll)
+	// Handle Fudge cost deduction (when used)
 	if (useFudge && showFudge) {
 		const { success, error } = await spendLuckMove(actor, "fudge", useGambit);
 		if (!success && error) {
@@ -269,8 +269,16 @@ async function findRoller(i, reaction = false) {
 	});
 }
 
-function requestStat(actor, showLuckOptions = true) {
+function requestStat(actor, options = {}) {
 	return new Promise(resolve => {
+		const {
+			showLuckOptions = true,
+			allowFeint = true,
+			allowGambit = true,
+			lockMessage = "The previous roll must be completed first.",
+			canProceed = null
+		} = options || {};
+		const showLuckSection = !!showLuckOptions && (allowFeint || allowGambit);
 		let sources;
 		if (actor.system.attributes?.ustats || actor.system.attributes?.sstats) {
 			sources = {
@@ -323,18 +331,20 @@ function requestStat(actor, showLuckOptions = true) {
 		const feintState = { count: 0, messageId: null };
 
 		const buildFormHtml = () => {
-			const canFeint = (tempLuck - feintState.count) >= feintCost;
+			const canFeint = allowFeint && (tempLuck - feintState.count) >= feintCost;
 			const showClear = feintState.count > 0;
 
 			let content = "";
-			if (showLuckOptions) {
+			if (showLuckSection) {
 				// Build Luck options section
 				content += `<div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">`;
 				content += `<p><strong>Luck Options</strong></p>`;
-				content += `<label style="display: block; margin: 8px 0;">
-					<input type="checkbox" id="use-gambit" value="gambit"> 
-					<strong>Gambit</strong> - Makes all Luck moves cost 0 (if using Chekhov's Gun or solid plan)
-				</label>`;
+				if (allowGambit) {
+					content += `<label style="display: block; margin: 8px 0;">
+						<input type="checkbox" id="use-gambit" value="gambit"> 
+						<strong>Gambit</strong> - Makes all Luck moves cost 0 (if using Chekhov's Gun or solid plan)
+					</label>`;
+				}
 				content += `<div style="margin: 8px 0; padding: 8px; background: #fff; border-radius: 4px;">
 					<p style="margin: 5px 0;"><strong>Feints</strong> (Cost: ${feintCost} Temp Luck each, have: ${tempLuck})</p>
 					<div style="display: flex; gap: 8px; align-items: center;">
@@ -342,6 +352,7 @@ function requestStat(actor, showLuckOptions = true) {
 						${showClear ? `<button type="button" id="btn-clear-feint" style="padding: 4px 12px; cursor: pointer;">⊗ Clear</button>` : ''}
 						<span id="feint-display" style="font-weight: bold; min-width: 60px;">Count: ${feintState.count}</span>
 					</div>
+					${allowFeint ? '' : `<div style="margin-top:6px; color:#b00; font-size:0.9em;">Feints require the same or linked actor on roll 2.</div>`}
 				</div></div>`;
 			}
 
@@ -380,6 +391,37 @@ function requestStat(actor, showLuckOptions = true) {
 		}
 
 		let dialogInstance;
+		let statResolved = false;
+		let resolved = false;
+		const resolveOnce = (value) => {
+			if (resolved) return;
+			resolved = true;
+			resolve(value);
+		};
+		const cancelFeints = async () => {
+			if (feintState.count > 0) {
+				// Delete feint message
+				if (feintState.messageId) {
+					try {
+						const msg = game.messages.get(feintState.messageId);
+						if (msg) await msg.delete();
+					} catch (e) { }
+				}
+				// Send cancel message
+				const cancelText = feintState.count > 1 ? ` x${feintState.count}` : "";
+				const cancelMsg = await ChatMessage.create({
+					speaker: ChatMessage.getSpeaker({ actor }),
+					content: `<strong>${actor.name}</strong> - Feint${cancelText} Cancelled!`,
+					whisper: game.users.filter(u => u.isGM).map(u => u.id)
+				});
+				// Delete cancel message after delay
+				setTimeout(() => {
+					try { cancelMsg.delete(); } catch (e) { }
+				}, 2000);
+			}
+			feintState.count = 0;
+			feintState.messageId = null;
+		};
 		const bindDialog = (dlgClass) => {
 			setTimeout(() => {
 				const root = dialogInstance?.element?.[0] || document;
@@ -388,10 +430,10 @@ function requestStat(actor, showLuckOptions = true) {
 					return;
 				}
 				
-				const gambitCheckbox = showLuckOptions ? root.querySelector('#use-gambit') : null;
-				const addFeintBtn = showLuckOptions ? root.querySelector('#btn-add-feint') : null;
-				const clearFeintBtn = showLuckOptions ? root.querySelector('#btn-clear-feint') : null;
-				const feintDisplay = showLuckOptions ? root.querySelector('#feint-display') : null;
+				const gambitCheckbox = (showLuckSection && allowGambit) ? root.querySelector('#use-gambit') : null;
+				const addFeintBtn = showLuckSection ? root.querySelector('#btn-add-feint') : null;
+				const clearFeintBtn = showLuckSection ? root.querySelector('#btn-clear-feint') : null;
+				const feintDisplay = showLuckSection ? root.querySelector('#feint-display') : null;
 				if (feintDisplay) feintDisplay.textContent = `Count: ${feintState.count}`;
 
 				const rerenderDialog = () => {
@@ -405,8 +447,13 @@ function requestStat(actor, showLuckOptions = true) {
 						const btnKey = btn.dataset.btnKey;
 						const btnData = buttons[btnKey];
 						if (btnData) {
+							if (typeof canProceed === "function" && !canProceed()) {
+								ui.notifications.warn(lockMessage);
+								return;
+							}
+							statResolved = true;
 							dialogInstance.close();
-							resolve({
+							resolveOnce({
 								key: btnData.key,
 								label: btnData.statName,
 								value: btnData.statValue,
@@ -420,6 +467,10 @@ function requestStat(actor, showLuckOptions = true) {
 				// Feint add button
 				if (addFeintBtn) {
 					addFeintBtn.addEventListener('click', async () => {
+						if (!allowFeint) {
+							ui.notifications.warn("Feints require the same or linked actor on roll 2.");
+							return;
+						}
 						const usingGambit = gambitCheckbox?.checked || false;
 						const effectiveCost = usingGambit ? 0 : 1;
 						if (!usingGambit && tempLuck - feintState.count < effectiveCost) {
@@ -454,30 +505,7 @@ function requestStat(actor, showLuckOptions = true) {
 				// Feint clear button
 				if (clearFeintBtn) {
 					clearFeintBtn.addEventListener('click', async () => {
-						if (feintState.count > 0) {
-							// Delete feint message
-							if (feintState.messageId) {
-								try {
-									const msg = game.messages.get(feintState.messageId);
-									if (msg) await msg.delete();
-								} catch (e) { }
-							}
-							
-							// Send cancel message
-							const cancelText = feintState.count > 1 ? ` x${feintState.count}` : "";
-							const cancelMsg = await ChatMessage.create({
-								speaker: ChatMessage.getSpeaker({ actor }),
-								content: `<strong>${actor.name}</strong> - Feint${cancelText} Cancelled!`,
-								whisper: game.users.filter(u => u.isGM).map(u => u.id)
-							});
-							
-							// Delete cancel message after delay
-							setTimeout(() => {
-								try { cancelMsg.delete(); } catch (e) { }
-							}, 2000);
-						}
-						feintState.count = 0;
-						feintState.messageId = null;
+						await cancelFeints();
 						rerenderDialog();
 					});
 				}
@@ -490,13 +518,19 @@ function requestStat(actor, showLuckOptions = true) {
 				title: "Choose a Stat & Luck Options",
 				content: formHtml,
 				buttons: {
-					cancel: { label: "Cancel", callback: () => resolve(null) }
+					cancel: { label: "Cancel", callback: () => resolveOnce(null) }
 				},
 				default: "cancel"
 			}, {
 				width: 500,
 				classes: ["roller-dialog"]
 			});
+			dialogInstance.options.close = async () => {
+				if (!statResolved) {
+					resolveOnce(null);
+					await cancelFeints();
+				}
+			};
 			dialogInstance.render(true);
 			bindDialog(dlgClass);
 		};
@@ -618,7 +652,6 @@ function createEmptyRollState() {
 function createPairState() {
 	return {
 		advantage: null,
-		pendingFudgeNextRoll: false,
 		rolls: {
 			1: createEmptyRollState(),
 			2: createEmptyRollState()
@@ -683,15 +716,18 @@ function getQuadrantButtonLabel(side, rollIndex) {
 function renderQuadrantCell(side, rollIndex, rollData, nextStep) {
 	const quadrant = `${side}-${rollIndex}`;
 	const isNext = nextStep === quadrant;
+	const isLocked = !isNext && !rollData?.resolved;
 	const label = getQuadrantLabel(side, rollIndex);
-	const button = isNext && !rollData?.resolved
-		? `<button type="button" class="bad6-roll-btn" data-quadrant="${quadrant}" style="margin-top:6px;">${getQuadrantButtonLabel(side, rollIndex)}</button>`
+	const buttonStyle = `margin-top:6px; ${isLocked ? "opacity:0.55;" : ""}`;
+	const lockNote = isLocked ? `<div style="font-size:0.85em; color:#777;">Waiting for previous roll...</div>` : "";
+	const button = !rollData?.resolved
+		? `<button type="button" class="bad6-roll-btn" data-quadrant="${quadrant}" style="${buttonStyle}">${getQuadrantButtonLabel(side, rollIndex)}</button>`
 		: "";
 	const content = rollData?.resolved ? formatRollSummary(rollData) : (isNext ? "" : "<em>Pending</em>");
 	return `
 		<div style="padding:6px;">
 			<div style="font-weight:bold; margin-bottom:4px;">${label}</div>
-			<div style="display:flex; flex-direction:column; gap:2px;">${content}${button}</div>
+			<div style="display:flex; flex-direction:column; gap:2px;">${content}${lockNote}${button}</div>
 		</div>
 	`;
 }
@@ -718,8 +754,8 @@ function buildContestHtml(state) {
 		: "";
 	return `
 		<div class="bad6-contest" style="border:1px solid #777; padding:6px; background:#f8f8f8;">
-			${actionRow}
 			${reactionRow}
+			${actionRow}
 			${resultHtml}
 		</div>
 	`;
@@ -735,6 +771,42 @@ function parseQuadrant(quadrant) {
 	const rollIndex = Number(idx || 0);
 	if (!side || !["action", "reaction"].includes(side) || ![1, 2].includes(rollIndex)) return null;
 	return { side, rollIndex };
+}
+
+function getLinkedActorUuids(actor) {
+	const linkedSet = new Set();
+	if (!actor) return linkedSet;
+	if (actor.uuid) linkedSet.add(actor.uuid);
+	const linked = actor.system?.bio?.linkedActors?.value || [];
+	for (const link of linked) {
+		if (link?.uuid) linkedSet.add(link.uuid);
+	}
+	return linkedSet;
+}
+
+function areActorsLinked(actorA, actorB) {
+	if (!actorA || !actorB) return false;
+	const setA = getLinkedActorUuids(actorA);
+	if (setA.has(actorB.uuid)) return true;
+	const setB = getLinkedActorUuids(actorB);
+	if (setB.has(actorA.uuid)) return true;
+	for (const id of setA) {
+		if (setB.has(id)) return true;
+	}
+	return false;
+}
+
+function getRollOrder(hasReaction) {
+	return hasReaction
+		? ["reaction-1", "reaction-2", "action-1", "action-2"]
+		: ["action-1", "action-2"];
+}
+
+function getNextStepInOrder(state, currentQuadrant) {
+	const order = getRollOrder(state?.hasReaction);
+	const idx = order.indexOf(currentQuadrant);
+	if (idx === -1) return state?.nextStep || null;
+	return order[idx + 1] || null;
 }
 
 async function handlePostRollLuck(pair, actor) {
@@ -776,7 +848,7 @@ async function handlePostRollLuck(pair, actor) {
 	return { resetPair: false };
 }
 
-async function rollOneStep(side, rollIndex, state) {
+async function rollOneStep(side, rollIndex, state, messageId = null) {
 	const pair = state[side];
 	let advantage = pair.advantage;
 	if (advantage === null || advantage === undefined) {
@@ -786,16 +858,40 @@ async function rollOneStep(side, rollIndex, state) {
 	const actor = await findRoller(0, side === "reaction");
 	if (!actor) return null;
 
-	const showLuckOptions = rollIndex === 1;
-	const stat = await requestStat(actor, showLuckOptions);
+	const isSecondRoll = rollIndex === 2;
+	const roll1ActorUuid = pair?.rolls?.[1]?.actorUuid || null;
+	const roll1Actor = isSecondRoll && roll1ActorUuid ? await fromUuid(roll1ActorUuid) : null;
+	const allowSecondLuck = isSecondRoll ? areActorsLinked(roll1Actor, actor) : true;
+	const allowFeint = !isSecondRoll || allowSecondLuck;
+	const allowFudge = !isSecondRoll || allowSecondLuck;
+	const allowGambit = allowFeint || allowFudge;
+	const expectedQuadrant = `${side}-${rollIndex}`;
+	const canProceed = () => {
+		if (!messageId) return true;
+		const latest = game.messages.get(messageId);
+		const currentState = latest?.flags?.[SYSTEM_ID]?.[CONTEST_FLAG];
+		return currentState?.nextStep === expectedQuadrant;
+	};
+	const lockMessage = `Waiting for the previous roll before ${getQuadrantLabel(side, rollIndex)}.`;
+	const stat = await requestStat(actor, {
+		showLuckOptions: true,
+		allowFeint,
+		allowGambit,
+		lockMessage,
+		canProceed
+	});
 	if (!stat) {
 		ui.notifications.warn("Stat selection cancelled.");
+		return null;
+	}
+	if (typeof canProceed === "function" && !canProceed()) {
+		ui.notifications.warn(lockMessage);
 		return null;
 	}
 
 	const feintCount = stat.feintCount || 0;
 	const useGambit = stat.useGambit || false;
-	const useFudgeCarry = !showLuckOptions && pair.pendingFudgeNextRoll;
+	const showFudge = allowFudge;
 	const hasOwner = Object.entries(actor.ownership || {})
 		.some(([uid, lvl]) => {
 			const u = game.users.get(uid);
@@ -814,18 +910,13 @@ async function rollOneStep(side, rollIndex, state) {
 			advantage,
 			actor.getRollData(),
 			feintCount,
-			useFudgeCarry,
+			false,
 			useGambit,
-			showLuckOptions,
+			showFudge,
 			true
 		);
 		if (!rollResult) return null;
 		const useFudge = !!rollResult.useFudge;
-		if (showLuckOptions && useFudge) {
-			pair.pendingFudgeNextRoll = true;
-		} else if (useFudgeCarry) {
-			pair.pendingFudgeNextRoll = false;
-		}
 		return {
 			actorUuid: actor.uuid,
 			actorName: actor.name,
@@ -845,16 +936,11 @@ async function rollOneStep(side, rollIndex, state) {
 
 	const baseFormula = `(${stat.value}d6cs>=5)`;
 	const data = actor.getRollData();
-	let useFudge = useFudgeCarry;
-	const formulaResult = await prepareFormula(actor, baseFormula, stat.key, stat.label, advantage, data, useFudge, useGambit, showLuckOptions);
+	let useFudge = false;
+	const formulaResult = await prepareFormula(actor, baseFormula, stat.key, stat.label, advantage, data, useFudge, useGambit, showFudge);
 	if (formulaResult === null) return null;
 	const finalFormula = formulaResult?.formula ?? formulaResult;
 	useFudge = !!formulaResult?.useFudge;
-	if (showLuckOptions && useFudge) {
-		pair.pendingFudgeNextRoll = true;
-	} else if (useFudgeCarry) {
-		pair.pendingFudgeNextRoll = false;
-	}
 	const roll = new Roll(finalFormula, data);
 	await roll.evaluate({ async: true });
 
@@ -863,7 +949,7 @@ async function rollOneStep(side, rollIndex, state) {
 		if (!success && error) ui.notifications.error(error);
 	}
 
-	if (useFudge && showLuckOptions) {
+	if (useFudge && showFudge) {
 		const { success, error } = await spendLuckMove(actor, "fudge", useGambit);
 		if (!success && error) ui.notifications.error(error);
 	}
@@ -912,7 +998,6 @@ function applyRollToState(state, side, rollIndex, rollData) {
 
 function resetPairState(pair) {
 	pair.advantage = null;
-	pair.pendingFudgeNextRoll = false;
 	pair.rolls[1] = createEmptyRollState();
 	pair.rolls[2] = createEmptyRollState();
 	pair.total = null;
@@ -952,9 +1037,9 @@ Hooks.on("renderChatMessage", (message, html) => {
 		if (!parsed) return;
 		const latest = game.messages.get(message.id);
 		const state = latest?.flags?.[SYSTEM_ID]?.[CONTEST_FLAG];
-		if (!state || state.nextStep !== quadrant) return;
+		if (!state) return;
 		const { side, rollIndex } = parsed;
-		const rollData = await rollOneStep(side, rollIndex, state);
+		const rollData = await rollOneStep(side, rollIndex, state, message.id);
 		if (!rollData) return;
 		const refreshed = game.messages.get(message.id);
 		const currentState = refreshed?.flags?.[SYSTEM_ID]?.[CONTEST_FLAG];
@@ -977,15 +1062,7 @@ Hooks.on("renderChatMessage", (message, html) => {
 			}
 		}
 
-	if (side === "action" && rollIndex === 1) {
-		currentState.nextStep = "action-2";
-	} else if (side === "action" && rollIndex === 2) {
-		currentState.nextStep = currentState.hasReaction ? "reaction-1" : null;
-	} else if (side === "reaction" && rollIndex === 1) {
-		currentState.nextStep = "reaction-2";
-	} else if (side === "reaction" && rollIndex === 2) {
-		currentState.nextStep = null;
-	}
+	currentState.nextStep = getNextStepInOrder(currentState, quadrant);
 
 	updateResultState(currentState);
 	await updateContestMessage(refreshed, currentState);
@@ -1010,7 +1087,7 @@ async function main() {
 		}
 	if (game.user.isGM) {
 		if (canvas.tokens.controlled.length < 1) {
-			ui.notifications.warn("Select at least one token to start an Action roll.");
+			ui.notifications.warn("Select at least one token to start a roll.");
 			return;
 		}
 		if (canvas.tokens.controlled.length > 1) {
@@ -1018,16 +1095,13 @@ async function main() {
 		}
 	}
 	const state = createContestState(hasReaction);
-	state.nextStep = "action-1";
-	const rollData = await rollOneStep("action", 1, state);
-	if (!rollData) return;
-	applyRollToState(state, "action", 1, rollData);
-	state.nextStep = "action-2";
+	const rollOrder = getRollOrder(hasReaction);
+	const firstStep = rollOrder[0];
+	state.nextStep = firstStep;
 	updateResultState(state);
 
-	const speakerActor = rollData.actorUuid ? await fromUuid(rollData.actorUuid) : null;
 	await ChatMessage.create({
-		speaker: ChatMessage.getSpeaker({ actor: speakerActor || undefined }),
+		speaker: ChatMessage.getSpeaker({ actor: null }),
 		content: buildContestHtml(state),
 		flags: {
 			[SYSTEM_ID]: {
