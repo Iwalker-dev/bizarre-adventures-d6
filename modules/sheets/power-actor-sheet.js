@@ -1,5 +1,5 @@
 import { BaseActorSheet } from "./base-actor-sheet.js";
-import { typeConfigs }    from "../config.js";
+import { typeConfigs, DEBUG_LOGS }    from "../config.js";
 const mergeObject = foundry.utils.mergeObject;
 
 export class PowerSheet extends BaseActorSheet {
@@ -26,7 +26,9 @@ export class PowerSheet extends BaseActorSheet {
 		data.typeConfigs = typeConfigs.power;
 		data.system.bio = data.system.bio || {};
 		data.linkedActors = data.system.bio.linkedActors?.value || [];
-		console.log("BAD6 | data.system.bio.type", data.system.bio.type);
+		if (DEBUG_LOGS) {
+			console.log("BAD6 | data.system.bio.type", data.system.bio.type);
+		}
 		// If no type is saved yet, pretend we have one so the <select> shows it
 		if (!data.system.bio.type) {
 			data.system.bio.type = Object.keys(typeConfigs.power)[0];

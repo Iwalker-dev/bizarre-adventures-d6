@@ -3,7 +3,7 @@
  * Helpers to assemble and prepare roll formulas based on actor/item formula lines.
  *
  * Exports:
- *   - prepareFormula(actor, baseFormula, statLabel, advantage, data, useFudge, useGambit)
+ *   - prepareFormula(actor, baseFormula, statLabel, advantage, data, useFudge, useGambitForFudge)
  *
  * Behavior:
  *   - Scans the actor's items for `system.formula.lines` arrays (normalizes object -> array)
@@ -13,9 +13,9 @@
  *   - Includes Fudge luck move handling as a special formula modifier
  */
 
-import { canUseFudge } from "./luck-moves.js";
+import { showOptionalFormulaDialog } from "./dialog.js";
 
-export async function prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge = false, useGambit = false, showFudge = true) {
+export async function prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge = false, useGambitForFudge = false, showFudge = true, fudgeLockReason = "") {
 	try {
 		if (!actor || !baseFormula) return { formula: baseFormula, useFudge: false };
 
@@ -86,111 +86,25 @@ export async function prepareFormula(actor, baseFormula, statKey, statLabel, adv
 
 		let chosenOptionalIndices = [];
 		let useFudgeSelected = !!useFudge;
+		let useGambitSelected = !!useGambitForFudge;
+		const hasFudgeLock = !!fudgeLockReason;
 		if (optionalLines.length || showFudge) {
-			const dlgClass = `optional-lines-${Date.now()}`;
-			let html = `<form class="${dlgClass}">`;
-			if (showFudge) {
-				const initialPreviewAdv = computeAdvantageFromLines([
-					...required,
-					...optionalLines
-				]);
-				const fudgeCheck = canUseFudge(actor, initialPreviewAdv, useGambit);
-				const fudgeCost = useGambit ? 0 : 2;
-				const fudgeDisabled = !fudgeCheck.canUse ? 'disabled' : '';
-				const fudgeOpacity = fudgeCheck.canUse ? '1' : '0.6';
-				const fudgeReason = fudgeCheck.reason || '';
-				html += `
-					<div style="margin-bottom:8px; padding:8px; background:#f5f5f5; border-radius:4px;">
-						<label id="fudge-label" style="display:block; opacity:${fudgeOpacity};">
-							<input type="checkbox" id="use-fudge" class="fudge-checkbox" ${useFudgeSelected ? 'checked' : ''} ${fudgeDisabled}>
-							<strong>Fudge</strong> (+1 Advantage) — Cost: ${fudgeCost} Temp
-							<span class="fudge-reason" style="color:#b00; font-size:0.9em;">${escapeHtml(fudgeReason)}</span>
-						</label>
-					</div>
-				`;
-			}
-			if (optionalLines.length) {
-				html += `<p>Select optional formula lines to include:</p><div style="max-height:320px;overflow:auto;">`;
-				optionalLines.forEach((opt, i) => {
-					const op = (opt.line.operand || '+').toString();
-					const varOrVal = opt.line.variable ? `${opt.line.variable}` : (opt.line.value !== undefined ? `${opt.line.value}` : '');
-					const label = `${opt.actorName || 'Actor'} - ${opt.itemName || 'Item'}: ${op} ${varOrVal}`;
-					html += `<div><label><input type="checkbox" class="opt-checkbox" data-idx="${i}" checked> ${escapeHtml(label)}</label></div>`;
-				});
-				html += `</div>`;
-			}
-			html += `</form>`;
-
-			chosenOptionalIndices = await new Promise(resolve => {
-				const dialogInstance = new Dialog({
-					title: "Optional Formula Lines",
-					content: html,
-					buttons: {
-						include: {
-							label: "Include Selected",
-							callback: () => {
-								const form = document.querySelector(`.${dlgClass}`);
-								const checked = [];
-								if (form) {
-									form.querySelectorAll('.opt-checkbox').forEach((el) => {
-										if (el.checked) checked.push(Number(el.dataset.idx));
-									});
-									if (showFudge) {
-										const fudgeBox = form.querySelector('#use-fudge');
-										useFudgeSelected = !!(fudgeBox && fudgeBox.checked && !fudgeBox.disabled);
-									} else {
-										useFudgeSelected = false;
-									}
-								}
-								resolve(checked);
-							}
-						},
-						cancel: {
-							label: "Cancel",
-							callback: () => resolve(null)
-						}
-					},
-					default: "include"
-				});
-				dialogInstance.render(true);
-				setTimeout(() => {
-					const form = document.querySelector(`.${dlgClass}`);
-					if (!form) return;
-
-					if (showFudge) {
-						const updateFudgeState = () => {
-							const checkedIndices = [];
-							form.querySelectorAll('.opt-checkbox').forEach((el) => {
-								if (el.checked) checkedIndices.push(Number(el.dataset.idx));
-							});
-							const currentLines = [
-								...required,
-								...optionalLines.filter((o, i) => checkedIndices.includes(i))
-							];
-							const previewAdv = computeAdvantageFromLines(currentLines);
-							const fudgeCheckNow = canUseFudge(actor, previewAdv, useGambit);
-							const fudgeBox = form.querySelector('#use-fudge');
-							const fudgeReasonEl = form.querySelector('.fudge-reason');
-							const fudgeLabelEl = form.querySelector('#fudge-label');
-							if (fudgeBox) {
-								fudgeBox.disabled = !fudgeCheckNow.canUse;
-								if (!fudgeCheckNow.canUse) fudgeBox.checked = false;
-							}
-							if (fudgeReasonEl) fudgeReasonEl.textContent = fudgeCheckNow.reason || '';
-							if (fudgeLabelEl) fudgeLabelEl.style.opacity = fudgeCheckNow.canUse ? '1' : '0.6';
-						};
-
-						form.querySelectorAll('.opt-checkbox').forEach((el) => {
-							el.addEventListener('change', updateFudgeState);
-						});
-
-						updateFudgeState();
-					}
-				}, 50);
+			const dialogResult = await showOptionalFormulaDialog({
+				required,
+				optionalLines,
+				showFudge,
+				useFudgeSelected,
+				hasFudgeLock,
+				fudgeLockReason,
+				actor,
+				gambitDefault: useGambitSelected,
+				computeAdvantageFromLines
 			});
+			if (dialogResult === null) return null;
+			chosenOptionalIndices = dialogResult.chosenOptionalIndices || [];
+			useFudgeSelected = !!dialogResult.useFudgeSelected;
+			useGambitSelected = !!dialogResult.useGambitSelected;
 		}
-
-		if (chosenOptionalIndices === null) return null;
 		const chosenSet = new Set(chosenOptionalIndices);
 		const selected = [
 			...required,
@@ -257,7 +171,7 @@ export async function prepareFormula(actor, baseFormula, statKey, statLabel, adv
 		if (modifierVal) finalFormula += ` + (${modifierVal})`;
 		if (extraTerms.length) finalFormula += ' ' + extraTerms.join(' ');
 
-		return { formula: finalFormula, useFudge: useFudgeSelected };
+		return { formula: finalFormula, useFudge: useFudgeSelected, useGambitForFudge: useGambitSelected };
 	} catch (err) {
 		console.error('BAD6 | prepareFormula error', err);
 		return { formula: baseFormula, useFudge: false };
@@ -283,11 +197,6 @@ function resolveVariableValue(line, data, statKey, statLabel, advantage) {
 	if (typeof found === 'number') return found;
 	// Fallback to 0
 	return 0;
-}
-
-function escapeHtml(str) {
-	if (str === undefined || str === null) return '';
-	return String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[s]);
 }
 
 function findValueInData(obj, key) {

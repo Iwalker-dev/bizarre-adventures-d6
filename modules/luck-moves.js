@@ -58,41 +58,37 @@ export const LUCK_MOVES = {
 
 function resolveLinkedActorSync(linked) {
 	if (!linked) return null;
-	if (linked.uuid && typeof fromUuidSync === "function") {
-		try {
-			return fromUuidSync(linked.uuid);
-		} catch (e) {
-			return null;
-		}
+	const uuid = linked.uuid;
+	if (!uuid || typeof uuid !== "string") return null;
+	if (uuid.startsWith("Actor.")) {
+		const parts = uuid.split(".");
+		const actorId = parts[1];
+		return game.actors?.get(actorId) || null;
 	}
 	return null;
 }
 
 function resolveLuckActorSync(actor) {
 	if (!actor) return null;
-	const luck = actor.system?.attributes?.stats?.luck;
-	const temp = luck?.temp || 0;
-	const perm = luck?.perm || 0;
-	if (temp > 0 || perm > 0) return actor;
+
+	// Prefer a user-type actor (self or linked) for spending luck
+	if (actor.type === "user") return actor;
 
 	const linkedActors = actor.system?.bio?.linkedActors?.value || [];
 	for (const linked of linkedActors) {
 		const linkedActor = resolveLinkedActorSync(linked);
 		if (!linkedActor) continue;
-		const l = linkedActor.system?.attributes?.stats?.luck;
-		const t = l?.temp || 0;
-		const p = l?.perm || 0;
-		if (t > 0 || p > 0) return linkedActor;
+		if (linkedActor.type === "user") return linkedActor;
 	}
+
 	return actor;
 }
 
 async function resolveLuckActor(actor) {
 	if (!actor) return null;
-	const luck = actor.system?.attributes?.stats?.luck;
-	const temp = luck?.temp || 0;
-	const perm = luck?.perm || 0;
-	if (temp > 0 || perm > 0) return actor;
+
+	// Prefer a user-type actor (self or linked) for spending luck
+	if (actor.type === "user") return actor;
 
 	const linkedActors = actor.system?.bio?.linkedActors?.value || [];
 	for (const linked of linkedActors) {
@@ -105,11 +101,9 @@ async function resolveLuckActor(actor) {
 			}
 		}
 		if (!linkedActor) continue;
-		const l = linkedActor.system?.attributes?.stats?.luck;
-		const t = l?.temp || 0;
-		const p = l?.perm || 0;
-		if (t > 0 || p > 0) return linkedActor;
+		if (linkedActor.type === "user") return linkedActor;
 	}
+
 	return actor;
 }
 
@@ -120,11 +114,11 @@ async function resolveLuckActor(actor) {
  * @param {boolean} hasGambit - Whether the actor is using a Gambit (reduces cost to 0)
  * @returns {Object} { canUse: boolean, needed: number, current: number, reason: string }
  */
-export function canUseLuckMove(actor, moveKey, hasGambit = false) {
+export function canUseLuckMove(actor, moveKey, hasGambit = false, luckActorOverride = null) {
 	const move = LUCK_MOVES[moveKey];
 	if (!move) return { canUse: false, reason: "Invalid luck move" };
 
-	const luckActor = resolveLuckActorSync(actor);
+	const luckActor = luckActorOverride || resolveLuckActorSync(actor);
 	const luck = luckActor?.system?.attributes?.stats?.luck;
 	if (!luck) return { canUse: false, reason: "Actor has no Luck stat" };
 
@@ -162,14 +156,14 @@ export function canUseLuckMove(actor, moveKey, hasGambit = false) {
  * @param {number} feintCount - Number of feints used (for feint move only)
  * @returns {Promise<{success: boolean, error: string|null}>} Success status and error message
  */
-export async function spendLuckMove(actor, moveKey, hasGambit = false, feintCount = 0) {
+export async function spendLuckMove(actor, moveKey, hasGambit = false, feintCount = 0, luckActorOverride = null) {
 	const move = LUCK_MOVES[moveKey];
 	if (!move) return { success: false, error: "Invalid luck move" };
 
-	const check = canUseLuckMove(actor, moveKey, hasGambit);
+	const check = canUseLuckMove(actor, moveKey, hasGambit, luckActorOverride);
 	if (!check.canUse) return { success: false, error: check.reason };
 
-	const luckActor = await resolveLuckActor(actor);
+	const luckActor = luckActorOverride || await resolveLuckActor(actor);
 	if (!luckActor) return { success: false, error: "No actor with Luck found" };
 	const luck = luckActor.system.attributes.stats.luck;
 	

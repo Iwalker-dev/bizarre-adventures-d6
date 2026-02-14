@@ -1,4 +1,4 @@
-import { typeConfigs } from "../config.js";
+import { typeConfigs, DEBUG_LOGS } from "../config.js";
 
 export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 	static get defaultOptions() {
@@ -31,13 +31,17 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
                 const actorType = actor.type;
                 const typeConfigsForActorType = typeConfigs[actorType] || {};
                 const typeConfig = typeConfigsForActorType[typeKey];
-				console.error("BaseActorSheet | typeConfig", typeConfig?.image);
+				if (DEBUG_LOGS) {
+					console.error("BaseActorSheet | typeConfig", typeConfig?.image);
+				}
 
                 const isKnownTypeImage = Object.values(typeConfigsForActorType).some(config => config.image === actor.img);
 				if (actor.img == "icons/svg/mystery-man.svg" || isKnownTypeImage) {
 					if (typeConfig?.image) {
 						update.img = typeConfig.image;
-						console.error(update.img);
+						if (DEBUG_LOGS) {
+							console.error(update.img);
+						}
 					} else {
 						update.img = "icons/svg/mystery-man.svg";
 					}

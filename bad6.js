@@ -1,8 +1,7 @@
 
-import { BAD6 } from "./modules/config.js";
+import { BAD6, DEBUG_LOGS } from "./modules/config.js";
 import { setupStats } from "./modules/listenerFunctions.js";
 import { registerHandlebarsHelpers, preloadHandlebarsTemplates } from "./modules/utils.js"; 
-import { loadChartJS } from "./modules/objects/stat-chart-loader.js";
 import { rollerControl } from './modules/apps/bad6-roller.js';
 import { HueShiftControl } from "./modules/apps/hue-shift.js";
 import { outroControl } from './modules/apps/stylizedOutro.js';
@@ -18,12 +17,13 @@ import { DefaultItemSheet } from "./modules/sheets/default-item-sheet.js";
 
 Hooks.once("init", async () => {
 	
-	console.log("BAD6 Core System is Initializing");
-	Hooks.on("renderActorSheet", (app) => {
-		console.log(`Rendered: ${app.actor.name}, Sheet: ${app.constructor.name}, Type: ${app.actor.type}`);
-	});
+	if (DEBUG_LOGS) {
+		console.log("BAD6 Core System is Initializing");
+		Hooks.on("renderActorSheet", (app) => {
+			console.log(`Rendered: ${app.actor.name}, Sheet: ${app.constructor.name}, Type: ${app.actor.type}`);
+		});
+	}
 	// Load Apps and Stat Chart
-	await loadChartJS();
 	rollerControl();
 	HueShiftControl();
 	outroControl();

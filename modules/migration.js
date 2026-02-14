@@ -29,11 +29,11 @@ Hooks.once("ready", async () => {
 				, "system.attributes.-=uroll": null
 			, });
 			// Set actors to the correct type by creating a new actor object
-			const actorData = duplicate(actor.toObject());
+			const actorData = foundry.utils.duplicate(actor.toObject());
 			actorData.type = "user";
 			delete actorData._id;
 			actorData.folder = actor.folder?.id;
-			actorData.permission = actor.permission;
+			actorData.ownership = actor.ownership;
 			await actor.delete();
 			await Actor.create(actorData);
 			ui.notifications.info(`BAD6 Migration | Actor ${actor.name} (${actor.id}) migrated to type "${actorData.type}".`);
@@ -48,11 +48,11 @@ Hooks.once("ready", async () => {
 				, "system.attributes.-=sroll": null
 			, });
 			// Set actors to the correct type by creating a new actor object
-			const actorData = duplicate(actor.toObject());
+			const actorData = foundry.utils.duplicate(actor.toObject());
 			actorData.type = "stand";
 			delete actorData._id;
 			actorData.folder = actor.folder?.id;
-			actorData.permission = actor.permission;
+			actorData.ownership = actor.ownership;
 			await actor.delete();
 			await Actor.create(actorData);
 			ui.notifications.info(`BAD6 Migration | Actor ${actor.name} (${actor.id}) migrated to type "${actorData.type}".`);
@@ -134,9 +134,8 @@ Hooks.once("ready", async () => {
 			const typeKey = actor.system.info?.type;
 			await actor.update({ "system.info.type": typeKey });
 			console.log(`Updated ${actor.name}`);
-			updated++;
 		}
-		console.log("BAD6 | Applied 0.9.5 migration (default type images for power actors) x", updated);
+		console.log("BAD6 | Applied 0.9.5 migration (default type images for power actors) x");
 	}
 
 	//— 0.9.6 migration: move "info" to "bio" for universal linkedActors field —
