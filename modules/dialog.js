@@ -401,7 +401,9 @@ export async function showStatDialog(actor, options = {}) {
 		const gambitState = {
 			feint: !!gambitDefaults?.feint
 		};
-		const selectedAdv = Number.isFinite(Number(advantageValue)) ? Number(advantageValue) : 0;
+		const selectedAdv = advantageLocked
+			? (Number.isFinite(Number(advantageValue)) ? Number(advantageValue) : 0)
+			: null;
 
 		const buttons = {};
 		for (let [k, stats] of Object.entries(sources)) {
@@ -482,7 +484,7 @@ export async function showStatDialog(actor, options = {}) {
 			}
 			content += `<div style="display:flex; gap:12px; flex-wrap:wrap;">`;
 			for (let i = 0; i <= 3; i++) {
-				const checked = i === selectedAdv ? "checked" : "";
+				const checked = selectedAdv === i ? "checked" : "";
 				content += `
 					<label style="display:flex; gap:6px; align-items:center;">
 						<input type="radio" name="advantage" value="${i}" ${checked} ${advantageLocked ? "disabled" : ""}>
@@ -539,7 +541,7 @@ export async function showStatDialog(actor, options = {}) {
 
 				const getAdvantageValue = () => {
 					const selected = root.querySelector('input[name="advantage"]:checked');
-					return selected ? Number(selected.value) : selectedAdv;
+					return selected ? Number(selected.value) : null;
 				};
 
 				const rerenderDialog = () => {
@@ -565,13 +567,18 @@ export async function showStatDialog(actor, options = {}) {
 								ui.notifications.warn(lockMessage);
 								return;
 							}
+							const advValue = advantageLocked ? selectedAdv : getAdvantageValue();
+							if (!advantageLocked && (advValue === null || Number.isNaN(advValue))) {
+								ui.notifications.warn("Select an Advantage level before rolling.");
+								return;
+							}
 							statResolved = true;
 							dialogInstance.close();
 							resolveOnce({
 								key: btnData.key,
 								label: btnData.statName,
 								value: btnData.statValue,
-								advantage: getAdvantageValue(),
+								advantage: advValue,
 								feintCount: feintState.count,
 								luckActorUuid,
 								gambitSelections: {

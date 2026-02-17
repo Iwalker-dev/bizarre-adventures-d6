@@ -1085,6 +1085,9 @@ Hooks.on("renderChatMessage", (message, html) => {
 		applyRollToState(currentState, side, rollIndex, rollData);
 		const pair = currentState[side];
 		if (rollIndex === 2) {
+			currentState.nextStep = getNextStepInOrder(currentState, quadrant);
+			updateResultState(currentState);
+			await updateContestMessage(refreshed, currentState);
 			const actor = rollData.actorUuid ? await fromUuid(rollData.actorUuid) : null;
 			const { resetPair, persistActorName } = await handlePostRollLuck(pair, actor, {
 				state: currentState,
@@ -1123,12 +1126,21 @@ Hooks.on("renderChatMessage", (message, html) => {
 		nextState.reaction.persistCount = currentState.reaction.persistCount;
 		nextState.reaction.persistNote = currentState.reaction.persistNote;
 		nextState.nextStep = getRollOrder(nextState.hasReaction)[0];
-		await updateContestMessage(refreshed, nextState);
+		await updateContestMessage(refreshed, currentState);
 		const speakerActorUuid = currentState.action.rolls[1]?.actorUuid || currentState.reaction.rolls[1]?.actorUuid;
 		const speakerActor = speakerActorUuid ? await fromUuid(speakerActorUuid) : null;
-		ChatMessage.create({
+		await ChatMessage.create({
 			speaker: ChatMessage.getSpeaker({ actor: speakerActor || undefined }),
 			content: "<strong>Clash!</strong> A new contest begins."
+		});
+		await ChatMessage.create({
+			speaker: ChatMessage.getSpeaker({ actor: speakerActor || undefined }),
+			content: buildContestHtml(nextState),
+			flags: {
+				[SYSTEM_ID]: {
+					[CONTEST_FLAG]: nextState
+				}
+			}
 		});
 		return;
 	}
