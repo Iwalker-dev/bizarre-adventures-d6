@@ -1,6 +1,6 @@
 // modules/config.js
 export const BAD6 = {};
-export const DEBUG_LOGS = true;
+export const DEBUG_LOGS = false;
 
 
 // Core Configuration

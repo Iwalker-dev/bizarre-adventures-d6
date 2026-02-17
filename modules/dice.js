@@ -15,6 +15,22 @@
 
 import { showOptionalFormulaDialog } from "./dialog.js";
 
+/**
+ * Build a roll formula by combining the base stat roll with item formula lines.
+ * Includes optional line selection and Fudge handling.
+ *
+ * @param {Actor} actor
+ * @param {string} baseFormula
+ * @param {string} statKey
+ * @param {string} statLabel
+ * @param {number} advantage
+ * @param {Object} data
+ * @param {boolean} [useFudge=false]
+ * @param {boolean} [useGambitForFudge=false]
+ * @param {boolean} [showFudge=true]
+ * @param {string} [fudgeLockReason=""]
+ * @returns {Promise<{formula:string,useFudge:boolean,useGambitForFudge:boolean}|{formula:string,useFudge:boolean}|null>}
+ */
 export async function prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge = false, useGambitForFudge = false, showFudge = true, fudgeLockReason = "") {
 	try {
 		if (!actor || !baseFormula) return { formula: baseFormula, useFudge: false };
@@ -178,6 +194,15 @@ export async function prepareFormula(actor, baseFormula, statKey, statLabel, adv
 	}
 }
 
+/**
+ * Resolve a formula line variable/value against roll data.
+ * @param {Object} line
+ * @param {Object} data
+ * @param {string} statKey
+ * @param {string} statLabel
+ * @param {number} advantage
+ * @returns {number}
+ */
 function resolveVariableValue(line, data, statKey, statLabel, advantage) {
 	const variable = (line?.variable || '').toString();
 	// Prefer an explicit numeric 'value'
@@ -199,6 +224,12 @@ function resolveVariableValue(line, data, statKey, statLabel, advantage) {
 	return 0;
 }
 
+/**
+ * Find a numeric value in a nested roll data object by key.
+ * @param {Object} obj
+ * @param {string} key
+ * @returns {number|undefined}
+ */
 function findValueInData(obj, key) {
 	if (!obj || !key) return undefined;
 	const lk = key.toString().toLowerCase();

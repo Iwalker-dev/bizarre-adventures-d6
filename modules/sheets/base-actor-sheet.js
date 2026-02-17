@@ -339,29 +339,30 @@ async _onDropActor(event) {
     
     const data = TextEditor.getDragEventData(event);
     
-	const actor = data?.uuid ? await fromUuid(data.uuid) : null;
-	// Only accept Actor drops (resolve by UUID if possible)
+	let actor = null;
+	if (data?.uuid) {
+		actor = await fromUuid(data.uuid);
+	} else if (data?.type === "Actor" && data?.id) {
+		actor = game.actors.get(data.id) || null;
+	}
+	// Only accept Actor drops (resolve by UUID or id)
 	if (!actor || actor.documentName !== "Actor") {
 		ui.notifications.warn("You can only drop Actors here!");
 		return;
 	}
-    if (!actor) {
-        ui.notifications.error("Could not find the dropped actor!");
-        return;
-    }
     
     // Get current linked actors or initialize empty array
     const linkedActors = this.actor.system.bio.linkedActors?.value || [];
     
     // Check if already linked
-    if (linkedActors.some(linked => linked.uuid === data.uuid)) {
+	if (linkedActors.some(linked => linked.uuid === actor.uuid)) {
         ui.notifications.warn(`${actor.name} is already linked!`);
         return;
     }
     
     // Add new linked actor
-    linkedActors.push({
-        uuid: data.uuid,
+	linkedActors.push({
+		uuid: actor.uuid,
         name: actor.name,
         type: actor.type
     });

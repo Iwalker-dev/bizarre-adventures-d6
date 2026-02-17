@@ -79,6 +79,7 @@ Hooks.once("ready", async () => {
           <li>🎲 Use the "D6 Roller" in token controls for rolls.</li>
           <li>🎲 As a GM, select 1 token for the action roll. If multiple tokens are highlighted, it starts a contest.</li>
           <li>🎯 As a player, selecting targets starts a contest. Otherwise, you roll from owned actors.</li>
+		  <li>🎯 Double-click the D6 Roller control to force a contest in chat.</li>
           <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
           <li>🔧 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue</li>
           <li>🌟 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called "Outro" and it will automatically switch to it afterwards.</li>

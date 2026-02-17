@@ -4,6 +4,7 @@ import { canUseFudge } from "./luck-moves.js";
  * Dialog utilities for BAD6 rolling, stat selection, and formula configuration.
  */
 
+
 /**
  * Escape HTML entities for safe insertion into dialog content.
  * @param {string|null|undefined} str
@@ -19,6 +20,19 @@ export function escapeHtml(str) {
 		"'": "&#39;"
 	})[s]);
 }
+
+/**
+ * Get a display-safe actor name, allowing anonymizing modules to intercept.
+ * @param {Actor} actor
+ * @param {TokenDocument|Token} [token]
+ * @returns {string}
+ */
+export function getActorDisplayName(actor, token = null) {
+	if (!actor) return "Unknown";
+	const speaker = ChatMessage.getSpeaker({ actor, token: token || undefined });
+	return speaker?.alias || actor.name || "Unknown";
+}
+
 
 /**
  * Show a generic choice dialog.
@@ -80,6 +94,7 @@ export function showChoiceDialog({
 	});
 }
 
+
 /**
  * Confirm a roll before execution.
  * @param {Object} options
@@ -100,6 +115,7 @@ export function showRollReadyDialog({ statLabel, advantagePhrase = "", formula =
 		defaultId: "No"
 	});
 }
+
 
 /**
  * Ask GM whether a player owner should complete the roll.
@@ -154,6 +170,7 @@ export function showMulliganDialog({ gambitDefault = false } = {}) {
 		closeValue: { confirmed: false, useGambit: !!gambitDefault }
 	});
 }
+
 
 /**
  * Prompt for Persist usage.
@@ -356,8 +373,9 @@ export async function showStatDialog(actor, options = {}) {
 			const luck = cand.system?.attributes?.stats?.luck;
 			const temp = luck?.temp ?? 0;
 			const perm = luck?.perm ?? 0;
+			const displayName = getActorDisplayName(cand);
 			buttons[cand.uuid] = {
-				label: `${cand.name} (${cand.type}) — Luck: ${temp}T / ${perm}P`,
+				label: `${displayName} (${cand.type}) — Luck: ${temp}T / ${perm}P`,
 				callback: () => cand
 			};
 		}
@@ -430,9 +448,10 @@ export async function showStatDialog(actor, options = {}) {
 					} catch (e) { }
 				}
 				const cancelText = feintState.count > 1 ? ` x${feintState.count}` : "";
+				const displayName = getActorDisplayName(actor);
 				const cancelMsg = await ChatMessage.create({
 					speaker: ChatMessage.getSpeaker({ actor }),
-					content: `<strong>${actor.name}</strong> - Feint${cancelText} Cancelled!`,
+					content: `<strong>${escapeHtml(displayName)}</strong> - Feint${cancelText} Cancelled!`,
 					whisper: game.users.filter(u => u.isGM).map(u => u.id)
 				});
 				setTimeout(() => {
@@ -574,7 +593,8 @@ export async function showStatDialog(actor, options = {}) {
 						feintState.count++;
 
 						const feintText = feintState.count > 1 ? ` x${feintState.count}` : "";
-						const content = `<strong>${actor.name} is feinting!</strong>${feintText}`;
+						const displayName = getActorDisplayName(actor);
+						const content = `<strong>${escapeHtml(displayName)} is feinting!</strong>${feintText}`;
 						let msg = feintState.messageId ? game.messages.get(feintState.messageId) : null;
 						if (msg) {
 							try { await msg.update({ content }); } catch (e) { }

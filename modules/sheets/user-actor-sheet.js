@@ -146,19 +146,20 @@
   		});
 
   		// Hit creation, deletion, and health recalculation
-  		const recalc = async () => {
-  			const dd = this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
-  			if (dd) return;
-  			const totalDamage = this.actor.items
-  				.filter(i => i.type === "hit")
-  				.reduce((sum, i) => sum + (i.system.quantity || 0), 0);
-  			const maxHP = this.actor.system.health.max;
-  			const newValue = Math.max(this.actor.system.health.min, maxHP - totalDamage);
-  			await this.actor.update({
-  				"system.health.value": newValue
-  			});
-  			this.render();
-  		};
+		const recalc = async () => {
+			const dd = this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
+			if (dd) return;
+			const baseActor = game.actors.get(this.actor.id) || this.actor;
+			const totalDamage = baseActor.items
+				.filter(i => i.type === "hit")
+				.reduce((sum, i) => sum + (i.system.quantity || 0), 0);
+			const maxHP = baseActor.system.health.max;
+			const newValue = Math.max(baseActor.system.health.min, maxHP - totalDamage);
+			await baseActor.update({
+				"system.health.value": newValue
+			});
+			this.render();
+		};
   		html.find("#create-hit").click(async () => {
   			await this.actor.createEmbeddedDocuments("Item", [{
   				name: "New Hit"

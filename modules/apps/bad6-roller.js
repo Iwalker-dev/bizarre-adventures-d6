@@ -14,7 +14,8 @@ import {
 	showConfirmRollerDialog,
 	showMulliganDialog,
 	showPersistDialog,
-	showStatDialog
+	showStatDialog,
+	getActorDisplayName
 } from "../dialog.js";
 import { DEBUG_LOGS } from "../config.js";
 
@@ -30,27 +31,54 @@ Hooks.once("init", () => {
 	rollerControl();
 });
 
-// Helper function
+/**
+ * Escape HTML for safe injection into chat content.
+ * @param {string|null|undefined} str
+ * @returns {string}
+ */
 function escapeHtml(str) {
 	if (str === undefined || str === null) return '';
 	return String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[s]);
 }
 
+/**
+ * Parse the cs>=N threshold from a formula.
+ * @param {string} formula
+ * @returns {number}
+ */
 function parseThreshold(formula) {
 	const match = /cs\s*>=\s*([0-9]+)/i.exec(formula || "");
 	return match ? Number(match[1]) : 5;
 }
 
+/**
+ * Extract d6 results from a roll.
+ * @param {Roll} roll
+ * @returns {number[]}
+ */
 function extractDiceResults(roll) {
 	const dice = roll?.dice?.[0];
 	if (!dice || !Array.isArray(dice.results)) return [];
 	return dice.results.map(r => Number(r.result)).filter(n => !Number.isNaN(n));
 }
 
+/**
+ * Count successes given a threshold.
+ * @param {number[]} results
+ * @param {number} threshold
+ * @returns {number}
+ */
 function countSuccesses(results, threshold) {
 	return results.reduce((sum, n) => sum + (n >= threshold ? 1 : 0), 0);
 }
 
+/**
+ * Build a roll snapshot for chat rendering and luck logic.
+ * @param {Roll} roll
+ * @param {string} formula
+ * @param {number} advantage
+ * @returns {{formula:string,threshold:number,diceResults:number[],delta:number,advantage:number,total:number}}
+ */
 function buildRollSnapshot(roll, formula, advantage) {
 	const threshold = parseThreshold(formula);
 	const diceResults = extractDiceResults(roll);
@@ -66,6 +94,11 @@ function buildRollSnapshot(roll, formula, advantage) {
 	};
 }
 
+/**
+ * Play Dice So Nice animation if available.
+ * @param {Roll} roll
+ * @returns {Promise<void>}
+ */
 async function playDiceAnimation(roll) {
     const dice3d = game?.dice3d;
     if (!dice3d?.showForRoll) return;
@@ -80,6 +113,10 @@ async function playDiceAnimation(roll) {
     });
 }
 
+/**
+ * Register the scene control button for the D6 Roller.
+ * @returns {void}
+ */
 export function rollerControl() {
 	Hooks.on("getSceneControlButtons", (controls) => {
 		const tokenControls = controls.tokens;
@@ -92,11 +129,41 @@ export function rollerControl() {
 			, visible: true
 			, button: true
 			, order: 50
-			, onClick: () => main()
+				, onClick: () => {
+					if (rollerClickTimer) {
+						clearTimeout(rollerClickTimer);
+						rollerClickTimer = null;
+						createContestMessage({ forceContest: true, forceUserSpeaker: true });
+						return;
+					}
+					rollerClickTimer = setTimeout(() => {
+						rollerClickTimer = null;
+						main();
+					}, 250);
+				}
 		};
 	});
+
 }
 
+/**
+ * GM-run ready check on behalf of a player.
+ * @param {string} actorId
+ * @param {string} baseFormula
+ * @param {string} statKey
+ * @param {string} statLabel
+ * @param {number} advantage
+ * @param {Object} data
+ * @param {number} [feintCount=0]
+ * @param {boolean} [useFudge=false]
+ * @param {boolean} [gambitForFeint=false]
+ * @param {boolean} [gambitForFudge=false]
+ * @param {boolean} [showFudge=true]
+ * @param {string} [fudgeLockReason=""]
+ * @param {boolean} [suppressMessage=false]
+ * @param {string|null} [luckActorUuid=null]
+ * @returns {Promise<{total:number,snapshot:Object,useFudge:boolean,effectiveAdvantage:number}|null>}
+ */
 // Takes an actorId, not an Actor instance
 async function readyCheck(actorId, baseFormula, statKey, statLabel, advantage, data, feintCount = 0, useFudge = false, gambitForFeint = false, gambitForFudge = false, showFudge = true, fudgeLockReason = "", suppressMessage = false, luckActorUuid = null) {
 	const actor = game.actors.get(actorId);
@@ -137,13 +204,20 @@ async function readyCheck(actorId, baseFormula, statKey, statLabel, advantage, d
 	await roll.evaluate({
 		async: true
 	});
+	const rollHtml = await roll.render();
 	const effectiveAdvantage = Number(advantage || 0) + (useFudge ? 1 : 0);
 	const fudgeNote = useFudge ? ` (+1 Fudged)` : "";
 	await playDiceAnimation(roll);
 	const snapshot = buildRollSnapshot(roll, finalFormula, effectiveAdvantage);
-	return { total: roll.total, snapshot, useFudge, effectiveAdvantage };
+	return { total: roll.total, snapshot, useFudge, effectiveAdvantage, rollHtml };
 }
 
+/**
+ * Resolve which actor will roll, with linked-actor selection as needed.
+ * @param {number} i
+ * @param {boolean} [reaction=false]
+ * @returns {Promise<Actor|null>}
+ */
 async function findRoller(i, reaction = false) {
 	if (game.user.isGM) {
 		if (DEBUG_LOGS) {
@@ -195,9 +269,10 @@ async function findRoller(i, reaction = false) {
 				ui.notifications.warn("No linked abilities found. Defaulting to original roller.");
 				return resolve(roller);
 			}
+			const rollerDisplayName = getActorDisplayName(roller);
 			let buttons = {
 				[roller.id]: {
-					label: roller.name,
+					label: rollerDisplayName,
 					callback: () => roller
 				}
 			};
@@ -205,8 +280,9 @@ async function findRoller(i, reaction = false) {
 			for (let linked of linkedActors) {
 				const actor = await fromUuid(linked.uuid);
 				if (actor) {
+					const displayName = getActorDisplayName(actor);
 					buttons[linked.uuid] = {
-						label: `${linked.name} (${linked.type})`,
+						label: `${displayName} (${linked.type})`,
 						callback: () => actor
 					};
 				}
@@ -231,8 +307,9 @@ async function findRoller(i, reaction = false) {
 	return new Promise(async resolve => {
 		const buttons = {};
 		for (let a of owned) {
+			const displayName = getActorDisplayName(a);
 			buttons[a.id] = {
-				label: a.name,
+				label: displayName,
 				callback: () => a
 			};
 		}
@@ -247,11 +324,22 @@ async function findRoller(i, reaction = false) {
 	});
 }
 
+/**
+ * Request a stat selection from the user.
+ * @param {Actor} actor
+ * @param {Object} [options]
+ * @returns {Promise<Object|null>}
+ */
 function requestStat(actor, options = {}) {
 	return showStatDialog(actor, options);
 }
 
 
+/**
+ * Convert a DC total to a label.
+ * @param {number} value
+ * @returns {string}
+ */
 function convDC(value) {
 	const map = {
 		0: "Trivial"
@@ -269,6 +357,11 @@ function convDC(value) {
 	return map[value] || "Literally Impossible";
 }
 
+/**
+ * Convert hit difference to a severity label.
+ * @param {number} value
+ * @returns {string}
+ */
 function convHit(value) {
 	const map = {
 		0: "Clash!"
@@ -284,6 +377,11 @@ function convHit(value) {
 }
 
 
+/**
+ * Helper to find a non-GM owner or fallback to GM.
+ * @param {Actor} actor
+ * @returns {User|undefined}
+ */
 // Helper to find a non-GM owner or fallback to GM
 function findOwner(actor) {
 	return game.users.find(u => !u.isGM && actor.testUserPermission(u, "OWNER")) ||
@@ -298,7 +396,12 @@ let rollProcessGambitDefaults = {
 	mulligan: false,
 	persist: false
 };
+let rollerClickTimer = null;
 
+/**
+ * Create an empty roll state for a single roll.
+ * @returns {Object}
+ */
 function createEmptyRollState() {
 	return {
 		resolved: false,
@@ -315,10 +418,15 @@ function createEmptyRollState() {
 		useFudge: false,
 		useGambit: false,
 		feintCount: 0,
-		snapshot: null
+		snapshot: null,
+		rollHtml: null
 	};
 }
 
+/**
+ * Create roll pair state (two rolls and metadata).
+ * @returns {Object}
+ */
 function createPairState() {
 	return {
 		advantage: null,
@@ -336,6 +444,11 @@ function createPairState() {
 	};
 }
 
+/**
+ * Create the contest state container.
+ * @param {boolean} hasReaction
+ * @returns {Object}
+ */
 function createContestState(hasReaction) {
 	return {
 		version: 1,
@@ -347,6 +460,11 @@ function createContestState(hasReaction) {
 	};
 }
 
+/**
+ * Compute total for a roll pair.
+ * @param {Object} pair
+ * @returns {number|null}
+ */
 function computePairTotal(pair) {
 	if (pair?.rolls?.[1]?.resolved && pair?.rolls?.[2]?.resolved) {
 		return Number(pair.rolls[1].total || 0) + Number(pair.rolls[2].total || 0);
@@ -354,33 +472,40 @@ function computePairTotal(pair) {
 	return null;
 }
 
+/**
+ * Format a roll summary HTML block.
+ * @param {Object} roll
+ * @returns {string}
+ */
 function formatRollSummary(roll) {
 	if (!roll?.resolved) return "<em>Pending</em>";
 	const actorName = escapeHtml(roll.actorName || "Unknown");
 	const statLabel = escapeHtml(roll.statLabel || "Stat");
-	const formula = roll.formula ? escapeHtml(roll.formula) : "";
-	const dice = Array.isArray(roll.diceResults) ? roll.diceResults.join(", ") : "";
-	const total = Number(roll.total || 0);
-	const adv = Number(roll.effectiveAdvantage ?? roll.advantage ?? 0);
-	const fudgeNote = roll.useFudge ? " (+1 Fudged)" : "";
-	const feintNote = roll.feintCount > 0 ? ` | Feints: ${roll.feintCount}` : "";
-	const gambitNote = roll.useGambit ? " | Gambit" : "";
 	const lineStyle = "white-space:normal; overflow-wrap:anywhere; word-break:break-word;";
-	const formulaLine = formula ? `<div style=\"${lineStyle}\">Formula: <span>${formula}</span></div>` : "";
-	const diceLine = dice ? `<div style=\"${lineStyle}\">Dice: <span>${dice}</span></div>` : "";
+	const rollCard = roll.rollHtml ? `<div class="bad6-roll-card" style="margin:4px 0;">${roll.rollHtml}</div>` : "";
 	return `
 		<div style="${lineStyle}"><strong>${actorName}</strong> — ${statLabel}</div>
-		${formulaLine}
-		${diceLine}
-		<div style="${lineStyle}">Total: <strong>${total}</strong> | Advantage: ${adv}${fudgeNote}${feintNote}${gambitNote}</div>
+		${rollCard}
 	`;
 }
 
+/**
+ * Get display label for a quadrant.
+ * @param {"action"|"reaction"} side
+ * @param {number} rollIndex
+ * @returns {string}
+ */
 function getQuadrantLabel(side, rollIndex) {
 	const sideLabel = side === "reaction" ? "Reaction" : "Action";
 	return `${sideLabel} Roll ${rollIndex}`;
 }
 
+/**
+ * Get button label for a quadrant.
+ * @param {"action"|"reaction"} side
+ * @param {number} rollIndex
+ * @returns {string}
+ */
 function getQuadrantButtonLabel(side, rollIndex) {
 	if (side === "reaction" && rollIndex === 1) return "Roll Reaction";
 	if (side === "action" && rollIndex === 1) return "Roll Action";
@@ -388,6 +513,14 @@ function getQuadrantButtonLabel(side, rollIndex) {
 	return `Roll ${sideLabel} ${rollIndex}`;
 }
 
+/**
+ * Render a quadrant cell HTML block.
+ * @param {"action"|"reaction"} side
+ * @param {number} rollIndex
+ * @param {Object} rollData
+ * @param {string|null} nextStep
+ * @returns {string}
+ */
 function renderQuadrantCell(side, rollIndex, rollData, nextStep) {
 	const quadrant = `${side}-${rollIndex}`;
 	const isNext = nextStep === quadrant;
@@ -407,6 +540,11 @@ function renderQuadrantCell(side, rollIndex, rollData, nextStep) {
 	`;
 }
 
+/**
+ * Build contest chat HTML from state.
+ * @param {Object} state
+ * @returns {string}
+ */
 function buildContestHtml(state) {
 	const actionAdvNote = state.action?.advantage !== null && state.action?.advantage !== undefined
 		? `<div style="margin-top:4px; font-style:italic; color:#666;">Advantage: ${state.action.advantage} (chosen by ${escapeHtml(state.action.advantageChosenBy || "Unknown")})</div>`
@@ -431,7 +569,7 @@ function buildContestHtml(state) {
 		: "";
 	const reactionRow = state.hasReaction
 		? `
-		<div style="border-top:2px solid #555; margin-top:6px; padding-top:4px;">
+		<div style="margin-top:6px; padding-top:4px;">
 			${renderQuadrantCell("reaction", 1, state.reaction.rolls[1], state.nextStep)}
 			<div style="border-top:1px solid #999;"></div>
 			${renderQuadrantCell("reaction", 2, state.reaction.rolls[2], state.nextStep)}
@@ -445,13 +583,19 @@ function buildContestHtml(state) {
 		: "";
 	return `
 		<div class="bad6-contest" style="border:1px solid #777; padding:6px; background:#f8f8f8;">
-			${reactionRow}
 			${actionRow}
+			${reactionRow}
 			${resultHtml}
 		</div>
 	`;
 }
 
+/**
+ * Update contest chat message, routing via GM if needed.
+ * @param {ChatMessage} message
+ * @param {Object} state
+ * @returns {Promise<void>}
+ */
 async function updateContestMessage(message, state) {
 	if (game.user.isGM) {
 		await message.setFlag(SYSTEM_ID, CONTEST_FLAG, state);
@@ -465,6 +609,12 @@ async function updateContestMessage(message, state) {
 	await socket.executeAsGM("updateContestMessage", message.id, state);
 }
 
+/**
+ * GM-side update for contest messages.
+ * @param {string} messageId
+ * @param {Object} state
+ * @returns {Promise<boolean>}
+ */
 async function updateContestMessageAsGM(messageId, state) {
 	const message = game.messages.get(messageId);
 	if (!message) return false;
@@ -473,6 +623,11 @@ async function updateContestMessageAsGM(messageId, state) {
 	return true;
 }
 
+/**
+ * Parse a quadrant string into its components.
+ * @param {string} quadrant
+ * @returns {{side:"action"|"reaction",rollIndex:number}|null}
+ */
 function parseQuadrant(quadrant) {
 	const [side, idx] = String(quadrant || "").split("-");
 	const rollIndex = Number(idx || 0);
@@ -480,6 +635,11 @@ function parseQuadrant(quadrant) {
 	return { side, rollIndex };
 }
 
+/**
+ * Collect linked actor UUIDs for an actor.
+ * @param {Actor} actor
+ * @returns {Set<string>}
+ */
 function getLinkedActorUuids(actor) {
 	const linkedSet = new Set();
 	if (!actor) return linkedSet;
@@ -491,6 +651,12 @@ function getLinkedActorUuids(actor) {
 	return linkedSet;
 }
 
+/**
+ * Check if two actors are linked directly or indirectly.
+ * @param {Actor} actorA
+ * @param {Actor} actorB
+ * @returns {boolean}
+ */
 function areActorsLinked(actorA, actorB) {
 	if (!actorA || !actorB) return false;
 	const setA = getLinkedActorUuids(actorA);
@@ -503,12 +669,23 @@ function areActorsLinked(actorA, actorB) {
 	return false;
 }
 
+/**
+ * Get roll order by whether a reaction exists.
+ * @param {boolean} hasReaction
+ * @returns {string[]}
+ */
 function getRollOrder(hasReaction) {
 	return hasReaction
 		? ["reaction-1", "reaction-2", "action-1", "action-2"]
 		: ["action-1", "action-2"];
 }
 
+/**
+ * Get next roll quadrant in order.
+ * @param {Object} state
+ * @param {string} currentQuadrant
+ * @returns {string|null}
+ */
 function getNextStepInOrder(state, currentQuadrant) {
 	const order = getRollOrder(state?.hasReaction);
 	const idx = order.indexOf(currentQuadrant);
@@ -516,6 +693,13 @@ function getNextStepInOrder(state, currentQuadrant) {
 	return order[idx + 1] || null;
 }
 
+/**
+ * Handle post-roll luck moves (mulligan/persist).
+ * @param {Object} pair
+ * @param {Actor} actor
+ * @param {Object} context
+ * @returns {Promise<{resetPair:boolean,persistActorName?:string}>}
+ */
 async function handlePostRollLuck(pair, actor, context = {}) {
 	const { state, side, messageId } = context;
 	const roll1 = pair.rolls[1];
@@ -572,8 +756,41 @@ async function handlePostRollLuck(pair, actor, context = {}) {
 	};
 	const initialLock = getPersistLockState();
 
-	const persistCheck = canUseLuckMove(actor, "persist", rollProcessGambitDefaults.persist, luckActor);
-	if (persistCheck.canUse) {
+	const persistCandidates = [];
+	const candidateMap = new Map();
+	if (roll1?.actorUuid) {
+		const actor1 = await fromUuid(roll1.actorUuid);
+		if (actor1) {
+			persistCandidates.push({ actor: actor1, luckActorUuid: roll1.luckActorUuid || null });
+			candidateMap.set(actor1.uuid, actor1);
+		}
+	}
+	if (roll2?.actorUuid) {
+		const actor2 = await fromUuid(roll2.actorUuid);
+		if (actor2 && !candidateMap.has(actor2.uuid)) {
+			persistCandidates.push({ actor: actor2, luckActorUuid: roll2.luckActorUuid || null });
+			candidateMap.set(actor2.uuid, actor2);
+		}
+	}
+	const hasNonGmOwner = (candidate) => {
+		const ownership = candidate?.actor?.ownership || {};
+		return Object.entries(ownership).some(([uid, lvl]) => {
+			const u = game.users.get(uid);
+			return u?.active && !u.isGM && lvl >= CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+		});
+	};
+	persistCandidates.sort((a, b) => {
+		const aPlayer = hasNonGmOwner(a);
+		const bPlayer = hasNonGmOwner(b);
+		if (aPlayer === bPlayer) return 0;
+		return aPlayer ? -1 : 1;
+	});
+
+	for (const candidate of persistCandidates) {
+		const candidateActor = candidate.actor;
+		const candidateLuckActor = candidate.luckActorUuid ? await fromUuid(candidate.luckActorUuid) : candidateActor;
+		const persistCheck = canUseLuckMove(candidateActor, "persist", rollProcessGambitDefaults.persist, candidateLuckActor);
+		if (!persistCheck.canUse) continue;
 		const persistResult = await showPersistDialog({
 			gambitDefault: !!rollProcessGambitDefaults.persist,
 			lockReason: initialLock?.locked ? initialLock.reason : "",
@@ -584,9 +801,9 @@ async function handlePostRollLuck(pair, actor, context = {}) {
 			rollProcessGambitDefaults.persist = !!persistResult.useGambit;
 		}
 		if (persistResult?.confirmed) {
-			const spend = await spendLuckMove(actor, "persist", persistResult.useGambit, 0, luckActor);
+			const spend = await spendLuckMove(candidateActor, "persist", persistResult.useGambit, 0, candidateLuckActor);
 			if (!spend.success && spend.error) ui.notifications.error(spend.error);
-			const actorName = actor?.name || "Unknown";
+			const actorName = candidateActor?.name || "Unknown";
 			pair.persistLock = {
 				by: actorName,
 				expiresAt: Date.now() + 5000
@@ -600,6 +817,14 @@ async function handlePostRollLuck(pair, actor, context = {}) {
 	return { resetPair: false };
 }
 
+/**
+ * Execute a single roll step in the contest flow.
+ * @param {"action"|"reaction"} side
+ * @param {number} rollIndex
+ * @param {Object} state
+ * @param {string|null} [messageId=null]
+ * @returns {Promise<Object|null>}
+ */
 async function rollOneStep(side, rollIndex, state, messageId = null) {
 	const pair = state[side];
 	let advantage = pair.advantage;
@@ -647,7 +872,7 @@ async function rollOneStep(side, rollIndex, state, messageId = null) {
 
 	if (!advantageLocked) {
 		pair.advantage = Number(stat.advantage || 0);
-		pair.advantageChosenBy = actor.name;
+		pair.advantageChosenBy = getActorDisplayName(actor);
 	}
 	advantage = pair.advantage ?? Number(stat.advantage || 0);
 	if (typeof canProceed === "function" && !canProceed()) {
@@ -690,7 +915,7 @@ async function rollOneStep(side, rollIndex, state, messageId = null) {
 		return {
 			actorUuid: actor.uuid,
 			luckActorUuid: stat.luckActorUuid || null,
-			actorName: actor.name,
+			actorName: getActorDisplayName(actor),
 			statKey: stat.key,
 			statLabel: stat.label,
 			formula: rollResult.snapshot?.formula || null,
@@ -701,7 +926,8 @@ async function rollOneStep(side, rollIndex, state, messageId = null) {
 			useFudge,
 			useGambit: gambitForFeint,
 			feintCount,
-			snapshot: rollResult.snapshot
+			snapshot: rollResult.snapshot,
+			rollHtml: rollResult.rollHtml || null
 		};
 	}
 
@@ -716,6 +942,7 @@ async function rollOneStep(side, rollIndex, state, messageId = null) {
 	rollProcessGambitDefaults.fudge = gambitForFudge;
 	const roll = new Roll(finalFormula, data);
 	await roll.evaluate({ async: true });
+	const rollHtml = await roll.render();
 
 	if (feintCount > 0) {
 		const { success, error } = await spendLuckMove(actor, "feint", gambitForFeint, feintCount, luckActor);
@@ -733,7 +960,7 @@ async function rollOneStep(side, rollIndex, state, messageId = null) {
 	return {
 		actorUuid: actor.uuid,
 		luckActorUuid: stat.luckActorUuid || null,
-		actorName: actor.name,
+		actorName: getActorDisplayName(actor),
 		statKey: stat.key,
 		statLabel: stat.label,
 		formula: finalFormula,
@@ -744,10 +971,19 @@ async function rollOneStep(side, rollIndex, state, messageId = null) {
 		useFudge,
 		useGambit: gambitForFeint,
 		feintCount,
-		snapshot
+		snapshot,
+		rollHtml
 	};
 }
 
+/**
+ * Apply a resolved roll to contest state.
+ * @param {Object} state
+ * @param {"action"|"reaction"} side
+ * @param {number} rollIndex
+ * @param {Object} rollData
+ * @returns {void}
+ */
 function applyRollToState(state, side, rollIndex, rollData) {
 	const pair = state[side];
 	const rollState = pair.rolls[rollIndex];
@@ -766,7 +1002,8 @@ function applyRollToState(state, side, rollIndex, rollData) {
 		useFudge: rollData.useFudge,
 		useGambit: rollData.useGambit,
 		feintCount: rollData.feintCount,
-		snapshot: rollData.snapshot
+		snapshot: rollData.snapshot,
+		rollHtml: rollData.rollHtml || null
 	});
 	if (rollData.useFudge && !pair.fudgeChosenBy) {
 		pair.fudgeChosenBy = rollData.actorName || "Unknown";
@@ -774,6 +1011,11 @@ function applyRollToState(state, side, rollIndex, rollData) {
 	pair.total = computePairTotal(pair);
 }
 
+/**
+ * Reset a roll pair after Persist.
+ * @param {Object} pair
+ * @returns {void}
+ */
 function resetPairState(pair) {
 	const persistCount = Number(pair.persistCount || 0);
 	const persistNote = pair.persistNote || null;
@@ -790,6 +1032,11 @@ function resetPairState(pair) {
 	pair.persistLock = persistLock;
 }
 
+/**
+ * Update contest result based on totals.
+ * @param {Object} state
+ * @returns {void}
+ */
 function updateResultState(state) {
 	if (!state.hasReaction) {
 		if (state.action.total !== null) {
@@ -845,9 +1092,16 @@ Hooks.on("renderChatMessage", (message, html) => {
 				messageId: message.id
 			});
 			if (resetPair) {
-				resetPairState(pair);
-				currentState.result = null;
-				currentState.nextStep = `${side}-1`;
+				if (side === "action") {
+					resetPairState(currentState.action);
+					resetPairState(currentState.reaction);
+					currentState.result = null;
+					currentState.nextStep = getRollOrder(currentState.hasReaction)[0];
+				} else {
+					resetPairState(pair);
+					currentState.result = null;
+					currentState.nextStep = "reaction-1";
+				}
 				if (persistActorName) {
 					ChatMessage.create({
 						speaker: ChatMessage.getSpeaker({ actor: actor || undefined }),
@@ -883,8 +1137,14 @@ Hooks.on("renderChatMessage", (message, html) => {
 });
 
 
-// Entrypoint
-async function main() {
+/**
+ * Create a contest message in chat.
+ * @param {Object} [options]
+ * @param {boolean} [options.forceContest=false]
+ * @param {boolean} [options.forceUserSpeaker=false]
+ * @returns {Promise<void>}
+ */
+async function createContestMessage({ forceContest = false, forceUserSpeaker = false } = {}) {
 	rollProcessGambitDefaults = {
 		feint: false,
 		fudge: false,
@@ -892,18 +1152,25 @@ async function main() {
 		persist: false
 	};
 	let hasReaction = false;
+	let gmNarrator = false;
 	const targetCount = game.user.targets.size;
 	if (targetCount > 0) {
-			hasReaction = true;
-		}
+		hasReaction = true;
+	}
 	if (game.user.isGM) {
+		// TODO:
+		// -Fix persist logic for contests (untested fix implemented). Add automated hit application.
+		// -Try to call actor in way which can trigger anonymous module (untested fix implemented). Also, fix it saying "only actors can be dragged in" when draging actors into the sheet (untested fix implemented).
 		if (canvas.tokens.controlled.length < 1) {
-			ui.notifications.warn("Select at least one token to start a roll.");
-			return;
+			gmNarrator = true;
+			hasReaction = false;
 		}
 		if (canvas.tokens.controlled.length > 1) {
 			hasReaction = true;
 		}
+	}
+	if (forceContest) {
+		hasReaction = true;
 	}
 	const state = createContestState(hasReaction);
 	const rollOrder = getRollOrder(hasReaction);
@@ -911,8 +1178,11 @@ async function main() {
 	state.nextStep = firstStep;
 	updateResultState(state);
 
+	const speaker = (forceUserSpeaker || gmNarrator)
+		? { alias: game.user.name }
+		: ChatMessage.getSpeaker({ actor: null });
 	await ChatMessage.create({
-		speaker: ChatMessage.getSpeaker({ actor: null }),
+		speaker,
 		content: buildContestHtml(state),
 		flags: {
 			[SYSTEM_ID]: {
@@ -920,4 +1190,13 @@ async function main() {
 			}
 		}
 	});
+}
+
+// Entrypoint
+/**
+ * Entrypoint for the roller.
+ * @returns {Promise<void>}
+ */
+async function main() {
+	return createContestMessage();
 }

@@ -83,6 +83,10 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 #### Fixes
 - Closing stat dialog (X) now behaves like Cancel and clears Feint state
 
+### - 2026-2-17
+#### Features
+- Double-click the D6 Roller scene control to force a contest in chat
+
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option

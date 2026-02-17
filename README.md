@@ -49,6 +49,7 @@ To Be Continued - Click the button to place the animation over all screens, turn
 Roller - Rolls happen once, then continue via buttons in the same chat message.
 - GM: Select 1 token for the action roll. If multiple tokens are highlighted it starts a contest.
 - Player: If you have a target, it starts a contest. Otherwise, roll from owned actors.
+- Double-click the D6 Roller control to force a contest in chat.
 - Contest rolls are resolved in the same chat message using the quadrant buttons (Action/Reaction, Roll 1/2).
 - Second rolls only resolve when their quadrant button is clicked.
 - Dice So Nice animations are supported.
