@@ -85,7 +85,11 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 
 ### - 2026-2-17
 #### Features
-- Double-click the D6 Roller scene control to force a contest in chat
+- Double-click the D6 Roller scene control to create a contest in chat
+## [0.9.7] - 2026-2-17
+### - 2026-2-18
+#### Fixes
+- Migrations now take advantage of foundry migration hooks.
 
 # What's left?
 - Create different backgrounds for all user types

@@ -16,7 +16,7 @@ Hooks.once("init", () => {
 
 export function outroControl() {
 	if (DEBUG_LOGS) {
-		console.log("Setting up JJBA Outro…");
+		console.log("Setting up Outro…");
 	}
 	Hooks.on("getSceneControlButtons", (controls) => {
 		const lighting = controls.lighting;

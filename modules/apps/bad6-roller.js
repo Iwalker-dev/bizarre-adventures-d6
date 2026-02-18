@@ -94,6 +94,10 @@ function buildRollSnapshot(roll, formula, advantage) {
 	};
 }
 
+let rollerClickTimer = null;
+let lastActionMessageId = null;
+let lastActionMessageAt = 0;
+const DOUBLE_CLICK_WINDOW_MS = 250;
 /**
  * Play Dice So Nice animation if available.
  * @param {Roll} roll
@@ -122,24 +126,42 @@ export function rollerControl() {
 		const tokenControls = controls.tokens;
 		if (!tokenControls) return;
 
-		tokenControls.tools["rollerButton"] = {
+			tokenControls.tools["rollerButton"] = {
 			name: "rollerButton"
 			, title: "D6 Roller"
 			, icon: "fas fa-dice-d6"
 			, visible: true
 			, button: true
 			, order: 50
-				, onClick: () => {
+				, onClick: async () => {
 					if (rollerClickTimer) {
 						clearTimeout(rollerClickTimer);
 						rollerClickTimer = null;
-						createContestMessage({ forceContest: true, forceUserSpeaker: true });
+						const now = Date.now();
+						const priorId = lastActionMessageId;
+						const isDouble = priorId && (now - lastActionMessageAt) <= DOUBLE_CLICK_WINDOW_MS;
+						lastActionMessageId = null;
+						lastActionMessageAt = 0;
+						if (isDouble && priorId) {
+							const prior = game.messages.get(priorId);
+							const priorState = prior?.flags?.[SYSTEM_ID]?.[CONTEST_FLAG];
+							if (prior && priorState && !priorState.hasReaction) {
+								const upgraded = upgradeActionStateToContest(priorState);
+								await updateContestMessage(prior, upgraded);
+								return;
+							}
+						}
+						await createContestMessage({ forceContest: true, forceUserSpeaker: true });
 						return;
 					}
+					const msg = await createContestMessage({ forceContest: false, forceUserSpeaker: true });
+					lastActionMessageId = msg?.id || null;
+					lastActionMessageAt = Date.now();
 					rollerClickTimer = setTimeout(() => {
 						rollerClickTimer = null;
-						main();
-					}, 250);
+						lastActionMessageId = null;
+						lastActionMessageAt = 0;
+					}, DOUBLE_CLICK_WINDOW_MS);
 				}
 		};
 	});
@@ -194,19 +216,22 @@ async function readyCheck(actorId, baseFormula, statKey, statLabel, advantage, d
 
 	// Handle Fudge cost deduction (when used)
 	if (useFudge && showFudge) {
-		const { success, error } = await spendLuckMove(actor, "fudge", gambitForFudge, 0, luckActor);
+		const { success, error } = await spendLuckMove(actor, "fudge", rollProcessGambitDefaults.fudge, 0, luckActor);
 		if (!success && error) {
 			ui.notifications.error(error);
 		}
 	}
 
 	const roll = new Roll(finalFormula, data);
-	await roll.evaluate({
-		async: true
-	});
+	await roll.evaluate({ async: true });
 	const rollHtml = await roll.render();
+	if (!suppressMessage) {
+		await roll.toMessage({
+			speaker: ChatMessage.getSpeaker({ actor })
+		});
+	}
+
 	const effectiveAdvantage = Number(advantage || 0) + (useFudge ? 1 : 0);
-	const fudgeNote = useFudge ? ` (+1 Fudged)` : "";
 	await playDiceAnimation(roll);
 	const snapshot = buildRollSnapshot(roll, finalFormula, effectiveAdvantage);
 	return { total: roll.total, snapshot, useFudge, effectiveAdvantage, rollHtml };
@@ -396,7 +421,6 @@ let rollProcessGambitDefaults = {
 	mulligan: false,
 	persist: false
 };
-let rollerClickTimer = null;
 
 /**
  * Create an empty roll state for a single roll.
@@ -691,6 +715,38 @@ function getNextStepInOrder(state, currentQuadrant) {
 	const idx = order.indexOf(currentQuadrant);
 	if (idx === -1) return state?.nextStep || null;
 	return order[idx + 1] || null;
+}
+
+/**
+ * Find the first unresolved quadrant in roll order.
+ * @param {Object} state
+ * @returns {string|null}
+ */
+function getFirstUnresolvedStep(state) {
+	const order = getRollOrder(state?.hasReaction);
+	for (const quadrant of order) {
+		const parsed = parseQuadrant(quadrant);
+		if (!parsed) continue;
+		const roll = state?.[parsed.side]?.rolls?.[parsed.rollIndex];
+		if (!roll?.resolved) return quadrant;
+	}
+	return null;
+}
+
+/**
+ * Upgrade a single-action contest state into a full contest state.
+ * Preserves any resolved action rolls.
+ * @param {Object} state
+ * @returns {Object}
+ */
+function upgradeActionStateToContest(state) {
+	if (!state) return state;
+	state.hasReaction = true;
+	state.reaction = createPairState();
+	state.action = createPairState();
+	state.result = null;
+	state.nextStep = "reaction-1";
+	return state;
 }
 
 /**
@@ -1193,7 +1249,7 @@ async function createContestMessage({ forceContest = false, forceUserSpeaker = f
 	const speaker = (forceUserSpeaker || gmNarrator)
 		? { alias: game.user.name }
 		: ChatMessage.getSpeaker({ actor: null });
-	await ChatMessage.create({
+	const message = await ChatMessage.create({
 		speaker,
 		content: buildContestHtml(state),
 		flags: {
@@ -1202,6 +1258,7 @@ async function createContestMessage({ forceContest = false, forceUserSpeaker = f
 			}
 		}
 	});
+	return message;
 }
 
 // Entrypoint

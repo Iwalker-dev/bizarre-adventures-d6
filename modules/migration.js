@@ -1,23 +1,15 @@
 // modules/migration.js
-Hooks.once("ready", () => {
-	game.settings.register("bizarre-adventures-d6", "migrationVersion", {
-		name: "Last migration version"
-		, scope: "world"
-		, config: false
-		, type: String
-		, default: "0.0.0"
-	});
-});
-
-// 2) Once everything is loaded, read the system version and run migrations
-Hooks.once("ready", async () => {
+export async function migrateWorld() {
 	const current = game.system.version;
 	if (!current) {
 		console.error("BAD6 Migration | Could not read system version:", game.system);
 		return;
 	}
 
-	const previous = game.settings.get("bizarre-adventures-d6", "migrationVersion") || "0.0.0";
+	const previous = game.settings.get("core", "systemMigrationVersion") || "0.0.0";
+	if (!foundry.utils.isNewerVersion(current, previous)) return;
+
+	const isNewer = foundry.utils.isNewerVersion;
 	for (const actor of game.actors.filter(a => a.type === "character")) {
 		// For old user actors, relocate their attributes to the new stats structure
 		if (actor.type === "character" && actor.system.attributes.ustats) {
@@ -60,12 +52,6 @@ Hooks.once("ready", async () => {
 
 	}
 
-	const isNewer = (a, b) => {
-		const [A, B, C] = a.split(".").map(Number);
-		const [X, Y, Z] = b.split(".").map(Number);
-		return A > X || (A === X && (B > Y || (B === Y && C > Z)));
-	};
-
 	// — First ever world load —
 	if (previous === "0.0.0") {
 		ChatMessage.create({
@@ -76,10 +62,9 @@ Hooks.once("ready", async () => {
 			, content: `<h2>Welcome to BAD6!</h2>
       <p> Controls: </p>
         <ul>
-          <li>🎲 Use the "D6 Roller" in token controls for rolls.</li>
+          <li>🎲 Use the "D6 Roller" in token controls for actions. Double click for Contests.</li>
           <li>🎲 As a GM, select 1 token for the action roll. If multiple tokens are highlighted, it starts a contest.</li>
           <li>🎯 As a player, selecting targets starts a contest. Otherwise, you roll from owned actors.</li>
-		  <li>🎯 Double-click the D6 Roller control to force a contest in chat.</li>
           <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
           <li>🔧 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue</li>
           <li>🌟 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called "Outro" and it will automatically switch to it afterwards.</li>
@@ -87,7 +72,7 @@ Hooks.once("ready", async () => {
         </ul>
         <p> This system is unfinished! Certain features are not yet implemented such as...</p>
         <ul>
-          <li> Custom Combat Implementation (Recommended to use Lancer Initiative as a replacement)</li>
+          <li> Flashbacks (You will have to manually take the cost).</li>
         </ul>
         <p> Please report any problems, ideas, or comments to itpart on Discord. I would love to make this the perfect system with your help! </p>`
 			, whisper: game.users.filter(u => u.isGM).map(u => u.id)
@@ -167,5 +152,14 @@ Hooks.once("ready", async () => {
 		console.log("BAD6 | Applied 0.9.6 migration (moved info to bio) x");
 	}
 	// — Record that we’re now at `current` —
-	await game.settings.set("bizarre-adventures-d6", "migrationVersion", current);
+	await game.settings.set("core", "systemMigrationVersion", current);
+}
+
+Hooks.once("init", () => {
+	game.system.migrateWorld = migrateWorld;
+});
+
+Hooks.once("ready", async () => {
+	if (!game.user.isGM) return;
+	await migrateWorld();
 });

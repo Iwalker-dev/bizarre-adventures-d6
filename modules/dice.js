@@ -176,7 +176,7 @@ export async function prepareFormula(actor, baseFormula, statKey, statLabel, adv
 		let totalAdvantage = Number(advFromLines) + Number(advantage || 0);
 
 		// Apply Fudge as +1 Advantage (cap at 3)
-		if (useFudgeSelected && totalAdvantage < 3) {
+		if (useFudgeSelected && totalAdvantage <= 2) {
 			totalAdvantage += 1;
 		}
 		
