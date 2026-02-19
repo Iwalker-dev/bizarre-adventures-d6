@@ -1,0 +1,64 @@
+# .github/workflows/foundryPublish.yml
+name: Publish BAD6 to Foundry (after GitHub Release)
+
+on:
+  release:
+    types: [published]   # fires AFTER the other job publishes the release
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundry-publish-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Skip pre-releases; remove this line if you *do* want to publish those.
+    if: ${{ github.event.release.prerelease == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Compute manifest URL for this tag
+        id: vars
+        run: |
+          echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          echo "manifest_url=https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.release.tag_name }}/system.json" >> "$GITHUB_OUTPUT"
+
+      - name: Wait until manifest+asset are reachable (retry)
+        id: verify
+        run: |
+          set -e
+          MF_URL="${{ steps.vars.outputs.manifest_url }}"
+          echo "Manifest: $MF_URL"
+
+          # Fetch manifest (retry up to ~1 min for tag propagation)
+          n=0
+          until curl -fsSL "$MF_URL" -o manifest.json || [ $n -ge 12 ]; do
+            n=$((n+1)); echo "Manifest not ready yet… ($n)"; sleep 5
+          done
+
+          # Extract .download from manifest.json using Python (avoids jq dependency)
+          DL_URL=$(python3 - <<'PY'
+            import json,sys
+            print(json.load(open("manifest.json")).get("download",""))
+            PY
+            )
+          if [ -z "$DL_URL" ]; then
+            echo "Manifest missing 'download' field"; cat manifest.json; exit 1
+          fi
+          echo "download_url=$DL_URL" >> "$GITHUB_OUTPUT"
+
+          # Ensure the release asset is live (retry)
+          n=0
+          until curl -IfsS "$DL_URL" >/dev/null || [ $n -ge 12 ]; do
+            n=$((n+1)); echo "Asset not live yet… ($n)"; sleep 5
+          done
+
+      - name: Publish to FoundryVTT Package Release API
+        uses: cs96and/FoundryVTT-release-package@v1.0.3
+        with:
+          package-token: ${{ secrets.FOUNDRY_PACKAGE_TOKEN }}
+          # Foundry reads this manifest, then follows its "download" to your zip
+          manifest-url: ${{ steps.vars.outputs.manifest_url }}
