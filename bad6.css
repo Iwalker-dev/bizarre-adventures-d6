@@ -159,6 +159,41 @@ body {
   display: block;
   /* Show the active tab content */
 }
+/* ────────────────────────── Linked Actors ────────────────────────── */
+.jojo-sheet .info-row[data-drop="ability"] {
+  align-items: flex-start;
+}
+.jojo-sheet .linked-ability {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--accent-light);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: 4px;
+  margin: 0.25rem 0;
+}
+.jojo-sheet .linked-ability span {
+  color: #fff;
+}
+.jojo-sheet .linked-ability:hover {
+  border-color: var(--accent-color);
+  background: rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+}
+.jojo-sheet .linked-ability .remove-link {
+  color: var(--accent-light);
+  padding: 0 0.25rem;
+}
+.jojo-sheet .linked-ability .remove-link:hover {
+  color: #fff;
+}
+.jojo-sheet .info-row .hint {
+  color: #ddd;
+  font-style: italic;
+}
 /* ────────────────────────── Stats Tab ────────────────────────── */
 /* Make every row a flex container with a small gap */
 .jojo-sheet .stat-line,
@@ -351,7 +386,7 @@ body {
 }
 .scrollable-list {
   max-height: 300px;
-  /* Adjust this height based on UI design */
+  /* Adjust this height based on your UI design */
   overflow-y: auto;
   padding-right: 5px;
 }
@@ -570,4 +605,49 @@ body {
   flex-wrap: wrap;
   gap: 0.5em;
   /* optional spacing between rows */
+}
+/* Formula rows: show columns inline */
+.formula-body {
+  margin-top: 0.75rem;
+}
+.formula-rows .formula-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  box-sizing: border-box;
+  flex-wrap: nowrap;
+}
+/* Header styling */
+.formula-row.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+/* Ensure columns behave as flex children and center controls */
+.formula-row .col {
+  display: flex;
+  align-items: center;
+  padding: 0 0.25rem;
+}
+/* Use flex-basis so columns line up on one row */
+.formula-row .col.optional {
+  flex: 0 0 6%;
+  justify-content: center;
+}
+/* Make form controls fill their column */
+.formula-row .col input[type="number"],
+.formula-row .col select,
+.formula-row .col input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Empty state */
+.formula-row.empty {
+  font-style: italic;
+  color: #666;
 }

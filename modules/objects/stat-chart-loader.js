@@ -1,12 +1,14 @@
+let chartLoadPromise;
+
 export async function loadChartJS() {
-	return new Promise((resolve, reject) => {
+	if (globalThis.Chart) return globalThis.Chart;
+	if (chartLoadPromise) return chartLoadPromise;
+	chartLoadPromise = new Promise((resolve, reject) => {
 		const script = document.createElement("script");
 		script.src = "systems/bizarre-adventures-d6/modules/objects/chart.umd.js";
-		script.onload = () => {
-			console.log("Chart.js successfully loaded:", Chart);
-			resolve();
-		};
+		script.onload = () => resolve(globalThis.Chart);
 		script.onerror = reject;
 		document.head.appendChild(script);
 	});
+	return chartLoadPromise;
 }

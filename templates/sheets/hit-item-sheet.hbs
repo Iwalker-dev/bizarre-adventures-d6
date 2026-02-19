@@ -10,7 +10,7 @@
     </div>
 
     <div class="form-group">
-      <label for="hit-weight">Weight:</label>
+      <label for="hit-weight">Severity:</label>
       <input type="number" id="hit-weight" name="system.weight" value="{{item.system.weight}}" min="0" />
     </div>
 
@@ -23,5 +23,7 @@
       <label for="hit-description">Description:</label>
       <textarea id="hit-description" name="system.description" rows="4">{{item.system.description}}</textarea>
     </div>
+
+      {{> item-formula}}
   </div>
 </form>

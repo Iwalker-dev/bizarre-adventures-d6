@@ -2,7 +2,13 @@
 <form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
   <div class="jojo-sheet">
     <header class="sheet-header dd-header">
-      <h1>{{actor.name}}</h1>
+      <div class="character-image-box">
+        <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
+      </div>
+      <h1 class="sheet-header">
+        <span class="name-display">{{actor.name}}</span>
+        <input class="name-edit" value="{{actor.name}}" style="display:none;" />
+      </h1>
       <div style="float:right; font-size:1.2em; color:#ccc;">
         Health: {{system.health.value}} / {{system.health.max}}
       </div>
@@ -41,23 +47,36 @@
           <div class="info-row">
             <label>Name:</label>
             <input type="text"
-              name="name"
-              value="{{actor.name}}"
+              name="system.bio.name"
+              value="{{system.bio.name}}"
               placeholder="Enter name" />
+          </div>
+          <div class="info-row" data-drop="ability">
+            <label>Abilities:</label>
+            {{#each system.bio.linkedActors.value as |linked|}}
+                <div class="linked-ability" data-uuid="{{linked.uuid}}">
+                    <span>{{linked.name}} ({{linked.type}})</span>
+                    <a class="remove-link" data-uuid="{{linked.uuid}}">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            {{else}}
+                <p class="hint">Drag actors here to link abilities</p>
+            {{/each}}
           </div>
           <div class="info-row">
             <label>Gender:</label>
             <input type="text"
-              name="system.info.gender"
-              value="{{system.info.gender}}"
+              name="system.bio.gender"
+              value="{{system.bio.gender}}"
               placeholder="Enter gender"
               />
           </div>
           <div class="info-row">
             <label>Date of Birth:</label>
             <input type="date"
-              name="system.info.dob"
-              value="{{system.info.dob}}"
+              name="system.bio.dob"
+              value="{{system.bio.dob}}"
               />
           </div>
           <div class="info-row">
@@ -70,37 +89,69 @@
           </div>
           <div class="info-row">
             <label>Type:</label>
-            <select id="user-type" name="system.info.type">
+            <select id="user-type" name="system.bio.type">
               {{#each typeConfigs}}
                 <option value="{{@key}}"
-                {{#ifEquals system.info.type @key}}selected{{/ifEquals}}>
+                {{#ifEquals system.bio.type @key}}selected{{/ifEquals}}>
                   {{this.label}}
                 </option>
               {{/each}}
             </select>
           </div>
+          {{!-- Render any additional fields defined by the selected type's config --}}
+          {{#if extraConfig.fields}}
+            {{#each extraConfig.fields}}
+              <div class="info-row">
+                <label>{{this.label}}:</label>
+                {{!-- textarea --}}
+                {{#ifEquals this.type "textarea"}}
+                  <textarea data-noautosubmit="true" name="system.bio.{{this.name}}" rows="{{this.rows}}">{{lookup ../system.bio this.name}}</textarea>
+                {{else}}
+                  {{!-- select --}}
+                  {{#ifEquals this.type "select"}}
+                    <select data-noautosubmit="true" name="system.bio.{{this.name}}">
+                      {{#each this.options}}
+                        <option value="{{this.value}}" {{#ifEquals (lookup ../../system.bio ../this.name) this.value}}selected{{/ifEquals}}>{{this.label}}</option>
+                      {{/each}}
+                    </select>
+                  {{else}}
+                    {{!-- default input (text/number/etc) --}}
+                    <input
+                      data-noautosubmit="true"
+                      type="{{this.type}}"
+                      name="system.bio.{{this.name}}"
+                      value="{{lookup ../system.bio this.name}}"
+                      {{#if this.placeholder}}placeholder="{{this.placeholder}}"{{/if}}
+                      {{#if this.min}}min="{{this.min}}"{{/if}}
+                      {{#if this.max}}max="{{this.max}}"{{/if}}
+                    />
+                  {{/ifEquals}}
+                {{/ifEquals}}
+              </div>
+            {{/each}}
+          {{/if}}
           <div class="info-row">
             <label>Appearance:</label>
-            <textarea name="system.info.appearance" rows="3" placeholder="Describe appearance">{{system.bio.appearance}}</textarea>
+            <textarea name="system.bio.appearance" rows="3" placeholder="Describe appearance">{{system.bio.appearance}}</textarea>
           </div>
           <div class="info-row">
             <label>Personality:</label>
-            <textarea name="system.info.personality" rows="3" placeholder="Describe personality">{{system.bio.personality}}</textarea>
+            <textarea name="system.bio.personality" rows="3" placeholder="Describe personality">{{system.bio.personality}}</textarea>
           </div>
           <div class="info-row">
             <label>Life Philosophy:</label>
-            <textarea name="system.info.philosophy" rows="3" placeholder="Enter life philosophy">{{system.bio.philosophy}}</textarea>
+            <textarea name="system.bio.philosophy" rows="3" placeholder="Enter life philosophy">{{system.bio.philosophy}}</textarea>
           </div>
           <div class="info-row">
             <label>Backstory:</label>
-            <textarea name="system.info.backstory" rows="5" placeholder="Enter backstory">{{system.bio.backstory}}</textarea>
+            <textarea name="system.bio.backstory" rows="5" placeholder="Enter backstory">{{system.bio.backstory}}</textarea>
           </div>
         </div>
       </div>
       <!-- ───────────── Info Type Tab ───────────── -->
-      <div class="tab" data-tab="{{actor.system.info.type}}" data-group="primary">
+      <div class="tab" data-tab="{{actor.system.bio.type}}" data-group="primary">
         <div class="ability-description">
-          {{{actor.system.info.description}}}
+          {{{actor.system.bio.description}}}
         </div>
       </div>
       <!-- ───────────── Hits Tab ───────────── -->

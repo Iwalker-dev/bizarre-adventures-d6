@@ -1,9 +1,12 @@
 import { renderStars } from "./objects/stat-star-render.js";
 import { renderStatChart } from "./objects/stat-chart-render.js";
+import { DEBUG_LOGS } from "./config.js";
 
 export function setupStats() {
 	Hooks.on("renderActorSheet", (app, html, data) => {
-		console.log("Actor sheet rendered. Updating UI and background...");
+		if (DEBUG_LOGS) {
+			console.log("Actor sheet rendered. Updating UI and background...");
+		}
 
 		// Star + Chart rendering
 		renderStars(html, app.actor);

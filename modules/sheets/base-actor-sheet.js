@@ -1,4 +1,6 @@
-export class BaseActorSheet extends ActorSheet {
+import { typeConfigs, DEBUG_LOGS } from "../config.js";
+
+export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 	static get defaultOptions() {
 		return foundry.utils.mergeObject(super.defaultOptions, {
 			classes: ["bizarre-adventures-d6", "sheet", "actor-sheet", "character-sheet"]
@@ -7,6 +9,8 @@ export class BaseActorSheet extends ActorSheet {
 				, contentSelector: ".sheet-body"
 				, initial: "stats"
 			}]
+			, submitOnChange: true
+			, closeOnSubmit: false
 		});
 	}
 
@@ -18,12 +22,40 @@ export class BaseActorSheet extends ActorSheet {
     , "range"
     , "learning"
   ];
+
+    static {
+        Hooks.on('preUpdateActor', (actor, update, options) => {
+			// Use custom default image based on type (Currently only for Power)
+            if (update.system?.bio?.type) {
+                const typeKey = update.system.bio.type;
+                const actorType = actor.type;
+                const typeConfigsForActorType = typeConfigs[actorType] || {};
+                const typeConfig = typeConfigsForActorType[typeKey];
+				if (DEBUG_LOGS) {
+					console.error("BaseActorSheet | typeConfig", typeConfig?.image);
+				}
+
+                const isKnownTypeImage = Object.values(typeConfigsForActorType).some(config => config.image === actor.img);
+				if (actor.img == "icons/svg/mystery-man.svg" || isKnownTypeImage) {
+					if (typeConfig?.image) {
+						update.img = typeConfig.image;
+						if (DEBUG_LOGS) {
+							console.error(update.img);
+						}
+					} else {
+						update.img = "icons/svg/mystery-man.svg";
+					}
+				}
+            }
+        });
+    }
+
 	/** @override **/
 	getData() {
 		const data = super.getData();
 		const statsObj = data.actor.system.attributes.stats || {};
 
-		// Build the flat array
+		// flat array
 		const stats = Object.entries(statsObj).map(([key, stat]) => ({
 			key
 			, dtype: stat.dtype
@@ -35,17 +67,17 @@ export class BaseActorSheet extends ActorSheet {
 		}));
 		if (data.typeConfigs && typeof data.typeConfigs === "object") {
 			const types = Object.keys(data.typeConfigs);
-			if (!data.system.info.type && types.length) {
-				data.system.info.type = types[0];
+			if (!data.system.bio.type && types.length) {
+				data.system.bio.type = types[0];
 			}
 		}
-		// 1) Sort by dtype (Burn first, then Number)
+		// Sort by data type (Burn first, then Number)
 		const dtypeOrder = {
 			Burn: 0
 			, Number: 1
 		};
 
-		// 2) Then by your static key order
+		// Then by key order
 		const keyOrder = this.constructor.statOrder;
 
 		stats.sort((a, b) => {
@@ -59,6 +91,7 @@ export class BaseActorSheet extends ActorSheet {
 			return (ai < 0 ? Infinity : ai) - (bi < 0 ? Infinity : bi);
 		});
 
+
 		data.stats = stats;
 		return data;
 	}
@@ -66,7 +99,7 @@ export class BaseActorSheet extends ActorSheet {
 	/**
 	 * Renders the clickable star‐rating widgets for a given sheet.
 	 *
-	 * @param {jQuery<HTMLElement>} html    The jQuery‐wrapped root element of the sheet.
+	 * @param {jQuery<HTMLElement>} html    Root element of the sheet.
 	 * @returns {void}
 	 */
 
@@ -81,14 +114,81 @@ export class BaseActorSheet extends ActorSheet {
 			this.showBurnStat(statKey, valueType);
 		});
 
-		// Optionally, pre-display the “original” stars for each Burn stat:
+		// Pre-display the "original" stars for each Burn stat:
 		this.getData().stats
 			.filter(s => s.dtype === "Burn")
 			.forEach(s => this.showBurnStat(s.key, 'original'));
+
+		// Setup inline name editing for all actor sheets
+		this._activateInlineNameEdit(html);
+
+		// Handle dropping actors to link abilities
+		html.find('[data-drop="ability"]').on('drop', this._onDropActor.bind(this));
+		html.find('[data-drop="ability"]').on('dragover', ev => ev.preventDefault());
+		
+		// Handle removing linked actors
+		html.find('.remove-link').on('click', this._onRemoveLink.bind(this));
+
+		// Open linked actor sheet on click
+		html.find('.linked-ability').on('click', async ev => {
+			const uuid = ev.currentTarget?.dataset?.uuid;
+			if (!uuid) return;
+			try {
+				const linkedActor = await fromUuid(uuid);
+				if (linkedActor) linkedActor.sheet.render(true);
+			} catch (e) {
+				// ignore missing linked actor
+			}
+		});
+	}
+
+	/**
+	 * Activates inline-edit behavior for actor names.
+	 * Allows clicking the name in the header to toggle edit mode.
+	 * Saves on blur/Enter, cancels on Escape.
+	 * @param {jQuery<HTMLElement>} html - The sheet HTML element.
+	 * @private
+	 */
+	_activateInlineNameEdit(html) {
+		if (!this.actor.isOwner) return;
+
+		const $nameDisplay = html.find('.name-display');
+		const $nameInput = html.find('.name-edit');
+
+		if (!$nameDisplay.length || !$nameInput.length) return;
+
+		$nameDisplay.on('click', ev => {
+			$nameDisplay.hide();
+			$nameInput.show().focus().select();
+		});
+
+		$nameInput.on('blur', async ev => {
+			const newName = ev.target.value?.trim() || "";
+			if (newName && newName !== this.actor.name) {
+				try {
+					await this.actor.update({ name: newName });
+				} catch (err) {
+					console.error('Failed to update actor name', err);
+				}
+			}
+			$nameInput.hide();
+			$nameDisplay.text(this.actor.name).show();
+		});
+
+		$nameInput.on('keydown', ev => {
+			if (ev.key === 'Enter') {
+				ev.preventDefault();
+				$nameInput[0].blur();
+			} else if (ev.key === 'Escape') {
+				ev.preventDefault();
+				$nameInput.hide();
+				$nameDisplay.show();
+			}
+		});
 	}
 
 	async _render(force, options) {
-		// 0) Look for any null‐valued stats and schedule their deletion
+		// Look for any null‐valued stats and schedule their deletion
 		const stats = this.actor.system.attributes.stats || {};
 		const deletions = {};
 		for (const [key, val] of Object.entries(stats)) {
@@ -98,12 +198,12 @@ export class BaseActorSheet extends ActorSheet {
 			}
 		}
 
-		// 1) If there are any deletions, apply them and re‐render once
+		// If there are any deletions, apply them and re‐render once
 		if (Object.keys(deletions).length) {
 			await this.actor.update(deletions);
 		}
 
-		// 2) No nulls to delete: proceed with your normal render logic
+		// No nulls to delete: proceed with your normal render logic
 		await super._render(force, options);
 
 		const $sheet = this.element.find('.jojo-sheet');
@@ -111,10 +211,10 @@ export class BaseActorSheet extends ActorSheet {
 			console.error('BaseActorSheet._render(): ".jojo-sheet" element not found.');
 			return;
 		}
-		const info = this.actor.system.info || {};
+		const info = this.actor.system.bio || {};
 		const type = info.type;
 		if (!type) {
-			console.warn('BaseActorSheet._render(): actor.system.info.type is undefined. Default background applied');
+			console.warn('BaseActorSheet._render(): actor.system.bio.type is undefined. Default background applied');
 			return;
 		}
 
@@ -228,6 +328,110 @@ export class BaseActorSheet extends ActorSheet {
 		const B = Math.min(255, (num & 0x0000FF) + amt);
 		return `rgb(${R}, ${G}, ${B})`;
 	}
+
+/**
+ * Handle dropping an actor to link as an ability
+ * @param {DragEvent} event - The drop event
+ * @private
+ */
+async _onDropActor(event) {
+    event.preventDefault();
+    
+    const data = TextEditor.getDragEventData(event);
+    
+	let actor = null;
+	if (data?.uuid) {
+		actor = await fromUuid(data.uuid);
+	} else if (data?.type === "Actor" && data?.id) {
+		actor = game.actors.get(data.id) || null;
+	}
+	// Only accept Actor drops (resolve by UUID or id)
+	if (!actor || actor.documentName !== "Actor") {
+		ui.notifications.warn("You can only drop Actors here!");
+		return;
+	}
+    
+    // Get current linked actors or initialize empty array
+    const linkedActors = this.actor.system.bio.linkedActors?.value || [];
+    
+    // Check if already linked
+	if (linkedActors.some(linked => linked.uuid === actor.uuid)) {
+        ui.notifications.warn(`${actor.name} is already linked!`);
+        return;
+    }
+    
+    // Add new linked actor
+	linkedActors.push({
+		uuid: actor.uuid,
+        name: actor.name,
+        type: actor.type
+    });
+    
+    // Update the actor
+    await this.actor.update({
+        "system.bio.linkedActors.value": linkedActors
+    });
+
+	// Also add reciprocal link on the dropped actor
+	const otherLinked = actor.system.bio.linkedActors?.value || [];
+	const selfUuid = this.actor.uuid;
+	if (!otherLinked.some(linked => linked.uuid === selfUuid)) {
+		otherLinked.push({
+			uuid: selfUuid,
+			name: this.actor.name,
+			type: this.actor.type
+		});
+		await actor.update({
+			"system.bio.linkedActors.value": otherLinked
+		});
+	}
+    
+    ui.notifications.info(`Linked ${actor.name} as an ability!`);
+}
+
+/**
+ * Handle removing a linked actor
+ * @param {MouseEvent} event - The click event
+ * @private
+ */
+async _onRemoveLink(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const uuid = event.currentTarget.dataset.uuid;
+    const linkedActors = this.actor.system.bio.linkedActors?.value || [];
+    
+    // Find the actor name for the notification
+    const removed = linkedActors.find(linked => linked.uuid === uuid);
+    
+    // Filter out the removed actor
+    const updated = linkedActors.filter(linked => linked.uuid !== uuid);
+    
+    await this.actor.update({
+        "system.bio.linkedActors.value": updated
+    });
+
+	// Also remove reciprocal link from the other actor
+	if (uuid) {
+		try {
+			const otherActor = await fromUuid(uuid);
+			if (otherActor) {
+				const otherLinked = otherActor.system.bio.linkedActors?.value || [];
+				const selfUuid = this.actor.uuid;
+				const otherUpdated = otherLinked.filter(linked => linked.uuid !== selfUuid);
+				await otherActor.update({
+					"system.bio.linkedActors.value": otherUpdated
+				});
+			}
+		} catch (e) {
+			// ignore missing linked actor
+		}
+	}
+    
+    if (removed) {
+        ui.notifications.info(`Removed ${removed.name} from abilities`);
+    }
+}
 
 
 }

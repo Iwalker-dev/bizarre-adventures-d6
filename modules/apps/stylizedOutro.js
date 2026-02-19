@@ -1,4 +1,6 @@
 // outro.js
+import { DEBUG_LOGS } from "../config.js";
+
 let socket;
 
 // Register socket handler
@@ -13,7 +15,9 @@ Hooks.once("init", () => {
 });
 
 export function outroControl() {
-	console.log("Setting up JJBA Outro…");
+	if (DEBUG_LOGS) {
+		console.log("Setting up Outro…");
+	}
 	Hooks.on("getSceneControlButtons", (controls) => {
 		const lighting = controls.lighting;
 		if (!lighting) return;
@@ -32,11 +36,15 @@ export function outroControl() {
 
 // 3) Send the outro effect (GM → everyone) and switch scene after delay
 function sendOutroEffect(wiggleAmount, wiggleDuration) {
-	console.log("Stopping all playlists");
+	if (DEBUG_LOGS) {
+		console.log("Stopping all playlists");
+	}
 	for (let pl of game.playlists) pl.stopAll();
 
 	if (socket) {
-		console.log("Broadcasting outro effect to all clients…");
+		if (DEBUG_LOGS) {
+			console.log("Broadcasting outro effect to all clients…");
+		}
 		socket.executeForEveryone("triggerOutroEffect", wiggleAmount, wiggleDuration);
 	} else {
 		console.error("Socketlib is not initialized!");
@@ -46,7 +54,9 @@ function sendOutroEffect(wiggleAmount, wiggleDuration) {
 	setTimeout(() => {
 		const outroScene = game.scenes.find(s => s.name === "Outro");
 		if (outroScene) {
-			console.log("Switching to Outro scene…");
+			if (DEBUG_LOGS) {
+				console.log("Switching to Outro scene…");
+			}
 			outroScene.activate();
 		} else {
 			console.warn("No scene named 'Outro' found.");
@@ -54,9 +64,11 @@ function sendOutroEffect(wiggleAmount, wiggleDuration) {
 	}, 2500);
 }
 
-// 4) Client-side effect: tint, arrow, shake
+// Client-side effect: tint, arrow, shake
 function triggerOutroEffect(wiggleAmount, wiggleDuration) {
-	console.log("Outro received, everybody freeze!");
+	if (DEBUG_LOGS) {
+		console.log("Outro received, everybody freeze!");
+	}
 
 	// Create screen tint
 	const tint = document.createElement("div");
@@ -107,7 +119,9 @@ function triggerOutroEffect(wiggleAmount, wiggleDuration) {
 					setTimeout(() => {
 						arrow.remove();
 						tint.remove();
-						console.log("Outro cleanup complete.");
+						if (DEBUG_LOGS) {
+							console.log("Outro cleanup complete.");
+						}
 					}, 500);
 					return;
 				}

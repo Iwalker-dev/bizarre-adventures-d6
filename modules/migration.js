@@ -1,23 +1,15 @@
 // modules/migration.js
-Hooks.once("init", () => {
-	game.settings.register("bizarre-adventures-d6", "migrationVersion", {
-		name: "Last migration version"
-		, scope: "world"
-		, config: false
-		, type: String
-		, default: "0.0.0"
-	});
-});
-
-// 2) Once everything is loaded, read the system version and run migrations
-Hooks.once("ready", async () => {
+export async function migrateWorld() {
 	const current = game.system.version;
 	if (!current) {
 		console.error("BAD6 Migration | Could not read system version:", game.system);
 		return;
 	}
 
-	const previous = game.settings.get("bizarre-adventures-d6", "migrationVersion") || "0.0.0";
+	const previous = game.settings.get("core", "systemMigrationVersion") || "0.0.0";
+	if (!foundry.utils.isNewerVersion(current, previous)) return;
+
+	const isNewer = foundry.utils.isNewerVersion;
 	for (const actor of game.actors.filter(a => a.type === "character")) {
 		// For old user actors, relocate their attributes to the new stats structure
 		if (actor.type === "character" && actor.system.attributes.ustats) {
@@ -29,11 +21,11 @@ Hooks.once("ready", async () => {
 				, "system.attributes.-=uroll": null
 			, });
 			// Set actors to the correct type by creating a new actor object
-			const actorData = duplicate(actor.toObject());
+			const actorData = foundry.utils.duplicate(actor.toObject());
 			actorData.type = "user";
 			delete actorData._id;
 			actorData.folder = actor.folder?.id;
-			actorData.permission = actor.permission;
+			actorData.ownership = actor.ownership;
 			await actor.delete();
 			await Actor.create(actorData);
 			ui.notifications.info(`BAD6 Migration | Actor ${actor.name} (${actor.id}) migrated to type "${actorData.type}".`);
@@ -48,23 +40,17 @@ Hooks.once("ready", async () => {
 				, "system.attributes.-=sroll": null
 			, });
 			// Set actors to the correct type by creating a new actor object
-			const actorData = duplicate(actor.toObject());
+			const actorData = foundry.utils.duplicate(actor.toObject());
 			actorData.type = "stand";
 			delete actorData._id;
 			actorData.folder = actor.folder?.id;
-			actorData.permission = actor.permission;
+			actorData.ownership = actor.ownership;
 			await actor.delete();
 			await Actor.create(actorData);
 			ui.notifications.info(`BAD6 Migration | Actor ${actor.name} (${actor.id}) migrated to type "${actorData.type}".`);
 		}
 
 	}
-
-	const isNewer = (a, b) => {
-		const [A, B, C] = a.split(".").map(Number);
-		const [X, Y, Z] = b.split(".").map(Number);
-		return A > X || (A === X && (B > Y || (B === Y && C > Z)));
-	};
 
 	// — First ever world load —
 	if (previous === "0.0.0") {
@@ -76,16 +62,17 @@ Hooks.once("ready", async () => {
 			, content: `<h2>Welcome to BAD6!</h2>
       <p> Controls: </p>
         <ul>
-          <li>🎲 Use the "D6 Roller" in token controls for rolls.</li>
-          <li>🎲 As a GM, highlight up to 2 tokens then run the roller to roll their stats.</li>
-          <li>🎲 As a player, select from your owned tokens for each roll.</li>
+          <li>🎲 Use the "D6 Roller" in token controls for actions. Double click for Contests.</li>
+          <li>🎲 As a GM, select 1 token for the action roll. If multiple tokens are highlighted, it starts a contest.</li>
+          <li>🎯 As a player, selecting targets starts a contest. Otherwise, you roll from owned actors.</li>
+          <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
           <li>🔧 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue</li>
           <li>🌟 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called "Outro" and it will automatically switch to it afterwards.</li>
           <li>🧑 Old Actors - On each load, actors will be automatically moved to a type (if set up properly in the Worldbuilding version.).</li>
         </ul>
         <p> This system is unfinished! Certain features are not yet implemented such as...</p>
         <ul>
-          <li> Custom Combat Implementation (Recommended to use Lancer Initiative as a replacement)</li>
+          <li> Flashbacks (You will have to manually take the cost).</li>
         </ul>
         <p> Please report any problems, ideas, or comments to itpart on Discord. I would love to make this the perfect system with your help! </p>`
 			, whisper: game.users.filter(u => u.isGM).map(u => u.id)
@@ -124,6 +111,55 @@ Hooks.once("ready", async () => {
 		console.log("BAD6 | Applied 0.9.3 migration (-learning-original,temp,perm on power users).");
 	}
 
+	// — 0.9.5 migration: apply default type images to power actors with mystery man
+	if (isNewer(current, previous) &&
+		isNewer("0.9.5", previous) &&
+		!isNewer("0.9.5", current)
+	) {
+		for (const actor of game.actors.filter(a => a.type === "power")) {
+			const typeKey = actor.system.info?.type;
+			await actor.update({ "system.info.type": typeKey });
+			console.log(`Updated ${actor.name}`);
+		}
+		console.log("BAD6 | Applied 0.9.5 migration (default type images for power actors) x");
+	}
+
+	//— 0.9.6 migration: move "info" to "bio" for universal linkedActors field —
+	if (isNewer(current, previous) &&
+		isNewer("0.9.6", previous) &&
+		!isNewer("0.9.6", current)
+	) {
+		for (const actor of game.actors.filter(a => a.type === "power")) {
+			if (actor.system.info) {
+				const info = actor.system.info || {};
+				const bio = actor.system.bio || {};
+				await actor.update({
+					"system.bio": info,
+					"system.-=info": null
+				});
+			}
+		}
+		for (const actor of game.actors.filter(a => a.type === "stand")) {
+			if (actor.system.info) {
+				const info = actor.system.info || {};
+				const bio = actor.system.bio || {};
+				await actor.update({
+					"system.bio": info,
+					"system.-=info": null
+				});
+			}
+		}
+		console.log("BAD6 | Applied 0.9.6 migration (moved info to bio) x");
+	}
 	// — Record that we’re now at `current` —
-	await game.settings.set("bizarre-adventures-d6", "migrationVersion", current);
+	await game.settings.set("core", "systemMigrationVersion", current);
+}
+
+Hooks.once("init", () => {
+	game.system.migrateWorld = migrateWorld;
+});
+
+Hooks.once("ready", async () => {
+	if (!game.user.isGM) return;
+	await migrateWorld();
 });

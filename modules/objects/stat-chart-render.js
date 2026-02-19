@@ -1,3 +1,5 @@
+import { loadChartJS } from "./stat-chart-loader.js";
+
 export function colorToRGBA(input, alpha = 1) {
 	let r, g, b;
 
@@ -47,13 +49,17 @@ export function renderStatChart(app, html, data) {
     , stats.durability?.value ?? 0
     , stats.learning?.orig ?? 0 // default to temp view for chart
   ];
-	requestAnimationFrame(() => {
+	const renderChart = () => {
 		const accentLight = getComputedStyle(document.documentElement)
 			.getPropertyValue('--accent-light')
 			.trim() || '#ffcc00';
 		const accentDark = getComputedStyle(document.documentElement)
 			.getPropertyValue('--accent-dark')
 			.trim() || '#ffcc00';
+
+		if (app._chartInstance) {
+			try { app._chartInstance.destroy(); } catch (e) { }
+		}
 
 		const chart = new Chart(canvas, {
 			type: "radar"
@@ -104,5 +110,11 @@ export function renderStatChart(app, html, data) {
 			}
 		});
 		app._chartInstance = chart;
-	});
+	};
+
+	if (!globalThis.Chart) {
+		loadChartJS().then(() => requestAnimationFrame(renderChart));
+		return;
+	}
+	requestAnimationFrame(renderChart);
 }

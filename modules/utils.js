@@ -10,7 +10,14 @@ export function registerHandlebarsHelpers() {
 		return Array.isArray(array) && array.includes(value);
 	});
 
-	Handlebars.registerHelper("concat", (s1, s2, s3 = "") => s1 + s2 + s3);
+	Handlebars.registerHelper("concat", function(s1, s2, s3) {
+		// Filter out the Handlebars options object (it's passed as the last parameter)
+		const args = [];
+		for (let i = 0; i < arguments.length - 1; i++) {
+			if (typeof arguments[i] === 'string') args.push(arguments[i]);
+		}
+		return args.join('');
+	});
 
 	Handlebars.registerHelper("isGreater", (p1, p2) => p1 > p2);
 
@@ -78,14 +85,17 @@ export async function preloadHandlebarsTemplates() {
 		, "systems/bizarre-adventures-d6/templates/partials/actor-class.hbs"
     
 		, "systems/bizarre-adventures-d6/templates/partials/actor-stats.hbs"
+
+		,"systems/bizarre-adventures-d6/templates/partials/item-formula.hbs"
   
 	, ];
 
-	const [shellTpl, navTpl, classTpl, statsTp1] = await loadTemplates(templatePaths);
+	const [shellTpl, navTpl, classTpl, statsTp1, formulaTpl] = await foundry.applications.handlebars.loadTemplates(templatePaths);
 
 	// Register based on hbs naming convention
 	Handlebars.registerPartial("actor-shell", shellTpl);
 	Handlebars.registerPartial("actor-nav", navTpl);
 	Handlebars.registerPartial("actor-class", classTpl);
 	Handlebars.registerPartial("actor-stats", statsTp1);
+	Handlebars.registerPartial("item-formula", formulaTpl);
 }

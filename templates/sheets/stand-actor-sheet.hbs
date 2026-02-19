@@ -1,16 +1,19 @@
-{{!-- systems/bizarre-adventures-d6/templates/sheets/stand-actor-sheet.hbs --}}
 <form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
   <div class="jojo-sheet">
     <header class="sheet-header">
+      <div class="character-image-box">
+        <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
+      </div>
       <h1 class="sheet-header">
-        {{actor.name}}
-        {{#ifEquals actor.system.info.type "Act"}}
+        <span class="name-display">{{actor.name}}</span>
+        <input class="name-edit" value="{{actor.name}}" style="display:none;" />
+        {{#ifEquals actor.system.bio.type "Act"}}
           <!-- single-digit input bound to system.info.actNumber -->
           <span class="act-label">Act:
             <input 
               type="text" 
-              name="system.info.actNumber" 
-              value="{{actor.system.info.actNumber}}" 
+              name="system.bio.actNumber" 
+              value="{{actor.system.bio.actNumber}}" 
               maxlength="1" 
               size="1" 
               pattern="\d" 
@@ -45,23 +48,29 @@
           <div class="info-row">
             <label>Stand:</label>
             <input type="text"
-                   name="name"
-                   value="{{actor.name}}"
+                   name="system.bio.standName"
+                   value="{{system.bio.standName}}"
                    placeholder="Enter stand name">
           </div>
-          <div class="info-row">
+            <div class="info-row" data-drop="ability">
             <label>Master:</label>
-            <input type="text"
-                   name="system.info.master"
-                   value="{{system.info.master}}"
-                   placeholder="Enter master name">
-          </div>
+            {{#each linkedActors as |linked|}}
+              <div class="linked-ability" data-uuid="{{linked.uuid}}">
+                <span>{{linked.name}} ({{linked.type}})</span>
+                <a class="remove-link" data-uuid="{{linked.uuid}}">
+                  <i class="fas fa-times"></i>
+                </a>
+              </div>
+            {{else}}
+              <p class="hint">Drag a user here to link a master</p>
+            {{/each}}
+            </div>
           <div class="info-row">
             <label>Type:</label>
-            <select id="stand-type" name="system.info.type">
+            <select id="stand-type" name="system.bio.type">
               {{#each typeConfigs}}
                 <option value="{{@key}}"
-                {{#ifEquals system.info.type @key}}selected{{/ifEquals}}>
+                {{#ifEquals system.bio.type @key}}selected{{/ifEquals}}>
                   {{this.label}}
                 </option>
               {{/each}}
@@ -69,29 +78,29 @@
           </div>
           <div class="info-row">
             <label>Design:</label>
-            <textarea name="system.info.design"
+            <textarea name="system.bio.design"
                       rows="3"
-                      placeholder="Enter design">{{system.info.design}}</textarea>
+                      placeholder="Enter design">{{system.bio.design}}</textarea>
           </div>
           <div class="info-row">
             <label>Ability:</label>
-            <textarea name="system.info.ability"
+            <textarea name="system.bio.ability"
                       rows="3"
-                      placeholder="Enter ability">{{system.info.ability}}</textarea>
+                      placeholder="Enter ability">{{system.bio.ability}}</textarea>
           </div>
           <div class="info-row">
             <label>Cost:</label>
             <input type="text"
-                   name="system.info.cost"
-                   value="{{system.info.cost}}"
+                   name="system.bio.cost"
+                   value="{{system.bio.cost}}"
                    readonly>
           </div>
         </div>
       </div>
       <!-- ─ Ability Description Tab ─ -->
-      <div class="tab" data-tab="{{actor.system.info.type}}" data-group="primary">
+      <div class="tab" data-tab="{{actor.system.bio.type}}" data-group="primary">
         <div class="ability-description">
-          {{{actor.system.info.description}}}
+          {{{actor.system.bio.description}}}
         </div>
       </div>
     </section>

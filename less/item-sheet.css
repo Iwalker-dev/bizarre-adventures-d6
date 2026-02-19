@@ -1,0 +1,45 @@
+/* Formula rows: show columns inline */
+.formula-body {
+  margin-top: 0.75rem;
+}
+.formula-rows .formula-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  box-sizing: border-box;
+  flex-wrap: nowrap;
+}
+/* Header styling */
+.formula-row.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+/* Ensure columns behave as flex children and center controls */
+.formula-row .col {
+  display: flex;
+  align-items: center;
+  padding: 0 0.25rem;
+}
+/* Use flex-basis so columns line up on one row */
+.formula-row .col.optional {
+  flex: 0 0 6%;
+  justify-content: center;
+}
+/* Make form controls fill their column */
+.formula-row .col input[type="number"],
+.formula-row .col select,
+.formula-row .col input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Empty state */
+.formula-row.empty {
+  font-style: italic;
+  color: #666;
+}

@@ -1,5 +1,5 @@
 import { BaseActorSheet } from "./base-actor-sheet.js";
-import { typeConfigs }    from "../config/actor-configs.js";
+import { typeConfigs, DEBUG_LOGS }    from "../config.js";
 const mergeObject = foundry.utils.mergeObject;
 
 export class PowerSheet extends BaseActorSheet {
@@ -24,19 +24,22 @@ export class PowerSheet extends BaseActorSheet {
 		const data = super.getData();
 		data.system = this.actor.system;
 		data.typeConfigs = typeConfigs.power;
-		data.system.info = data.system.info || {};
-		console.log("BAD6 | data.system.info.type", data.system.info.type);
+		data.system.bio = data.system.bio || {};
+		data.linkedActors = data.system.bio.linkedActors?.value || [];
+		if (DEBUG_LOGS) {
+			console.log("BAD6 | data.system.bio.type", data.system.bio.type);
+		}
 		// If no type is saved yet, pretend we have one so the <select> shows it
-		if (!data.system.info.type) {
-			data.system.info.type = Object.keys(typeConfigs.power)[0];
+		if (!data.system.bio.type) {
+			data.system.bio.type = Object.keys(typeConfigs.power)[0];
 		}
 
-		data.extraConfig = data.typeConfigs[data.system.info.type] || {};
+		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
 
 		// Set description
-		data.system.info.description = data.extraConfig.description || "";
+		data.system.bio.description = data.extraConfig.description || "";
 
-		// —— NEW: statLabelMap —— 
+
 		const keys = ['power', 'precision', 'speed', 'range', 'durability', 'learning'];
 		data.statLabelMap = {};
 		if (Array.isArray(data.extraConfig.statlabels)) {
@@ -45,7 +48,7 @@ export class PowerSheet extends BaseActorSheet {
 				if (key) data.statLabelMap[key] = lbl;
 			});
 		}
-		// ————————————————
+
 
 		data.getSelectedValue = stat => {
 			const s = this.actor.system.attributes.stats[stat];
@@ -58,6 +61,12 @@ export class PowerSheet extends BaseActorSheet {
 		super.activateListeners(html);
 		this.renderStars(html);
 
+		// Prevent auto-submit handlers from interrupting typing in configured fields
+		// Inputs marked with `data-noautosubmit="true"` will not bubble their input/change
+		html.find('[data-noautosubmit="true"]').on('input change', ev => {
+			ev.stopImmediatePropagation();
+		});
+
 		// Burn‐type toggles
 		html.find(".switch-value").click(ev => {
 			const {
@@ -69,8 +78,8 @@ export class PowerSheet extends BaseActorSheet {
 			});
 		});
 
-		// 1) Force the select to show the actual stored value
-		const current = this.actor.system.info?.type;
+		// Force the select to show the actual stored value
+		const current = this.actor.system.bio?.type;
 		if (current) {
 			html.find("#power-type").val(current);
 		}

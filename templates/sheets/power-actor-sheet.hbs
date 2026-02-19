@@ -1,7 +1,13 @@
 <form class="sheet actor-sheet {{cssClass}}" autocomplete="off">
   <div class="jojo-sheet">
     <header class="sheet-header">
-      <h1>{{actor.name}}</h1>
+      <div class="character-image-box">
+        <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
+      </div>
+      <h1>
+        <span class="name-display">{{actor.name}}</span>
+        <input class="name-edit" value="{{actor.name}}" style="display:none;" />
+      </h1>
     </header>
 
     <nav class="sheet-tabs tabs" data-group="primary">
@@ -21,44 +27,79 @@
             <label>Name:</label>
             <input
               type="text"
-              name="name"
-              value="{{actor.name}}"
+              name="system.bio.powerName"
+              value="{{system.bio.powerName}}"
               placeholder="Enter power name"
             />
           </div>
-          <div class="info-row">
-            <label>User:</label>
-            <input
-              type="text"
-              name="system.info.master"
-              value="{{system.info.master}}"
-              placeholder="Enter user name"
-            />
+          <div class="info-row" data-drop="ability">
+            <label>Master:</label>
+            {{#each linkedActors as |linked|}}
+                <div class="linked-ability" data-uuid="{{linked.uuid}}">
+                    <span>{{linked.name}} ({{linked.type}})</span>
+                    <a class="remove-link" data-uuid="{{linked.uuid}}">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            {{else}}
+                <p class="hint">Drag a user here to link a master</p>
+            {{/each}}
           </div>
           <div class="info-row">
             <label>Design:</label>
             <textarea
-              name="system.info.design"
+              name="system.bio.design"
               rows="3"
               placeholder="Enter design"
-            >{{system.info.design}}</textarea>
+            >{{system.bio.design}}</textarea>
           </div>
           <div class="info-row">
             <label>Type:</label>
-            <select id="power-type" name="system.info.type">
+            <select id="power-type" name="system.bio.type">
               {{#each typeConfigs}}
-                <option value="{{@key}}" {{#ifEquals system.info.type @key}}selected{{/ifEquals}}>
+                <option value="{{@key}}" {{#ifEquals system.bio.type @key}}selected{{/ifEquals}}>
                   {{this.label}}
                 </option>
               {{/each}}
             </select>
           </div>
+          {{!-- Render any additional fields defined by the selected type's config --}}
+          {{#if extraConfig.fields}}
+            {{#each extraConfig.fields}}
+              <div class="info-row">
+                <label>{{this.label}}:</label>
+                {{!-- textarea --}}
+                  {{#ifEquals this.type "textarea"}}
+                  <textarea data-noautosubmit="true" name="system.bio.{{this.name}}" rows="{{this.rows}}">{{lookup ../system.bio this.name}}</textarea>
+                {{else}}
+                  {{!-- select --}}
+                  {{#ifEquals this.type "select"}}
+                    <select data-noautosubmit="true" name="system.bio.{{this.name}}">
+                      {{#each this.options}}
+                        <option value="{{this.value}}" {{#ifEquals (lookup ../../system.bio ../this.name) this.value}}selected{{/ifEquals}}>{{this.label}}</option>
+                      {{/each}}
+                    </select>
+                  {{else}}
+                    {{!-- default input (text/number/etc) --}}
+                    <input
+                      data-noautosubmit="true"
+                      type="{{this.type}}"
+                      name="system.bio.{{this.name}}"
+                      value="{{lookup ../system.bio this.name}}"
+                      {{#if this.min}}min="{{this.min}}"{{/if}}
+                      {{#if this.max}}max="{{this.max}}"{{/if}}
+                    />
+                  {{/ifEquals}}
+                {{/ifEquals}}
+              </div>
+            {{/each}}
+          {{/if}}
         </div>
       </div>
       <!-- ─────────────────────── Ability Description Tab ─────────────────────── -->
-      <div class="tab" data-tab="{{actor.system.info.type}}" data-group="primary">
+      <div class="tab" data-tab="{{actor.system.bio.type}}" data-group="primary">
         <div class="ability-description">
-          {{{actor.system.info.description}}}
+          {{{actor.system.bio.description}}}
       </div>
     </div>
     </section>

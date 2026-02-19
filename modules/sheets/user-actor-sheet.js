@@ -1,6 +1,6 @@
   // systems/bizarre-adventures-d6/scripts/sheets/user-actor-sheet.js
   import { BaseActorSheet } from "./base-actor-sheet.js";
-  import { typeConfigs }    from "../config/actor-configs.js";
+  import { typeConfigs }    from "../config.js";
 
   /**
    * The UserSheet class manages the actor sheet for 'user' type actors.
@@ -41,14 +41,16 @@
   	getData() {
   		const data = super.getData();
   		data.system = this.actor.system;
-  		data.system.info = data.system.info ?? {};
-  		data.system.info.type = data.system.info.type ?? "user";
+  		data.system.bio = data.system.bio ?? {};
+  		data.system.bio.type = data.system.bio.type ?? "user";
   		data.typeConfigs = typeConfigs.user; // Options for <select>
-  		data.extraConfig = data.typeConfigs[data.system.info.type] || {};
-  		data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
-
-  		data.system.info.description = data.extraConfig.description || "";
-  		data.system.info.cost = data.extraConfig.cost || "";
+		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
+		data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
+		// Only apply type defaults when the actor doesn't already have values
+		data.system.bio.description = data.system.bio.description ?? data.extraConfig.description ?? "";
+		data.linkedActors = data.system.bio.linkedActors?.value || [];
+		// Do not copy human-readable config 'cost' into actor data (it can be non-numeric).
+		// Use placeholders in the template instead (template already supports `placeholder`).
   		data.getSelectedValue = (stat) => {
   			const statData = this.actor.system.attributes.stats[stat];
   			return statData[statData.selected] || 0;
@@ -99,16 +101,14 @@
   		document.documentElement.style.setProperty("--accent-light", light);
   		document.documentElement.style.setProperty("--accent-dark", dark);
 
-  		// Dark Determination toggle button
-  		html.find(".dark-determination-toggle")
-  			.click(this._onToggleDarkDetermination.bind(this));
+		// Dark Determination toggle button
+		html.find(".dark-determination-toggle")
+			.click(this._onToggleDarkDetermination.bind(this));
 
-  		// Render star ratings for stats
-
-  		// Handle Type dropdown changes
-  		const current = this.actor.system.info?.type;
+		// Render star ratings for stats  		// Handle Type dropdown changes
+  		const current = this.actor.system.bio?.type;
   		if (current) {
-  			html.find("#stand-type").val(current);
+  			html.find("#user-type").val(current);
   		}
 
   		// Health max input change updates actor
@@ -146,19 +146,20 @@
   		});
 
   		// Hit creation, deletion, and health recalculation
-  		const recalc = async () => {
-  			const dd = this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
-  			if (dd) return;
-  			const totalDamage = this.actor.items
-  				.filter(i => i.type === "hit")
-  				.reduce((sum, i) => sum + (i.system.quantity || 0), 0);
-  			const maxHP = this.actor.system.health.max;
-  			const newValue = Math.max(this.actor.system.health.min, maxHP - totalDamage);
-  			await this.actor.update({
-  				"system.health.value": newValue
-  			});
-  			this.render();
-  		};
+		const recalc = async () => {
+			const dd = this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
+			if (dd) return;
+			const baseActor = game.actors.get(this.actor.id) || this.actor;
+			const totalDamage = baseActor.items
+				.filter(i => i.type === "hit")
+				.reduce((sum, i) => sum + (i.system.quantity || 0), 0);
+			const maxHP = baseActor.system.health.max;
+			const newValue = Math.max(baseActor.system.health.min, maxHP - totalDamage);
+			await baseActor.update({
+				"system.health.value": newValue
+			});
+			this.render();
+		};
   		html.find("#create-hit").click(async () => {
   			await this.actor.createEmbeddedDocuments("Item", [{
   				name: "New Hit"
@@ -181,6 +182,40 @@
   			const hit = this.actor.items.get(id);
   			if (hit) hit.sheet.render(true);
   		});
+
+		// Prevent autosubmit from stealing focus while typing in special fields
+		// Marked in templates with `data-noautosubmit="true"`.
+		html.find('[data-noautosubmit="true"]').on("input", ev => {
+			ev.stopImmediatePropagation();
+		});
+
+		// Persist any `system.bio.*` fields on change/blur so dynamic fields save reliably
+		html.find('[name^="system.bio."]').on("change blur", async ev => {
+			// Prevent other handlers (like autosubmit) from firing first
+			ev.stopImmediatePropagation();
+			const el = ev.currentTarget;
+			const path = el.name;
+			let value;
+			if (el.type === "checkbox") value = el.checked;
+			else value = el.value;
+
+			// Coerce number inputs to numbers
+			if (el.type === "number") {
+				const n = parseFloat(value);
+				if (!Number.isNaN(n)) value = n;
+			}
+
+			console.debug("UserSheet: saving field", path, value);
+			// Update the actor with the single changed path. If this sheet is a synthetic
+			// token actor, update the base Actor document so changes persist.
+			const baseActor = game.actors.get(this.actor.id) || this.actor;
+			try {
+				await baseActor.update({ [path]: value });
+				console.debug("UserSheet: saved field", path, baseActor === this.actor ? "(self)" : "(base)");
+			} catch (err) {
+				console.error("UserSheet: Failed to save user sheet field", path, err);
+			}
+		});
   	}
 
   	/**
@@ -210,7 +245,7 @@
   				const vampireActors = game.actors.filter(a =>
   					a.id !== this.actor.id &&
   					ownerUsers.some(u => a.getUserLevel(u) === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) &&
-  					foundry.utils.getProperty(a, "system.info.type") === "Vampire"
+  					foundry.utils.getProperty(a, "system.bio.type") === "Vampire"
   				);
   				if (vampireActors.length) ui.notifications.warn(
   					"Reminder: A Vampire user may not activate Dark Determination."

@@ -2,7 +2,7 @@
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
   "description": "A core system for the Bizarre Adventures D6 system.",
-  "version": "0.9.4",
+  "version": "0.9.7",
   "authors": [
     {
       "name": "LIFT",
@@ -32,39 +32,8 @@
     "distance": 2,
     "units": "m"
   },
-  "actors": {
-    "types": [
-      "user",
-      "stand",
-      "power"
-    ],
-    "default": "user"
-  },
-  "Item": {
-    "types": [
-      "hit",
-      "item"
-    ],
-    "htmlFields": [
-      "description"
-    ],
-    "hit": {
-      "description": "",
-      "quantity": 1,
-      "weight": 0,
-      "attributes": {},
-      "groups": {}
-    },
-    "item": {
-      "description": "",
-      "quantity": 1,
-      "weight": 0,
-      "attributes": {},
-      "groups": {}
-    }
-  },
   "manifest": "https://raw.githubusercontent.com/Iwalker-dev/bizarre-adventures-d6/main/system.json",
-  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.9.4/bizarre-adventures-d6-v0.9.4.zip",
+  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.9.3.2/bizarre-adventures-d6-v0.9.3.2.zip",
   "relationships": {
     "requires": [
       {
@@ -74,6 +43,18 @@
         "compatibility": {
           "verified": "1.1.3"
         }
+      }
+    ],
+    "recommends": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json"
+      },
+      {
+        "id": "lancer-initiative",
+        "type": "module",
+        "manifest": "https://codeberg.org/Bolts/lancer-initiative/releases/download/latest/module.json"
       }
     ]
   }
