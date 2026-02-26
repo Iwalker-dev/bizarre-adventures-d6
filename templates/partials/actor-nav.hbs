@@ -24,16 +24,16 @@
   </div>
 {{/ifEquals}}
 
-{{#if actor.system.info.type}}
+{{#if system.bio.type}}
   {{!-- And only if the type isn’t the literal string "None" --}}
-  {{#ifEquals actor.system.info.type "None"}}
+  {{#ifEquals system.bio.type "None"}}
     {{!-- nothing --}}
   {{else}}
     <div class="button-container">
       <a class="item"
-         data-tab="{{actor.system.info.type}}"
+         data-tab="{{system.bio.type}}"
          data-group="primary">
-        {{actor.system.info.type}}
+        {{#if extraConfig.label}}{{extraConfig.label}}{{else}}{{system.bio.type}}{{/if}}
       </a>
     </div>
   {{/ifEquals}}

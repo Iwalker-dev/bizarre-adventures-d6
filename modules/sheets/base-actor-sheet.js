@@ -1,4 +1,4 @@
-import { typeConfigs, DEBUG_LOGS } from "../config.js";
+import { typeConfigs, isDebugEnabled } from "../config.js";
 
 export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 	static get defaultOptions() {
@@ -24,22 +24,36 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
   ];
 
     static {
-        Hooks.on('preUpdateActor', (actor, update, options) => {
+		Hooks.on('preUpdateActor', (actor, update, options) => {
 			// Use custom default image based on type (Currently only for Power)
-            if (update.system?.bio?.type) {
+			// Skip if the update explicitly sets an image to preserve user-chosen art.
+			if (update.img) {
+				if (isDebugEnabled()) {
+					console.error("BaseActorSheet | preUpdateActor | image update detected, skipping type default");
+				}
+				return;
+			}
+			if (update.system?.bio?.type) {
                 const typeKey = update.system.bio.type;
                 const actorType = actor.type;
                 const typeConfigsForActorType = typeConfigs[actorType] || {};
                 const typeConfig = typeConfigsForActorType[typeKey];
-				if (DEBUG_LOGS) {
+				if (isDebugEnabled()) {
 					console.error("BaseActorSheet | typeConfig", typeConfig?.image);
 				}
 
-                const isKnownTypeImage = Object.values(typeConfigsForActorType).some(config => config.image === actor.img);
-				if (actor.img == "icons/svg/mystery-man.svg" || isKnownTypeImage) {
+				const isKnownTypeImage = Object.values(typeConfigsForActorType).some(config => config.image === actor.img);
+				const isDefaultImage = actor.img == "icons/svg/mystery-man.svg" || isKnownTypeImage;
+				if (!isDefaultImage) {
+					if (isDebugEnabled()) {
+						console.error("BaseActorSheet | preUpdateActor | custom image detected, skipping type default");
+					}
+					return;
+				}
+				if (isDefaultImage) {
 					if (typeConfig?.image) {
 						update.img = typeConfig.image;
-						if (DEBUG_LOGS) {
+						if (isDebugEnabled()) {
 							console.error(update.img);
 						}
 					} else {
@@ -91,9 +105,22 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			return (ai < 0 ? Infinity : ai) - (bi < 0 ? Infinity : bi);
 		});
 
-
 		data.stats = stats;
+
+		this.applyExtraConfig(data);
+
 		return data;
+	}
+
+	/**
+	 * Apply extraConfig-derived defaults shared across sheets.
+	 *
+	 * @param {object} data
+	 */
+	applyExtraConfig(data) {
+		if (!data?.extraConfig) return;
+		data.defaultCost = data.extraConfig.cost || "";
+		data.showCost = data.defaultCost && data.defaultCost !== "None";
 	}
 
 	/**

@@ -1,10 +1,11 @@
 
-import { BAD6, DEBUG_LOGS } from "./modules/config.js";
+import { BAD6, isDebugEnabled } from "./modules/config.js";
 import { setupStats } from "./modules/listenerFunctions.js";
 import { registerHandlebarsHelpers, preloadHandlebarsTemplates } from "./modules/utils.js"; 
 import { rollerControl } from './modules/apps/bad6-roller.js';
 import { HueShiftControl } from "./modules/apps/hue-shift.js";
 import { outroControl } from './modules/apps/stylizedOutro.js';
+import { migrateWorld } from "./modules/migration.js";
 
 import { UserSheet } from "./modules/sheets/user-actor-sheet.js";
 import { StandSheet } from "./modules/sheets/stand-actor-sheet.js";
@@ -17,12 +18,34 @@ import { DefaultItemSheet } from "./modules/sheets/default-item-sheet.js";
 
 Hooks.once("init", async () => {
 	
-	if (DEBUG_LOGS) {
+	// Register settings first, before any code that might use them
+	game.settings.register("bizarre-adventures-d6", "systemMigrationVersion", {
+		name: "BAD6 System Migration Version",
+		hint: "Tracks the last system version that completed migrations for this world.",
+		scope: "world",
+		config: false,
+		type: String,
+		default: "0.9.9"
+	});
+
+	game.settings.register("bizarre-adventures-d6", "debugLogs", {
+		name: "BAD6 Debug Logs",
+		hint: "Enable or disable debug logs for the BAD6 system.",
+		scope: "world",
+		config: true,
+		type: Boolean,
+		default: false
+	});
+
+	game.system.migrateWorld = migrateWorld;
+
+	if (isDebugEnabled()) {
 		console.log("BAD6 Core System is Initializing");
 		Hooks.on("renderActorSheet", (app) => {
 			console.log(`Rendered: ${app.actor.name}, Sheet: ${app.constructor.name}, Type: ${app.actor.type}`);
 		});
 	}
+
 	// Load Apps and Stat Chart
 	rollerControl();
 	HueShiftControl();
@@ -68,6 +91,10 @@ Hooks.once("ready", async () => {
 	CONFIG.INIT = false;
 	// Check for optional modules and provide relavant warnings
 	if (!game.user.isGM) return;
+	
+	// Run migrations
+	await migrateWorld();
+	
 	const lancerModule = game.modules.get("lancer-initiative");
 	const libWrapperModule = game.modules.get("lib-wrapper");
 	if (!lancerModule?.active) {

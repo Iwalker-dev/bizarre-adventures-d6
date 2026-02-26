@@ -1,39 +1,42 @@
 {{!-- systems/bizarre-adventures-d6/templates/partials/actor-class.hbs --}}
+{{!-- Renders cost and extra fields for actor types --}}
 {{#if extraConfig}}
-  <h3 class="bio-section-header">{{extraConfig.label}} Abilities</h3>
-  
-  {{#if extraConfig.cost}}
-    {{!-- show cost and description --}}
-  <div class="bio-row extra-cost">
+  {{#if showCost}}
+  <div class="info-row">
     <label>Cost:</label>
-    <span>{{extraConfig.cost}}</span>
+    <input type="text"
+           name="system.bio.cost"
+           value="{{system.bio.cost}}"
+           placeholder="{{defaultCost}}">
   </div>
   {{/if}}
-  {{!-- show description --}}
-  {{#if extraConfig.description}}
-  <div class="bio-row extra-description">
-    <label>Description:</label>
-    <span>{{{extraConfig.description}}}</span>
-  </div>
+  {{!-- Render any additional fields defined by the selected type's config --}}
+  {{#if extraConfig.fields}}
+    {{#each extraConfig.fields}}
+      <div class="info-row">
+        <label>{{this.label}}:</label>
+        {{#ifEquals this.type "textarea"}}
+          <textarea data-noautosubmit="true" name="system.bio.{{this.name}}" rows="{{this.rows}}">{{lookup ../system.bio this.name}}</textarea>
+        {{else ifEquals this.type "select"}}
+          <select data-noautosubmit="true" name="system.bio.{{this.name}}">
+            {{#each this.options}}
+              <option value="{{this.value}}" {{#ifEquals (lookup ../../system.bio ../this.name) this.value}}selected{{/ifEquals}}>{{this.label}}</option>
+            {{/each}}
+          </select>
+        {{else}}
+          {{!-- default input (text/number/etc) --}}
+          <input
+            data-noautosubmit="true"
+            type="{{this.type}}"
+            name="system.bio.{{this.name}}"
+            value="{{lookup ../system.bio this.name}}"
+            {{#if this.placeholder}}placeholder="{{this.placeholder}}"{{/if}}
+            {{#if this.rows}}rows="{{this.rows}}"{{/if}}
+            {{#if this.min}}min="{{this.min}}"{{/if}}
+            {{#if this.max}}max="{{this.max}}"{{/if}}
+          />
+        {{/ifEquals}}
+      </div>
+    {{/each}}
   {{/if}}
-  {{!-- show extra fields --}}
-  {{#each extraConfig.fields as |field|}}
-    <div class="bio-row extra-field">
-      <label>{{field.label}}:</label>
-      {{#ifEquals field.input "text"}}
-        <input
-          type="text"
-          name="system.extra.{{field.key}}"
-          value="{{system.extra.[field.key]}}"
-          placeholder="{{field.placeholder}}"
-        >
-      {{else ifEquals field.input "textarea"}}
-        <textarea
-          name="system.extra.{{field.key}}"
-          rows="{{field.rows}}"
-          placeholder="{{field.placeholder}}"
-        >{{getProperty system (concat "extra." field.key)}}</textarea>
-      {{/ifEquals}}
-    </div>
-  {{/each}}
 {{/if}}

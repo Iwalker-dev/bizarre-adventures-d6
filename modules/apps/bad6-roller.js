@@ -17,18 +17,13 @@ import {
 	showStatDialog,
 	getActorDisplayName
 } from "../dialog.js";
-import { DEBUG_LOGS } from "../config.js";
+import { isDebugEnabled } from "../config.js";
 
 // Register socket function as soon as socketlib is ready
 Hooks.once("socketlib.ready", () => {
 	socket = socketlib.registerSystem("bizarre-adventures-d6");
 	socket.register("pCheck", readyCheck);
 	socket.register("updateContestMessage", updateContestMessageAsGM);
-});
-
-// Inject button on init
-Hooks.once("init", () => {
-	rollerControl();
 });
 
 /**
@@ -279,7 +274,7 @@ async function readyCheck(actorId, baseFormula, statKey, statLabel, advantage, d
  */
 async function findRoller(i, reaction = false) {
 	if (game.user.isGM) {
-		if (DEBUG_LOGS) {
+		if (isDebugEnabled()) {
 			console.warn("BAD6 | reaction:", reaction);
 		}
 		let token;
@@ -314,14 +309,14 @@ async function findRoller(i, reaction = false) {
 				roller = token.actor;
 			}
 		}
-		if (DEBUG_LOGS) {
+		if (isDebugEnabled()) {
 			console.warn("BAD6 | Roller chosen:", roller.name);
 		}
 		// Otherwise use the controlled token
 		return new Promise(async (resolve) => {
 			// Get linked actors from the actor's bio
 			const linkedActors = roller.system.bio.linkedActors?.value || [];
-			if (DEBUG_LOGS) {
+			if (isDebugEnabled()) {
 				console.warn("BAD6 | Linked actors:", linkedActors);
 			}
 			if (linkedActors.length === 0) {

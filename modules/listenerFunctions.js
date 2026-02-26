@@ -1,10 +1,10 @@
 import { renderStars } from "./objects/stat-star-render.js";
 import { renderStatChart } from "./objects/stat-chart-render.js";
-import { DEBUG_LOGS } from "./config.js";
+import { isDebugEnabled } from "./config.js";
 
 export function setupStats() {
 	Hooks.on("renderActorSheet", (app, html, data) => {
-		if (DEBUG_LOGS) {
+		if (isDebugEnabled()) {
 			console.log("Actor sheet rendered. Updating UI and background...");
 		}
 

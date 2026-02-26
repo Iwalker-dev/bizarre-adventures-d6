@@ -90,7 +90,17 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 ### - 2026-2-18
 #### Fixes
 - Migrations now take advantage of foundry migration hooks.
-
+## [0.9.8-9] - 2026-2-26
+### - 2026-2-26
+#### Fixes
+- Migrations *now* take advantage of foundry migration hooks.
+- Attempted fix on actor images failing to save
+- Fixed costs using the old/raw actor data for type-based configs
+- migration no longer runs twice
+- migration now runs later to avoid setting conflicts
+- defined single universal init for readability
+- toggleable debug log option added to settings
+- moved duplicate cost logic to base actor
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option

@@ -1,6 +1,6 @@
   // systems/bizarre-adventures-d6/scripts/sheets/user-actor-sheet.js
   import { BaseActorSheet } from "./base-actor-sheet.js";
-  import { typeConfigs }    from "../config.js";
+import { typeConfigs, isDebugEnabled }    from "../config.js";
 
   /**
    * The UserSheet class manages the actor sheet for 'user' type actors.
@@ -45,6 +45,7 @@
   		data.system.bio.type = data.system.bio.type ?? "user";
   		data.typeConfigs = typeConfigs.user; // Options for <select>
 		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
+		this.applyExtraConfig(data);
 		data.darkDetermination = !!this.actor.getFlag("bizarre-adventures-d6", "darkDetermination");
 		// Only apply type defaults when the actor doesn't already have values
 		data.system.bio.description = data.system.bio.description ?? data.extraConfig.description ?? "";
@@ -204,14 +205,17 @@
 				const n = parseFloat(value);
 				if (!Number.isNaN(n)) value = n;
 			}
-
-			console.debug("UserSheet: saving field", path, value);
+			if (isDebugEnabled()) {
+				console.debug("UserSheet: saving field", path, value);
+			}
 			// Update the actor with the single changed path. If this sheet is a synthetic
 			// token actor, update the base Actor document so changes persist.
 			const baseActor = game.actors.get(this.actor.id) || this.actor;
 			try {
 				await baseActor.update({ [path]: value });
-				console.debug("UserSheet: saved field", path, baseActor === this.actor ? "(self)" : "(base)");
+				if (isDebugEnabled()) {
+					console.debug("UserSheet: saved field", path, baseActor === this.actor ? "(self)" : "(base)");
+				}
 			} catch (err) {
 				console.error("UserSheet: Failed to save user sheet field", path, err);
 			}

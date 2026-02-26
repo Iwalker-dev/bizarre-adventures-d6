@@ -1,5 +1,5 @@
 import { BaseActorSheet } from "./base-actor-sheet.js";
-import { typeConfigs }    from "../config.js";
+import { typeConfigs, isDebugEnabled }    from "../config.js";
 
 export class StandSheet extends BaseActorSheet {
 
@@ -29,9 +29,10 @@ export class StandSheet extends BaseActorSheet {
 		data.system.bio = data.system.bio || {};
 
 		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
+		this.applyExtraConfig(data);
 
 		data.system.bio.description = data.extraConfig.description || "";
-		data.system.bio.cost = data.extraConfig.cost || "";
+		
 		data.getSelectedValue = (stat) => {
 			const statData = this.actor.system.attributes.stats[stat];
 			return statData[statData.selected] || 0;
@@ -60,7 +61,9 @@ export class StandSheet extends BaseActorSheet {
 
 		html.find("#stand-type").on("change", async ev => {
 			const newType = ev.target.value;
-			const updates = {};
+			const updates = {
+				"system.bio.type": newType
+			};
 
 			// Map of stand‐type configs
 			const configs = typeConfigs.stand;

@@ -1,5 +1,5 @@
 // outro.js
-import { DEBUG_LOGS } from "../config.js";
+import { isDebugEnabled } from "../config.js";
 
 let socket;
 
@@ -9,13 +9,8 @@ Hooks.once("socketlib.ready", () => {
 	socket.register("triggerOutroEffect", triggerOutroEffect);
 });
 
-// Wire up scene button on init
-Hooks.once("init", () => {
-	outroControl();
-});
-
 export function outroControl() {
-	if (DEBUG_LOGS) {
+	if (isDebugEnabled()) {
 		console.log("Setting up Outro…");
 	}
 	Hooks.on("getSceneControlButtons", (controls) => {
@@ -36,13 +31,13 @@ export function outroControl() {
 
 // 3) Send the outro effect (GM → everyone) and switch scene after delay
 function sendOutroEffect(wiggleAmount, wiggleDuration) {
-	if (DEBUG_LOGS) {
+	if (isDebugEnabled()) {
 		console.log("Stopping all playlists");
 	}
 	for (let pl of game.playlists) pl.stopAll();
 
 	if (socket) {
-		if (DEBUG_LOGS) {
+		if (isDebugEnabled()) {
 			console.log("Broadcasting outro effect to all clients…");
 		}
 		socket.executeForEveryone("triggerOutroEffect", wiggleAmount, wiggleDuration);
@@ -54,7 +49,7 @@ function sendOutroEffect(wiggleAmount, wiggleDuration) {
 	setTimeout(() => {
 		const outroScene = game.scenes.find(s => s.name === "Outro");
 		if (outroScene) {
-			if (DEBUG_LOGS) {
+			if (isDebugEnabled()) {
 				console.log("Switching to Outro scene…");
 			}
 			outroScene.activate();
@@ -66,7 +61,7 @@ function sendOutroEffect(wiggleAmount, wiggleDuration) {
 
 // Client-side effect: tint, arrow, shake
 function triggerOutroEffect(wiggleAmount, wiggleDuration) {
-	if (DEBUG_LOGS) {
+	if (isDebugEnabled()) {
 		console.log("Outro received, everybody freeze!");
 	}
 
@@ -119,7 +114,7 @@ function triggerOutroEffect(wiggleAmount, wiggleDuration) {
 					setTimeout(() => {
 						arrow.remove();
 						tint.remove();
-						if (DEBUG_LOGS) {
+						if (isDebugEnabled()) {
 							console.log("Outro cleanup complete.");
 						}
 					}, 500);

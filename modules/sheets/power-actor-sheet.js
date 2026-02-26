@@ -1,5 +1,5 @@
 import { BaseActorSheet } from "./base-actor-sheet.js";
-import { typeConfigs, DEBUG_LOGS }    from "../config.js";
+import { typeConfigs, isDebugEnabled }    from "../config.js";
 const mergeObject = foundry.utils.mergeObject;
 
 export class PowerSheet extends BaseActorSheet {
@@ -26,7 +26,7 @@ export class PowerSheet extends BaseActorSheet {
 		data.typeConfigs = typeConfigs.power;
 		data.system.bio = data.system.bio || {};
 		data.linkedActors = data.system.bio.linkedActors?.value || [];
-		if (DEBUG_LOGS) {
+		if (isDebugEnabled()) {
 			console.log("BAD6 | data.system.bio.type", data.system.bio.type);
 		}
 		// If no type is saved yet, pretend we have one so the <select> shows it
@@ -35,6 +35,7 @@ export class PowerSheet extends BaseActorSheet {
 		}
 
 		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
+		this.applyExtraConfig(data);
 
 		// Set description
 		data.system.bio.description = data.extraConfig.description || "";
