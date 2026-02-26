@@ -3,10 +3,16 @@ export const BAD6 = {};
 
 /**
  * Returns whether debug logging is enabled from game settings.
- * Falls back to false if settings aren't available yet.
+ * Falls back to false if settings aren't available yet or during init hooks
+ * before settings registration completes.
  */
 export function isDebugEnabled() {
-	return game.settings?.get("bizarre-adventures-d6", "debugLogs") ?? false;
+	try {
+		return game.settings?.get("bizarre-adventures-d6", "debugLogs") ?? false;
+	} catch (err) {
+		// Setting may not be registered yet during init hook execution
+		return false;
+	}
 }
 
 
@@ -35,12 +41,6 @@ export const typeConfigs = {
 			label: "Freak"
       , fields: [
         {
-          name: "cost"
-          , label: "Trait Cost"
-          , type: "text"
-          , placeholder: "1-3 User Points"
-        }
-        , {
           name: "Trait"
           , label: "Trait Description"
           , type: "textarea"

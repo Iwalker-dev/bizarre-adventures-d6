@@ -9,11 +9,6 @@ Hooks.once("socketlib.ready", () => {
 	socket.register("triggerOutroEffect", triggerOutroEffect);
 });
 
-// Wire up scene button on init
-Hooks.once("init", () => {
-	outroControl();
-});
-
 export function outroControl() {
 	if (isDebugEnabled()) {
 		console.log("Setting up Outro…");

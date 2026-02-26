@@ -76,6 +76,7 @@
               {{/each}}
             </select>
           </div>
+          {{> actor-class}}
           <div class="info-row">
             <label>Design:</label>
             <textarea name="system.bio.design"
@@ -88,19 +89,12 @@
                       rows="3"
                       placeholder="Enter ability">{{system.bio.ability}}</textarea>
           </div>
-          <div class="info-row">
-            <label>Cost:</label>
-            <input type="text"
-                   name="system.bio.cost"
-                   value="{{system.bio.cost}}"
-                   readonly>
-          </div>
         </div>
       </div>
-      <!-- ─ Ability Description Tab ─ -->
+      <!--  ─ Ability Description Tab ─ -->
       <div class="tab" data-tab="{{actor.system.bio.type}}" data-group="primary">
         <div class="ability-description">
-          {{{actor.system.bio.description}}}
+          {{{system.bio.description}}}
         </div>
       </div>
     </section>

@@ -155,8 +155,3 @@ export async function migrateWorld() {
 	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
 }
 
-
-Hooks.once("ready", async () => {
-	if (!game.user.isGM) return;
-	await migrateWorld();
-});

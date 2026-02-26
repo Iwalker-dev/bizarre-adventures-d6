@@ -98,38 +98,7 @@
               {{/each}}
             </select>
           </div>
-          {{!-- Render any additional fields defined by the selected type's config --}}
-          {{#if extraConfig.fields}}
-            {{#each extraConfig.fields}}
-              <div class="info-row">
-                <label>{{this.label}}:</label>
-                {{!-- textarea --}}
-                {{#ifEquals this.type "textarea"}}
-                  <textarea data-noautosubmit="true" name="system.bio.{{this.name}}" rows="{{this.rows}}">{{lookup ../system.bio this.name}}</textarea>
-                {{else}}
-                  {{!-- select --}}
-                  {{#ifEquals this.type "select"}}
-                    <select data-noautosubmit="true" name="system.bio.{{this.name}}">
-                      {{#each this.options}}
-                        <option value="{{this.value}}" {{#ifEquals (lookup ../../system.bio ../this.name) this.value}}selected{{/ifEquals}}>{{this.label}}</option>
-                      {{/each}}
-                    </select>
-                  {{else}}
-                    {{!-- default input (text/number/etc) --}}
-                    <input
-                      data-noautosubmit="true"
-                      type="{{this.type}}"
-                      name="system.bio.{{this.name}}"
-                      value="{{lookup ../system.bio this.name}}"
-                      {{#if this.placeholder}}placeholder="{{this.placeholder}}"{{/if}}
-                      {{#if this.min}}min="{{this.min}}"{{/if}}
-                      {{#if this.max}}max="{{this.max}}"{{/if}}
-                    />
-                  {{/ifEquals}}
-                {{/ifEquals}}
-              </div>
-            {{/each}}
-          {{/if}}
+          {{> actor-class}}
           <div class="info-row">
             <label>Appearance:</label>
             <textarea name="system.bio.appearance" rows="3" placeholder="Describe appearance">{{system.bio.appearance}}</textarea>
@@ -151,7 +120,7 @@
       <!-- ───────────── Info Type Tab ───────────── -->
       <div class="tab" data-tab="{{actor.system.bio.type}}" data-group="primary">
         <div class="ability-description">
-          {{{actor.system.bio.description}}}
+          {{{system.bio.description}}}
         </div>
       </div>
       <!-- ───────────── Hits Tab ───────────── -->

@@ -26,11 +26,6 @@ Hooks.once("socketlib.ready", () => {
 	socket.register("updateContestMessage", updateContestMessageAsGM);
 });
 
-// Inject button on init
-Hooks.once("init", () => {
-	rollerControl();
-});
-
 /**
  * Escape HTML for safe injection into chat content.
  * @param {string|null|undefined} str

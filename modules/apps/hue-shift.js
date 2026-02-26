@@ -11,11 +11,6 @@ Hooks.once("socketlib.ready", () => {
 	socket.register("stepHueShift", stepHueShift);
 });
 
-// 2) Ensure control hooks are bound on init
-Hooks.once("init", () => {
-	HueShiftControl();
-});
-
 export function HueShiftControl() {
 
 	// Register the Reset-Hue keybinding here ——

@@ -105,9 +105,22 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			return (ai < 0 ? Infinity : ai) - (bi < 0 ? Infinity : bi);
 		});
 
-
 		data.stats = stats;
+
+		this.applyExtraConfig(data);
+
 		return data;
+	}
+
+	/**
+	 * Apply extraConfig-derived defaults shared across sheets.
+	 *
+	 * @param {object} data
+	 */
+	applyExtraConfig(data) {
+		if (!data?.extraConfig) return;
+		data.defaultCost = data.extraConfig.cost || "";
+		data.showCost = data.defaultCost && data.defaultCost !== "None";
 	}
 
 	/**

@@ -35,6 +35,7 @@ export class PowerSheet extends BaseActorSheet {
 		}
 
 		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
+		this.applyExtraConfig(data);
 
 		// Set description
 		data.system.bio.description = data.extraConfig.description || "";

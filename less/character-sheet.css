@@ -249,8 +249,12 @@ body {
 }
 /* ────────────────────────── Info Type Text ────────────────────────── */
 .jojo-sheet .ability-description {
-  display: inline-block;
+  display: block;
   color: white;
   font-weight: bold;
   /* make it stand out */
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--accent-light);
+  padding: 0.75rem 1rem;
+  line-height: 1.5;
 }
