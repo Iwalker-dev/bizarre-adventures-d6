@@ -29,9 +29,10 @@ import { showOptionalFormulaDialog } from "./dialog.js";
  * @param {boolean} [useGambitForFudge=false]
  * @param {boolean} [showFudge=true]
  * @param {string} [fudgeLockReason=""]
+ * @param {string} [context=""] - Context label like "Action 1" or "Reaction 2"
  * @returns {Promise<{formula:string,useFudge:boolean,useGambitForFudge:boolean}|{formula:string,useFudge:boolean}|null>}
  */
-export async function prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge = false, useGambitForFudge = false, showFudge = true, fudgeLockReason = "") {
+export async function prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge = false, useGambitForFudge = false, showFudge = true, fudgeLockReason = "", context = "") {
 	try {
 		if (!actor || !baseFormula) return { formula: baseFormula, useFudge: false };
 
@@ -114,7 +115,8 @@ export async function prepareFormula(actor, baseFormula, statKey, statLabel, adv
 				fudgeLockReason,
 				actor,
 				gambitDefault: useGambitSelected,
-				computeAdvantageFromLines
+				computeAdvantageFromLines,
+				context
 			});
 			if (dialogResult === null) return null;
 			chosenOptionalIndices = dialogResult.chosenOptionalIndices || [];

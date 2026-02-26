@@ -179,13 +179,15 @@ export function showMulliganDialog({ gambitDefault = false } = {}) {
  * @param {Function|null} [options.lockCheck]
  * @param {string} [options.lockReason]
  * @param {number} [options.autoCloseMs]
+ * @param {string} [options.context] - Context label like "Action" or "Reaction"
  * @returns {Promise<{confirmed:boolean,useGambit:boolean}>}
  */
 export function showPersistDialog({
 	gambitDefault = false,
 	lockCheck = null,
 	lockReason = "",
-	autoCloseMs = 5000
+	autoCloseMs = 5000,
+	context = ""
 } = {}) {
 	return new Promise(resolve => {
 		let resolved = false;
@@ -209,8 +211,9 @@ export function showPersistDialog({
 			<div id="persist-lock-reason" style="margin-top:6px; color:#b00; font-size:0.9em;">${escapeHtml(lockReason || "")}</div>
 		`;
 
+		const dialogTitle = context ? `Persist — ${context}` : "Persist";
 		const dlg = new Dialog({
-			title: "Persist",
+			title: dialogTitle,
 			content,
 			buttons: {
 				yes: {
@@ -287,7 +290,8 @@ export async function showStatDialog(actor, options = {}) {
 		advantageValue = 0,
 		advantageChosenBy = "",
 		advantageLockReason = "",
-		gambitDefaults = {}
+		gambitDefaults = {},
+		title = "Choose a Stat & Luck Options"
 	} = options || {};
 
 	let sources;
@@ -633,7 +637,7 @@ export async function showStatDialog(actor, options = {}) {
 		const renderDialog = () => {
 			const { formHtml, dlgClass } = buildFormHtml();
 			dialogInstance = new Dialog({
-				title: "Choose a Stat & Luck Options",
+				title: title,
 				content: formHtml,
 				buttons: {
 					cancel: { label: "Cancel", callback: () => resolveOnce(null) }
@@ -670,6 +674,7 @@ export async function showStatDialog(actor, options = {}) {
  * @param {Actor} options.actor
  * @param {boolean} [options.gambitDefault]
  * @param {Function} [options.computeAdvantageFromLines]
+ * @param {string} [options.context] - Context label like "Action 1" or "Reaction 2"
  * @returns {Promise<{chosenOptionalIndices:number[], useFudgeSelected:boolean, useGambitSelected:boolean}|null>}
  */
 export function showOptionalFormulaDialog({
@@ -681,7 +686,8 @@ export function showOptionalFormulaDialog({
 	fudgeLockReason = "",
 	actor,
 	gambitDefault = false,
-	computeAdvantageFromLines
+	computeAdvantageFromLines,
+	context = ""
 } = {}) {
 	return new Promise(resolve => {
 		const dlgClass = `optional-lines-${Date.now()}`;
@@ -726,8 +732,9 @@ export function showOptionalFormulaDialog({
 		}
 		html += `</form>`;
 
+		const dialogTitle = context ? `Optional Formula Lines — ${context}` : "Optional Formula Lines";
 		const dialogInstance = new Dialog({
-			title: "Optional Formula Lines",
+			title: dialogTitle,
 			content: html,
 			buttons: {
 				include: {

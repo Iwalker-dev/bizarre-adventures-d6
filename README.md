@@ -54,7 +54,7 @@ Roller - Rolls happen once, then continue via buttons in the same chat message.
 - Second rolls only resolve when their quadrant button is clicked.
 - Dice So Nice animations are supported.
 
-Luck - Feint/Fudge are pre-roll. Mulligan/Persist appear after the second roll.
+Luck - Feint/Fudge are pre-roll. Mulligan/Persist are after.
 - Fudge affects the current roll and the immediately following roll.
 
 Actor Sheets - Navigate the tabs to fill in or view information related to your actor's type. Use your Foundry color to alter the color of your own sheets for all viewers.

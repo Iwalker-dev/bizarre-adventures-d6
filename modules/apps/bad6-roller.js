@@ -42,6 +42,41 @@ function escapeHtml(str) {
 }
 
 /**
+ * Check whether the current user can see roll formulas for an actor.
+ * @param {Actor|null} actor
+ * @returns {boolean}
+ */
+function canViewActorFormula(actor) {
+	if (game.user.isGM) return true;
+	if (!actor) return false;
+	return !!actor.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+}
+
+/**
+ * Resolve an Actor from a UUID without async calls.
+ * @param {string|null|undefined} uuid
+ * @returns {Actor|null}
+ */
+function resolveActorFromUuidSync(uuid) {
+	if (!uuid || typeof uuid !== "string") return null;
+	if (!uuid.startsWith("Actor.")) return null;
+	const parts = uuid.split(".");
+	const actorId = parts[1];
+	return game.actors?.get(actorId) || null;
+}
+
+/**
+ * Resolve an Actor from a speaker.
+ * @param {object|null|undefined} speaker
+ * @returns {Actor|null}
+ */
+function resolveActorFromSpeaker(speaker) {
+	const actorId = speaker?.actor;
+	if (!actorId) return null;
+	return game.actors?.get(actorId) || null;
+}
+
+/**
  * Parse the cs>=N threshold from a formula.
  * @param {string} formula
  * @returns {number}
@@ -194,7 +229,7 @@ async function readyCheck(actorId, baseFormula, statKey, statLabel, advantage, d
 
 	const advantagePhrase = advantage > 0 ? ` with +${advantage} advantage` : "";
 	// Let dice helpers prepare the final formula using items on the actor
-	const formulaResult = await prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge, gambitForFudge, showFudge, fudgeLockReason);
+	const formulaResult = await prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge, gambitForFudge, showFudge, fudgeLockReason, "");
 	if (formulaResult === null) return null;
 	const finalFormula = formulaResult?.formula ?? formulaResult;
 	useFudge = !!formulaResult?.useFudge;
@@ -226,9 +261,8 @@ async function readyCheck(actorId, baseFormula, statKey, statLabel, advantage, d
 	await roll.evaluate({ async: true });
 	const rollHtml = await roll.render();
 	if (!suppressMessage) {
-		await roll.toMessage({
-			speaker: ChatMessage.getSpeaker({ actor })
-		});
+		const speaker = ChatMessage.getSpeaker({ actor });
+		await roll.toMessage({ speaker });
 	}
 
 	const effectiveAdvantage = Number(advantage || 0) + (useFudge ? 1 : 0);
@@ -428,12 +462,15 @@ let rollProcessGambitDefaults = {
  */
 function createEmptyRollState() {
 	return {
+		prepared: false,
 		resolved: false,
 		actorUuid: null,
 		luckActorUuid: null,
 		actorName: null,
 		statKey: null,
 		statLabel: null,
+		statValue: null,
+		baseFormula: null,
 		formula: null,
 		diceResults: null,
 		total: null,
@@ -442,6 +479,7 @@ function createEmptyRollState() {
 		useFudge: false,
 		useGambit: false,
 		feintCount: 0,
+		gambitSelections: null,
 		snapshot: null,
 		rollHtml: null
 	};
@@ -478,6 +516,7 @@ function createContestState(hasReaction) {
 		version: 1,
 		hasReaction: !!hasReaction,
 		nextStep: null,
+		isResolving: false,
 		action: createPairState(),
 		reaction: createPairState(),
 		result: null
@@ -497,6 +536,77 @@ function computePairTotal(pair) {
 }
 
 /**
+ * Check if all required quadrants are prepared.
+ * @param {Object} state
+ * @returns {boolean}
+ */
+function allQuadrantsPrepared(state) {
+	const order = getRollOrder(state?.hasReaction);
+	for (const quadrant of order) {
+		const parsed = parseQuadrant(quadrant);
+		if (!parsed) continue;
+		const roll = state?.[parsed.side]?.rolls?.[parsed.rollIndex];
+		if (!roll?.prepared) return false;
+	}
+	return true;
+}
+
+/**
+ * Check if any quadrants are resolved.
+ * @param {Object} state
+ * @returns {boolean}
+ */
+function anyQuadrantsResolved(state) {
+	const order = getRollOrder(state?.hasReaction);
+	for (const quadrant of order) {
+		const parsed = parseQuadrant(quadrant);
+		if (!parsed) continue;
+		const roll = state?.[parsed.side]?.rolls?.[parsed.rollIndex];
+		if (roll?.resolved) return true;
+	}
+	return false;
+}
+
+/**
+ * Close all dialogs related to the contest.
+ * @returns {void}
+ */
+function closeContestDialogs() {
+	const openDialogs = Object.values(ui.windows).filter(d => d instanceof Dialog);
+	for (const dialog of openDialogs) {
+		const content = dialog.element?.[0]?.innerText || "";
+		// Close stat dialogs, feint dialogs, choice dialogs (look for common patterns)
+		if (content.includes("Stat") || content.includes("Feint") || content.includes("Choose") || 
+		    content.includes("Prepare") || content.includes("Action") || content.includes("Reaction")) {
+			dialog.close();
+		}
+	}
+}
+
+/**
+ * Format a prepared roll summary (stats selected but not rolled).
+ * @param {Object} roll
+ * @returns {string}
+ */
+function formatPreparedSummary(roll) {
+	if (!roll?.prepared || roll?.resolved) return "";
+	const actorName = escapeHtml(roll.actorName || "Unknown");
+	const statLabel = escapeHtml(roll.statLabel || "Stat");
+	const advDisplay = roll.advantage !== null && roll.advantage !== undefined 
+		? ` (+${roll.advantage} Adv)`
+		: "";
+	const feintDisplay = roll.feintCount > 0
+		? `<div style="color:#c70; font-weight:bold; margin-top:4px;">🎭 Feints: ${roll.feintCount}</div>`
+		: "";
+	const lineStyle = "white-space:normal; overflow-wrap:anywhere; word-break:break-word;";
+	return `
+		<div style="${lineStyle}"><strong>${actorName}</strong> — ${statLabel}${advDisplay}</div>
+		${feintDisplay}
+		<div style="font-size:0.85em; color:#666; margin-top:2px;"><em>Ready to resolve</em></div>
+	`;
+}
+
+/**
  * Format a roll summary HTML block.
  * @param {Object} roll
  * @returns {string}
@@ -506,7 +616,10 @@ function formatRollSummary(roll) {
 	const actorName = escapeHtml(roll.actorName || "Unknown");
 	const statLabel = escapeHtml(roll.statLabel || "Stat");
 	const lineStyle = "white-space:normal; overflow-wrap:anywhere; word-break:break-word;";
-	const rollCard = roll.rollHtml ? `<div class="bad6-roll-card" style="margin:4px 0;">${roll.rollHtml}</div>` : "";
+	const actorUuid = escapeHtml(roll.actorUuid || "");
+	const rollCard = roll.rollHtml
+		? `<div class="bad6-roll-card" data-actor-uuid="${actorUuid}" style="margin:4px 0;">${roll.rollHtml}</div>`
+		: "";
 	return `
 		<div style="${lineStyle}"><strong>${actorName}</strong> — ${statLabel}</div>
 		${rollCard}
@@ -528,13 +641,18 @@ function getQuadrantLabel(side, rollIndex) {
  * Get button label for a quadrant.
  * @param {"action"|"reaction"} side
  * @param {number} rollIndex
+ * @param {Object} rollData
  * @returns {string}
  */
-function getQuadrantButtonLabel(side, rollIndex) {
-	if (side === "reaction" && rollIndex === 1) return "Roll Reaction";
-	if (side === "action" && rollIndex === 1) return "Roll Action";
+function getQuadrantButtonLabel(side, rollIndex, rollData) {
+	if (rollData?.prepared && !rollData?.resolved) {
+		const sideLabel = side === "reaction" ? "Reaction" : "Action";
+		return `Edit ${sideLabel} ${rollIndex}`;
+	}
+	if (side === "reaction" && rollIndex === 1) return "Prepare Reaction";
+	if (side === "action" && rollIndex === 1) return "Prepare Action";
 	const sideLabel = side === "reaction" ? "Reaction" : "Action";
-	return `Roll ${sideLabel} ${rollIndex}`;
+	return `Prepare ${sideLabel} ${rollIndex}`;
 }
 
 /**
@@ -543,23 +661,35 @@ function getQuadrantButtonLabel(side, rollIndex) {
  * @param {number} rollIndex
  * @param {Object} rollData
  * @param {string|null} nextStep
+ * @param {boolean} isResolving
  * @returns {string}
  */
-function renderQuadrantCell(side, rollIndex, rollData, nextStep) {
+function renderQuadrantCell(side, rollIndex, rollData, nextStep, isResolving) {
 	const quadrant = `${side}-${rollIndex}`;
-	const isNext = nextStep === quadrant;
-	const isLocked = !isNext && !rollData?.resolved;
 	const label = getQuadrantLabel(side, rollIndex);
-	const buttonStyle = `margin-top:6px; ${isLocked ? "opacity:0.55;" : ""}`;
-	const lockNote = isLocked ? `<div style="font-size:0.85em; color:#777;">Waiting for previous roll...</div>` : "";
-	const button = !rollData?.resolved
-		? `<button type="button" class="bad6-roll-btn" data-quadrant="${quadrant}" style="${buttonStyle}">${getQuadrantButtonLabel(side, rollIndex)}</button>`
-		: "";
-	const content = rollData?.resolved ? formatRollSummary(rollData) : (isNext ? "" : "<em>Pending</em>");
+	const buttonStyle = `margin-top:6px;`;
+	
+	let button = "";
+	if (isResolving && rollData?.prepared && !rollData?.resolved) {
+		// Show "Rolling..." button when resolution is in progress
+		button = `<button type="button" class="bad6-roll-btn" disabled style="${buttonStyle} opacity:0.6; cursor:not-allowed;">Rolling...</button>`;
+	} else if (!rollData?.resolved) {
+		// Show prepare/edit button if not resolving and not resolved
+		button = `<button type="button" class="bad6-roll-btn" data-quadrant="${quadrant}" style="${buttonStyle}">${getQuadrantButtonLabel(side, rollIndex, rollData)}</button>`;
+	}
+	
+	let content;
+	if (rollData?.resolved) {
+		content = formatRollSummary(rollData);
+	} else if (rollData?.prepared) {
+		content = formatPreparedSummary(rollData);
+	} else {
+		content = "<em>Pending</em>";
+	}
 	return `
 		<div style="padding:6px;">
 			<div style="font-weight:bold; margin-bottom:4px;">${label}</div>
-			<div style="display:flex; flex-direction:column; gap:2px;">${content}${lockNote}${button}</div>
+			<div style="display:flex; flex-direction:column; gap:2px;">${content}${button}</div>
 		</div>
 	`;
 }
@@ -578,9 +708,9 @@ function buildContestHtml(state) {
 		: "";
 	const actionRow = `
 		<div style="border-bottom:2px solid #555; padding-bottom:4px;">
-			${renderQuadrantCell("action", 1, state.action.rolls[1], state.nextStep)}
+			${renderQuadrantCell("action", 1, state.action.rolls[1], state.nextStep, state.isResolving)}
 			<div style="border-top:1px solid #999;"></div>
-			${renderQuadrantCell("action", 2, state.action.rolls[2], state.nextStep)}
+			${renderQuadrantCell("action", 2, state.action.rolls[2], state.nextStep, state.isResolving)}
 			${actionAdvNote}
 			${actionPersistNote}
 		</div>
@@ -594,14 +724,25 @@ function buildContestHtml(state) {
 	const reactionRow = state.hasReaction
 		? `
 		<div style="margin-top:6px; padding-top:4px;">
-			${renderQuadrantCell("reaction", 1, state.reaction.rolls[1], state.nextStep)}
+			${renderQuadrantCell("reaction", 1, state.reaction.rolls[1], state.nextStep, state.isResolving)}
 			<div style="border-top:1px solid #999;"></div>
-			${renderQuadrantCell("reaction", 2, state.reaction.rolls[2], state.nextStep)}
+			${renderQuadrantCell("reaction", 2, state.reaction.rolls[2], state.nextStep, state.isResolving)}
 			${reactionAdvNote}
 			${reactionPersistNote}
 		</div>
 		`
 		: "";
+	
+	// Show "Resolve Contest" button if all prepared and none resolved, and not currently resolving
+	const canResolve = allQuadrantsPrepared(state) && !anyQuadrantsResolved(state) && !state.isResolving;
+	const resolveButton = canResolve
+		? `<div style="margin-top:8px; padding-top:6px; border-top:1px solid #999; text-align:center;">
+			<button type="button" data-action="resolve" style="background:#4a7; color:#fff; font-weight:bold; font-size:1.1em; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">
+				🎲 Resolve Contest
+			</button>
+		</div>`
+		: "";
+	
 	const resultHtml = state.result
 		? `<div style="margin-top:8px; padding-top:6px; border-top:1px solid #999;"><strong>Result:</strong> ${state.result.label}</div>`
 		: "";
@@ -609,6 +750,7 @@ function buildContestHtml(state) {
 		<div class="bad6-contest" style="border:1px solid #777; padding:6px; background:#f8f8f8;">
 			${actionRow}
 			${reactionRow}
+			${resolveButton}
 			${resultHtml}
 		</div>
 	`;
@@ -851,7 +993,8 @@ async function handlePostRollLuck(pair, actor, context = {}) {
 			gambitDefault: !!rollProcessGambitDefaults.persist,
 			lockReason: initialLock?.locked ? initialLock.reason : "",
 			lockCheck: getPersistLockState,
-			autoCloseMs: 5000
+			autoCloseMs: 5000,
+			context: side === "reaction" ? "Reaction" : "Action"
 		});
 		if (persistResult) {
 			rollProcessGambitDefaults.persist = !!persistResult.useGambit;
@@ -871,6 +1014,190 @@ async function handlePostRollLuck(pair, actor, context = {}) {
 		}
 	}
 	return { resetPair: false };
+}
+
+/**
+ * Prepare a single roll step (stat selection only, no roll execution).
+ * @param {"action"|"reaction"} side
+ * @param {number} rollIndex
+ * @param {Object} state
+ * @param {string|null} [messageId=null]
+ * @returns {Promise<Object|null>}
+ */
+async function prepareOneStep(side, rollIndex, state, messageId = null) {
+	const pair = state[side];
+	let advantage = pair.advantage;
+	const actor = await findRoller(0, side === "reaction");
+	if (!actor) return null;
+
+	const advantageLocked = advantage !== null && advantage !== undefined;
+	const advantageValue = advantageLocked ? advantage : 0;
+	const advantageChosenBy = pair.advantageChosenBy || "";
+	const advantageLockReason = advantageLocked ? "Advantage already locked for this pair." : "";
+
+	const allowFeint = true;
+	const allowFudge = false; // Fudge happens at resolution time
+	const allowGambit = allowFeint || allowFudge;
+	
+	const stat = await requestStat(actor, {
+		showLuckOptions: true,
+		allowFeint,
+		allowGambit,
+		advantageLocked,
+		advantageValue,
+		advantageChosenBy,
+		advantageLockReason,
+		gambitDefaults: rollProcessGambitDefaults,
+		title: `Prepare ${side === "reaction" ? "Reaction" : "Action"} ${rollIndex}`
+	});
+	if (!stat) {
+		ui.notifications.warn("Stat selection cancelled.");
+		return null;
+	}
+
+	rollProcessGambitDefaults.feint = !!stat.gambitSelections?.feint;
+
+	return {
+		actorUuid: actor.uuid,
+		luckActorUuid: stat.luckActorUuid || null,
+		actorName: getActorDisplayName(actor),
+		statKey: stat.key,
+		statLabel: stat.label,
+		statValue: stat.value,
+		baseFormula: `(${stat.value}d6cs>=5)`,
+		advantage: Number(stat.advantage || 0),
+		feintCount: stat.feintCount || 0,
+		gambitSelections: stat.gambitSelections || null
+	};
+}
+
+/**
+ * Execute a prepared roll (dice rolling and Luck spending).
+ * @param {Object} preparedData
+ * @param {Object} state
+ * @param {"action"|"reaction"} side
+ * @param {number} rollIndex
+ * @returns {Promise<Object|null>}
+ */
+async function executeOneRoll(preparedData, state, side, rollIndex) {
+	const pair = state[side];
+	const actor = await fromUuid(preparedData.actorUuid);
+	if (!actor) return null;
+
+	const luckActor = preparedData.luckActorUuid ? await fromUuid(preparedData.luckActorUuid) : actor;
+	const advantage = preparedData.advantage;
+	const feintCount = preparedData.feintCount || 0;
+	const gambitForFeint = !!preparedData.gambitSelections?.feint;
+	const allowFudge = true;
+	const showFudge = allowFudge;
+	const fudgeLockReason = pair.fudgeChosenBy ? `Fudge used by ${pair.fudgeChosenBy}!` : "";
+	
+	const hasOwner = Object.entries(actor.ownership || {})
+		.some(([uid, lvl]) => {
+			const u = game.users.get(uid);
+			return u?.active && !u.isGM && lvl >= CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+		});
+
+	// If GM is rolling for a player-owned actor, execute via socketlib
+	if (game.user.isGM && hasOwner && await showConfirmRollerDialog()) {
+		const rollResult = await socket.executeAsUser(
+			"pCheck",
+			findOwner(actor).id,
+			actor.id,
+			preparedData.baseFormula,
+			preparedData.statKey,
+			preparedData.statLabel,
+			advantage,
+			actor.getRollData(),
+			feintCount,
+			false,
+			gambitForFeint,
+			rollProcessGambitDefaults.fudge,
+			showFudge,
+			fudgeLockReason,
+			true,
+			preparedData.luckActorUuid || null
+		);
+		if (!rollResult) return null;
+		const useFudge = !!rollResult.useFudge;
+		return {
+			actorUuid: actor.uuid,
+			luckActorUuid: preparedData.luckActorUuid || null,
+			actorName: preparedData.actorName,
+			statKey: preparedData.statKey,
+			statLabel: preparedData.statLabel,
+			formula: rollResult.snapshot?.formula || null,
+			diceResults: rollResult.snapshot?.diceResults || null,
+			total: rollResult.total,
+			advantage,
+			effectiveAdvantage: rollResult.effectiveAdvantage ?? advantage,
+			useFudge,
+			useGambit: gambitForFeint,
+			feintCount,
+			snapshot: rollResult.snapshot,
+			rollHtml: rollResult.rollHtml || null
+		};
+	}
+
+	// Direct execution
+	const data = actor.getRollData();
+	let useFudge = false;
+	const context = `${side === "reaction" ? "Reaction" : "Action"} ${rollIndex}`;
+	const formulaResult = await prepareFormula(
+		actor,
+		preparedData.baseFormula,
+		preparedData.statKey,
+		preparedData.statLabel,
+		advantage,
+		data,
+		useFudge,
+		rollProcessGambitDefaults.fudge,
+		showFudge,
+		fudgeLockReason,
+		context
+	);
+	if (formulaResult === null) return null;
+	const finalFormula = formulaResult?.formula ?? formulaResult;
+	useFudge = !!formulaResult?.useFudge;
+	const gambitForFudge = !!formulaResult?.useGambitForFudge;
+	rollProcessGambitDefaults.fudge = gambitForFudge;
+	
+	const roll = new Roll(finalFormula, data);
+	await roll.evaluate({ async: true });
+	const rollHtml = await roll.render();
+
+	// Spend Luck for Feints
+	if (feintCount > 0) {
+		const { success, error } = await spendLuckMove(actor, "feint", gambitForFeint, feintCount, luckActor);
+		if (!success && error) ui.notifications.error(error);
+	}
+
+	// Spend Luck for Fudge
+	if (useFudge && showFudge) {
+		const { success, error } = await spendLuckMove(actor, "fudge", gambitForFudge, 0, luckActor);
+		if (!success && error) ui.notifications.error(error);
+	}
+
+	const effectiveAdvantage = Number(advantage || 0) + (useFudge ? 1 : 0);
+	await playDiceAnimation(roll);
+	const snapshot = buildRollSnapshot(roll, finalFormula, effectiveAdvantage);
+	return {
+		actorUuid: actor.uuid,
+		luckActorUuid: preparedData.luckActorUuid || null,
+		actorName: preparedData.actorName,
+		statKey: preparedData.statKey,
+		statLabel: preparedData.statLabel,
+		formula: finalFormula,
+		diceResults: snapshot.diceResults,
+		total: roll.total,
+		advantage,
+		effectiveAdvantage,
+		useFudge,
+		useGambit: gambitForFeint,
+		feintCount,
+		snapshot,
+		rollHtml
+	};
 }
 
 /**
@@ -916,7 +1243,8 @@ async function rollOneStep(side, rollIndex, state, messageId = null) {
 		advantageValue,
 		advantageChosenBy,
 		advantageLockReason,
-		gambitDefaults: rollProcessGambitDefaults
+		gambitDefaults: rollProcessGambitDefaults,
+		title: `Roll ${side === "reaction" ? "Reaction" : "Action"} ${rollIndex}`
 	});
 	if (!stat) {
 		ui.notifications.warn("Stat selection cancelled.");
@@ -990,7 +1318,8 @@ async function rollOneStep(side, rollIndex, state, messageId = null) {
 	const baseFormula = `(${stat.value}d6cs>=5)`;
 	const data = actor.getRollData();
 	let useFudge = false;
-	const formulaResult = await prepareFormula(actor, baseFormula, stat.key, stat.label, advantage, data, useFudge, rollProcessGambitDefaults.fudge, showFudge, fudgeLockReason);
+	const context = `${side === "reaction" ? "Reaction" : "Action"} ${rollIndex}`;
+	const formulaResult = await prepareFormula(actor, baseFormula, stat.key, stat.label, advantage, data, useFudge, rollProcessGambitDefaults.fudge, showFudge, fudgeLockReason, context);
 	if (formulaResult === null) return null;
 	const finalFormula = formulaResult?.formula ?? formulaResult;
 	useFudge = !!formulaResult?.useFudge;
@@ -1068,6 +1397,64 @@ function applyRollToState(state, side, rollIndex, rollData) {
 }
 
 /**
+ * Apply prepared data to contest state (stat selection complete, not rolled yet).
+ * @param {Object} state
+ * @param {"action"|"reaction"} side
+ * @param {number} rollIndex
+ * @param {Object} preparedData
+ * @returns {void}
+ */
+function applyPreparedToState(state, side, rollIndex, preparedData) {
+	const pair = state[side];
+	const rollState = pair.rolls[rollIndex];
+	Object.assign(rollState, {
+		prepared: true,
+		resolved: false,
+		actorUuid: preparedData.actorUuid,
+		luckActorUuid: preparedData.luckActorUuid || null,
+		actorName: preparedData.actorName,
+		statKey: preparedData.statKey,
+		statLabel: preparedData.statLabel,
+		statValue: preparedData.statValue,
+		baseFormula: preparedData.baseFormula,
+		advantage: preparedData.advantage,
+		feintCount: preparedData.feintCount || 0,
+		gambitSelections: preparedData.gambitSelections || null
+	});
+	// Lock advantage for the pair if not already locked
+	if (!pair.advantage && pair.advantage !== 0) {
+		pair.advantage = Number(preparedData.advantage || 0);
+		pair.advantageChosenBy = preparedData.actorName || "Unknown";
+	}
+}
+
+/**
+ * Clear a prepared roll from contest state.
+ * @param {Object} state
+ * @param {"action"|"reaction"} side
+ * @param {number} rollIndex
+ * @returns {void}
+ */
+function clearPreparedRoll(state, side, rollIndex) {
+	const pair = state[side];
+	const roll = pair.rolls[rollIndex];
+	
+	// If this roll set the advantage lock for its pair, reset it
+	if (pair.advantageChosenBy === roll.actorName) {
+		pair.advantage = null;
+		pair.advantageChosenBy = null;
+	}
+	
+	// If this roll used Fudge, reset that too
+	if (pair.fudgeChosenBy === roll.actorName) {
+		pair.fudgeChosenBy = null;
+	}
+	
+	// Reset the roll state
+	pair.rolls[rollIndex] = createEmptyRollState();
+}
+
+/**
  * Reset a roll pair after Persist.
  * @param {Object} pair
  * @returns {void}
@@ -1086,6 +1473,132 @@ function resetPairState(pair) {
 	pair.persistCount = persistCount;
 	pair.persistNote = persistNote;
 	pair.persistLock = persistLock;
+}
+
+/**
+ * Resolve all prepared rolls in a contest.
+ * @param {Object} state
+ * @param {string|null} messageId
+ * @returns {Promise<void>}
+ */
+async function resolveContest(state, messageId) {
+	if (!allQuadrantsPrepared(state) || anyQuadrantsResolved(state)) {
+		ui.notifications.warn("Cannot resolve: not all rolls are prepared or some are already resolved.");
+		return;
+	}
+
+	const message = messageId ? game.messages.get(messageId) : null;
+	if (!message) return;
+
+	// Mark that resolution is starting
+	state.isResolving = true;
+	closeContestDialogs();
+
+	const order = getRollOrder(state.hasReaction);
+	
+	// Execute all rolls in sequence
+	for (const quadrant of order) {
+		const parsed = parseQuadrant(quadrant);
+		if (!parsed) continue;
+		
+		const { side, rollIndex } = parsed;
+		const preparedRoll = state[side].rolls[rollIndex];
+		if (!preparedRoll?.prepared || preparedRoll?.resolved) continue;
+
+		// Execute the roll
+		const rollResult = await executeOneRoll(preparedRoll, state, side, rollIndex);
+		if (!rollResult) {
+			ui.notifications.error(`Failed to execute ${side} roll ${rollIndex}`);
+			return;
+		}
+
+		// Apply the result to state
+		applyRollToState(state, side, rollIndex, rollResult);
+		
+		// Update the chat message after each roll
+		await updateContestMessage(message, state);
+		
+		// Small delay to let animations play
+		await new Promise(resolve => setTimeout(resolve, 500));
+	}
+
+	// Handle post-roll luck moves after each pair completes
+	for (const side of ["reaction", "action"]) {
+		const pair = state[side];
+		if (pair.rolls[1]?.resolved && pair.rolls[2]?.resolved) {
+			const actor2 = pair.rolls[2]?.actorUuid ? await fromUuid(pair.rolls[2].actorUuid) : null;
+			if (actor2) {
+				const { resetPair, persistActorName } = await handlePostRollLuck(pair, actor2, {
+					state,
+					side,
+					messageId
+				});
+				
+				if (resetPair) {
+					// Persist was used - reset pairs and return to prepare phase
+					if (side === "action") {
+						resetPairState(state.action);
+						resetPairState(state.reaction);
+						state.result = null;
+						state.nextStep = getRollOrder(state.hasReaction)[0];
+					} else {
+						resetPairState(pair);
+						state.result = null;
+						state.nextStep = "reaction-1";
+					}
+					
+					if (persistActorName) {
+						ChatMessage.create({
+							speaker: ChatMessage.getSpeaker({ actor: actor2 || undefined}),
+							content: `✨ Persist used by <strong>${escapeHtml(persistActorName)}</strong>`
+						});
+					}
+					
+					state.isResolving = false;
+					await updateContestMessage(message, state);
+					return; // Stop resolution, return to prep phase
+				}
+			}
+		}
+	}
+
+	// Update final result
+	updateResultState(state);
+	
+	// Handle clash scenario
+	if (state.result?.type === "clash") {
+		const nextState = createContestState(state.hasReaction);
+		nextState.action.persistCount = state.action.persistCount;
+		nextState.action.persistNote = state.action.persistNote;
+		nextState.reaction.persistCount = state.reaction.persistCount;
+		nextState.reaction.persistNote = state.reaction.persistNote;
+		nextState.nextStep = getRollOrder(nextState.hasReaction)[0];
+		
+		await updateContestMessage(message, state);
+		
+		const speakerActorUuid = state.action.rolls[1]?.actorUuid || state.reaction.rolls[1]?.actorUuid;
+		const speakerActor = speakerActorUuid ? await fromUuid(speakerActorUuid) : null;
+		
+		await ChatMessage.create({
+			speaker: ChatMessage.getSpeaker({ actor: speakerActor || undefined }),
+			content: "<strong>Clash!</strong> A new contest begins."
+		});
+		
+		await ChatMessage.create({
+			speaker: ChatMessage.getSpeaker({ actor: speakerActor || undefined }),
+			content: buildContestHtml(nextState),
+			flags: {
+				[SYSTEM_ID]: {
+					[CONTEST_FLAG]: nextState
+				}
+			}
+		});
+		state.isResolving = false;
+		return;
+	}
+	
+	state.isResolving = false;
+	await updateContestMessage(message, state);
 }
 
 /**
@@ -1118,90 +1631,71 @@ function updateResultState(state) {
 
 Hooks.on("renderChatMessage", (message, html) => {
 	const contest = message?.flags?.[SYSTEM_ID]?.[CONTEST_FLAG];
-	if (!contest) return;
-	html.find("button.bad6-roll-btn").on("click", async (event) => {
-		event.preventDefault();
-		const quadrant = event.currentTarget?.dataset?.quadrant;
-		const parsed = parseQuadrant(quadrant);
-		if (!parsed) return;
-		const latest = game.messages.get(message.id);
-		const state = latest?.flags?.[SYSTEM_ID]?.[CONTEST_FLAG];
-		if (!state) return;
-		const { side, rollIndex } = parsed;
-		const rollData = await rollOneStep(side, rollIndex, state, message.id);
-		if (!rollData) return;
-		const refreshed = game.messages.get(message.id);
-		const currentState = refreshed?.flags?.[SYSTEM_ID]?.[CONTEST_FLAG];
-		if (!currentState) return;
-		const currentRoll = currentState?.[side]?.rolls?.[rollIndex];
-		if (currentRoll?.resolved) {
-			ui.notifications.warn("That roll is already resolved.");
-			return;
-		}
-		applyRollToState(currentState, side, rollIndex, rollData);
-		const pair = currentState[side];
-		if (rollIndex === 2) {
-			currentState.nextStep = getNextStepInOrder(currentState, quadrant);
-			updateResultState(currentState);
-			await updateContestMessage(refreshed, currentState);
-			const actor = rollData.actorUuid ? await fromUuid(rollData.actorUuid) : null;
-			const { resetPair, persistActorName } = await handlePostRollLuck(pair, actor, {
-				state: currentState,
-				side,
-				messageId: message.id
-			});
-			if (resetPair) {
-				if (side === "action") {
-					resetPairState(currentState.action);
-					resetPairState(currentState.reaction);
-					currentState.result = null;
-					currentState.nextStep = getRollOrder(currentState.hasReaction)[0];
-				} else {
-					resetPairState(pair);
-					currentState.result = null;
-					currentState.nextStep = "reaction-1";
-				}
-				if (persistActorName) {
-					ChatMessage.create({
-						speaker: ChatMessage.getSpeaker({ actor: actor || undefined }),
-						content: `✨ Persist used by <strong>${escapeHtml(persistActorName)}</strong>`
-					});
-				}
-				await updateContestMessage(refreshed, currentState);
+	
+	// Handler for Prepare/Edit buttons
+	if (contest) {
+		html.find("button.bad6-roll-btn").on("click", async (event) => {
+			event.preventDefault();
+			const quadrant = event.currentTarget?.dataset?.quadrant;
+			const parsed = parseQuadrant(quadrant);
+			if (!parsed) return;
+			
+			const latest = game.messages.get(message.id);
+			const state = latest?.flags?.[SYSTEM_ID]?.[CONTEST_FLAG];
+			if (!state) return;
+			
+			const { side, rollIndex } = parsed;
+			const currentRoll = state?.[side]?.rolls?.[rollIndex];
+			
+			// If already resolved, can't change
+			if (currentRoll?.resolved) {
+				ui.notifications.warn("That roll is already resolved.");
 				return;
 			}
-		}
-
-	currentState.nextStep = getNextStepInOrder(currentState, quadrant);
-
-	updateResultState(currentState);
-	if (currentState.result?.type === "clash") {
-		const nextState = createContestState(currentState.hasReaction);
-		nextState.action.persistCount = currentState.action.persistCount;
-		nextState.action.persistNote = currentState.action.persistNote;
-		nextState.reaction.persistCount = currentState.reaction.persistCount;
-		nextState.reaction.persistNote = currentState.reaction.persistNote;
-		nextState.nextStep = getRollOrder(nextState.hasReaction)[0];
-		await updateContestMessage(refreshed, currentState);
-		const speakerActorUuid = currentState.action.rolls[1]?.actorUuid || currentState.reaction.rolls[1]?.actorUuid;
-		const speakerActor = speakerActorUuid ? await fromUuid(speakerActorUuid) : null;
-		await ChatMessage.create({
-			speaker: ChatMessage.getSpeaker({ actor: speakerActor || undefined }),
-			content: "<strong>Clash!</strong> A new contest begins."
-		});
-		await ChatMessage.create({
-			speaker: ChatMessage.getSpeaker({ actor: speakerActor || undefined }),
-			content: buildContestHtml(nextState),
-			flags: {
-				[SYSTEM_ID]: {
-					[CONTEST_FLAG]: nextState
-				}
+			
+			// If prepared, clear it first (edit mode)
+			if (currentRoll?.prepared) {
+				clearPreparedRoll(state, side, rollIndex);
+			}
+			
+			// Prepare the roll
+			const preparedData = await prepareOneStep(side, rollIndex, state, message.id);
+			if (!preparedData) return;
+			
+			// Apply prepared state
+			applyPreparedToState(state, side, rollIndex, preparedData);
+			
+			// Update the message
+			const refreshed = game.messages.get(message.id);
+			if (refreshed) {
+				await updateContestMessage(refreshed, state);
 			}
 		});
-		return;
+		
+		// Handler for Resolve Contest button
+		html.find("button[data-action='resolve']").on("click", async (event) => {
+			event.preventDefault();
+			const latest = game.messages.get(message.id);
+			const state = latest?.flags?.[SYSTEM_ID]?.[CONTEST_FLAG];
+			if (!state) return;
+			
+			await resolveContest(state, message.id);
+		});
+
+		// Hide roll formulas for users without permission
+		html.find(".bad6-roll-card[data-actor-uuid]").each((_, el) => {
+			const actorUuid = el?.dataset?.actorUuid || "";
+			const actor = resolveActorFromUuidSync(actorUuid);
+			if (!canViewActorFormula(actor)) {
+				el.innerHTML = "<em>Formula hidden</em>";
+			}
+		});
 	}
-	await updateContestMessage(refreshed, currentState);
-	});
+
+	const speakerActor = resolveActorFromSpeaker(message?.speaker);
+	if (speakerActor && !canViewActorFormula(speakerActor)) {
+		html.find(".dice-formula").text("Formula hidden");
+	}
 });
 
 

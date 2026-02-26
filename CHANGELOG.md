@@ -97,7 +97,8 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Clean up code
 - Make more User-Friendly
 - Remove Depreciated methods
-- Add to FoundryVTT browser
 - Add custom images for user and stand type actors
 - Implement Learning automation
+- Allow privatizing of roll formula
+- Show feint count at result
 
