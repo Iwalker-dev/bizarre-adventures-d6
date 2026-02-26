@@ -33,7 +33,7 @@
     "units": "m"
   },
   "manifest": "https://raw.githubusercontent.com/Iwalker-dev/bizarre-adventures-d6/main/system.json",
-  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.9.7/bizarre-adventures-d6-v0.9.7.zip",
+  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.9.8/bizarre-adventures-d6-v0.9.8.zip",
   "relationships": {
     "requires": [
       {
@@ -59,4 +59,3 @@
     ]
   }
 }
-
