@@ -8,16 +8,29 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: foundry-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-and-release:
-    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'Unreleased'
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'Unreleased' &&
+      github.actor != 'github-actions[bot]'
     runs-on: windows-latest
+    timeout-minutes: 20
+
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
 
     steps:
-      - name: Checkout
+      - name: Checkout EXACT merge commit
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: Pack ZIP
         shell: pwsh
@@ -42,34 +55,40 @@ jobs:
           $version = "${{ steps.meta.outputs.version }}"
           $id      = "${{ steps.meta.outputs.name }}"
           $m.download = "https://github.com/$owner/$repo/releases/download/v$version/$id-v$version.zip"
-
-          # write back with reasonable depth to keep arrays/objects intact
-          $json = $m | ConvertTo-Json -Depth 10
-          Set-Content -Path system.json -Value $json -Encoding UTF8
+          ($m | ConvertTo-Json -Depth 10) | Set-Content system.json -Encoding UTF8
 
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add system.json
-          git commit -m "chore(release): update download url to v$version" || echo "No changes to commit"
-          git push
+          git commit -m "chore(release): update download url to v$version [skip ci]" || echo "No changes to commit"
+          # detached HEAD → push to main explicitly
+          git push origin HEAD:main
 
-
-      - name: Delete existing release/tag if present
+      - name: Create or update GitHub Release (idempotent)
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          gh auth status
-          gh release delete v${{ steps.meta.outputs.version }} -y --cleanup-tag || true
+          $version = "${{ steps.meta.outputs.version }}"
+          $zip     = "${{ steps.meta.outputs.zip }}"
+          $notes   = if (Test-Path CHANGELOG.md) { "Automated release`n`n" + (Get-Content CHANGELOG.md -Raw) } else { "Automated release" }
+          $head    = (git rev-parse HEAD)
 
-      - name: Recreate release at current commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: pwsh
-        run: |
-          $changelog = Get-Content CHANGELOG.md -Raw
-          $notes = "Automated overwrite on Unreleased→main merge`n`n$changelog"
-          gh release create v${{ steps.meta.outputs.version }} `
-            "${{ steps.meta.outputs.zip }}" `
-            --title "v${{ steps.meta.outputs.version }}" `
-            --notes "$notes"
+          if (gh release view "v$version" 2>$null) {
+            gh release upload "v$version" "$zip" --clobber
+            gh release edit   "v$version" --title "v$version" --notes "$notes" --target $head
+          } else {
+            gh release create "v$version" "$zip" --title "v$version" --notes "$notes" --target $head
+          }
+
+  # Run the Foundry publish on Ubuntu (avoids Windows path bug in the action)
+  foundry-publish:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Publish to FoundryVTT Package Release API
+        uses: cs96and/FoundryVTT-release-package@v1.0.3
+        with:
+          package-token: ${{ secrets.FOUNDRY_PACKAGE_TOKEN }}
+          manifest-url: https://raw.githubusercontent.com/${{ github.repository }}/v${{ needs.build-and-release.outputs.version }}/system.json
