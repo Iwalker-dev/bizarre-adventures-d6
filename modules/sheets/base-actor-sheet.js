@@ -1,4 +1,4 @@
-import { typeConfigs, DEBUG_LOGS } from "../config.js";
+import { typeConfigs, isDebugEnabled } from "../config.js";
 
 export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 	static get defaultOptions() {
@@ -28,7 +28,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			// Use custom default image based on type (Currently only for Power)
 			// Skip if the update explicitly sets an image to preserve user-chosen art.
 			if (update.img) {
-				if (DEBUG_LOGS) {
+				if (isDebugEnabled()) {
 					console.error("BaseActorSheet | preUpdateActor | image update detected, skipping type default");
 				}
 				return;
@@ -38,14 +38,14 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
                 const actorType = actor.type;
                 const typeConfigsForActorType = typeConfigs[actorType] || {};
                 const typeConfig = typeConfigsForActorType[typeKey];
-				if (DEBUG_LOGS) {
+				if (isDebugEnabled()) {
 					console.error("BaseActorSheet | typeConfig", typeConfig?.image);
 				}
 
 				const isKnownTypeImage = Object.values(typeConfigsForActorType).some(config => config.image === actor.img);
 				const isDefaultImage = actor.img == "icons/svg/mystery-man.svg" || isKnownTypeImage;
 				if (!isDefaultImage) {
-					if (DEBUG_LOGS) {
+					if (isDebugEnabled()) {
 						console.error("BaseActorSheet | preUpdateActor | custom image detected, skipping type default");
 					}
 					return;
@@ -53,7 +53,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 				if (isDefaultImage) {
 					if (typeConfig?.image) {
 						update.img = typeConfig.image;
-						if (DEBUG_LOGS) {
+						if (isDebugEnabled()) {
 							console.error(update.img);
 						}
 					} else {

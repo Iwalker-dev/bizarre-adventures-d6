@@ -1,6 +1,13 @@
 // modules/config.js
 export const BAD6 = {};
-export const DEBUG_LOGS = false;
+
+/**
+ * Returns whether debug logging is enabled from game settings.
+ * Falls back to false if settings aren't available yet.
+ */
+export function isDebugEnabled() {
+	return game.settings?.get("bizarre-adventures-d6", "debugLogs") ?? false;
+}
 
 
 // Core Configuration

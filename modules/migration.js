@@ -6,7 +6,7 @@ export async function migrateWorld() {
 		return;
 	}
 
-	const previous = game.settings.get("core", "systemMigrationVersion") || "0.0.0";
+	const previous = game.settings.get("bizarre-adventures-d6", "systemMigrationVersion") || "0.0.0";
 	if (!foundry.utils.isNewerVersion(current, previous)) return;
 
 	const isNewer = foundry.utils.isNewerVersion;
@@ -152,12 +152,9 @@ export async function migrateWorld() {
 		console.log("BAD6 | Applied 0.9.6 migration (moved info to bio) x");
 	}
 	// — Record that we’re now at `current` —
-	await game.settings.set("core", "systemMigrationVersion", current);
+	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
 }
 
-Hooks.once("init", () => {
-	game.system.migrateWorld = migrateWorld;
-});
 
 Hooks.once("ready", async () => {
 	if (!game.user.isGM) return;
