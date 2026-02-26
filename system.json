@@ -2,7 +2,7 @@
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
   "description": "A core system for the Bizarre Adventures D6 system.",
-  "version": "0.9.",
+  "version": "0.9.8",
   "authors": [
     {
       "name": "LONYO",
@@ -59,3 +59,4 @@
     ]
   }
 }
+
