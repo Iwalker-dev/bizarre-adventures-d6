@@ -839,3 +839,67 @@ export function showOptionalFormulaDialog({
 		}, 50);
 	});
 }
+/**
+ * Show a dialog for selecting a special stat (if any exist for the chosen stat).
+ * @param {Actor} actor - The actor performing the roll
+ * @param {string} statKey - The key of the chosen stat (e.g., "body", "luck")
+ * @param {string} statLabel - The label of the chosen stat for display
+ * @returns {Promise<string|null>} - Returns the special stat name if selected, null for base stat
+ */
+export async function showSpecialStatSelectionDialog(actor, statKey, statLabel) {
+	// Get the special stats array from the actor's stat
+	let specialStats = [];
+	
+	// Try to get from user actor stats
+	if (actor.system.attributes?.stats?.[statKey]?.special) {
+		specialStats = actor.system.attributes.stats[statKey].special;
+	}
+	// Try to get from sstats/ustats (older/alternate format)
+	else if (actor.system.attributes?.ustats?.[statKey]?.special) {
+		specialStats = actor.system.attributes.ustats[statKey].special;
+	}
+	else if (actor.system.attributes?.sstats?.[statKey]?.special) {
+		specialStats = actor.system.attributes.sstats[statKey].special;
+	}
+	
+	// Normalize and validate special stats
+	specialStats = Array.isArray(specialStats) ? specialStats.filter(s => s && typeof s === "object" && s.name) : [];
+	
+	if (!specialStats.length) {
+		// No special stats, return null (use base stat)
+		return null;
+	}
+
+	return new Promise(resolve => {
+		const buttons = {};
+		
+		// Add button for base stat (no special)
+		buttons["base-stat"] = {
+			label: `${escapeHtml(statLabel)} (Base)`,
+			callback: () => resolve(null)
+		};
+		
+		// Add buttons for each special stat
+		specialStats.forEach((special, index) => {
+			const displayName = `${escapeHtml(special.name)}`;
+			const points = special.points ? ` [${special.points}pts]` : "";
+			buttons[`special-${index}`] = {
+				label: `${displayName}${points}`,
+				callback: () => resolve(special.name)
+			};
+		});
+
+		const content = `<p>Select which special stat to use for this roll of <strong>${escapeHtml(statLabel)}</strong>:</p>`;
+
+		new Dialog({
+			title: `Choose Special Stat — ${escapeHtml(statLabel)}`,
+			content,
+			buttons,
+			default: "base-stat",
+			close: () => resolve(null) // Cancel returns null (base stat)
+		}, {
+			width: 400,
+			classes: ["special-stat-dialog"]
+		}).render(true);
+	});
+}

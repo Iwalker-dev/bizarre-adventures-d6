@@ -232,12 +232,40 @@ body {
   transition: color 0.2s ease;
 }
 
+.jojo-sheet .stat-star.filled-special {
+  color: var(--accent-dark);
+}
+
+.jojo-sheet .stat-star.special-single {
+  color: var(--accent-color);
+}
+
+.jojo-sheet .stat-star.special-multiple {
+  color: var(--accent-dark);
+}
+
 /* Filled and infinite overrides */
 .jojo-sheet .stat-star.filled {
   color: var(--accent-color);
 }
 .jojo-sheet .stat-stars.infinite .stat-star {
   color: crimson !important;
+}
+
+.jojo-sheet .stat-star.filled-special {
+  color: var(--accent-dark);
+}
+
+.jojo-sheet .stat-stars.has-special {
+  position: relative;
+}
+
+.jojo-sheet .stat-stars.has-special::after {
+  content: "✦";
+  font-size: 10px;
+  color: var(--accent-dark);
+  margin-left: 2px;
+  align-self: center;
 }
 /* ────────────────────────── Info Type Text ────────────────────────── */
 
