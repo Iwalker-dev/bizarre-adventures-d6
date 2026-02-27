@@ -29,6 +29,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			// Skip if the update explicitly sets an image to preserve user-chosen art.
 			if (update.img) {
 				if (isDebugEnabled()) {
+					console.warn(`[Actor Image Update] Explicit image change for actor "${actor.name}" (${actor.id}): ${actor.img} → ${update.img}`);
 					console.error("BaseActorSheet | preUpdateActor | image update detected, skipping type default");
 				}
 				return;
@@ -46,18 +47,20 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 				const isDefaultImage = actor.img == "icons/svg/mystery-man.svg" || isKnownTypeImage;
 				if (!isDefaultImage) {
 					if (isDebugEnabled()) {
-						console.error("BaseActorSheet | preUpdateActor | custom image detected, skipping type default");
+						console.error(`BaseActorSheet | preUpdateActor | [Actor Image Update] Custom image detected for actor "${actor.name}" (${actor.id}): keeping ${actor.img} (type change to ${typeKey} would have set: ${typeConfig?.image || "None (Mystery Man)"})`);
 					}
 					return;
-				}
-				if (isDefaultImage) {
+				} else {
 					if (typeConfig?.image) {
 						update.img = typeConfig.image;
 						if (isDebugEnabled()) {
-							console.error(update.img);
+							console.warn(`[Actor Image Update] Type-based image change for actor "${actor.name}" (${actor.id}): ${actor.img} → ${update.img} (type: ${typeKey})`);
 						}
 					} else {
 						update.img = "icons/svg/mystery-man.svg";
+						if (isDebugEnabled()) {
+							console.warn(`[Actor Image Update] Default image applied for actor "${actor.name}" (${actor.id}): ${actor.img} → ${update.img} (no type config found for ${typeKey})`);
+						}
 					}
 				}
             }
