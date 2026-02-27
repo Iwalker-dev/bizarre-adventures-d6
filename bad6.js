@@ -25,7 +25,16 @@ Hooks.once("init", async () => {
 		scope: "world",
 		config: false,
 		type: String,
-		default: "0.9.9"
+		default: "0.9.8"
+	});
+
+	game.settings.register("bizarre-adventures-d6", "welcomed", {
+		name: "BAD6 Welcomed",
+		hint: "Tracks whether the user has been welcomed to the system.",
+		scope: "world",
+		config: false,
+		type: Boolean,
+		default: true
 	});
 
 	game.settings.register("bizarre-adventures-d6", "debugLogs", {
