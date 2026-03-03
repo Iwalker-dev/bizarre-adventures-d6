@@ -356,6 +356,14 @@ export const typeConfigs = {
 		, Vampire: {
 			label: "Vampire"
       , image: "systems/bizarre-adventures-d6/assets/icons/powers/cracked-mask.svg"
+      , fields: [
+        {
+          name: "function",
+          label: "Function",
+          type: "textarea",
+          placeholder: "e.g. Vapor Freezing Technique"
+        }
+      ]
 			, statlabels: [
         "Strength (Power)"
         , "Senses (Precision)"
@@ -419,6 +427,20 @@ export const typeConfigs = {
 		, Spin: {
 			label: "Spin"
       , image: "systems/bizarre-adventures-d6/assets/icons/powers/ink-swirl.svg"
+      , fields: [
+        {
+          name: "device",
+          label: "Device",
+          type: "textarea",
+          placeholder: ""
+        },
+        {
+          name: "effect",
+          label: "Effect",  
+          type: "textarea",
+          placeholder: "e.g. Sinistral Ataxia"
+        }
+      ]
 			, statlabels: [
         "Mass (Power)"
         , "Manuverability (Precision)"

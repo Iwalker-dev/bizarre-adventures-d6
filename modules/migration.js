@@ -58,6 +58,7 @@ export async function migrateWorld() {
         <p> Please report any problems, ideas, or comments to itpart on Discord. I would love to make this the perfect system with your help! </p>`
 			, whisper: game.users.filter(u => u.isGM).map(u => u.id)
 		});
+		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 	}
 
 	// — 0.9.1 migration: “Learning” → “Luck” —
