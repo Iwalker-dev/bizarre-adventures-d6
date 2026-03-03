@@ -30,30 +30,11 @@ export async function migrateWorld() {
 			await Actor.create(actorData);
 			ui.notifications.info(`BAD6 Migration | Actor ${actor.name} (${actor.id}) migrated to type "${actorData.type}".`);
 		}
-		// For old stand actors, relocate their attributes to the new stats structure
-		if (actor.type === "character" && actor.system.attributes.sstats) {
-			await actor.update({
-				"system.attributes.stats": actor.system.attributes.sstats
-				, "system.attributes.stats.learning.dtype": 'Burn'
-				, "system.attributes.-=sstats": null
-				, "system.attributes.-=advantage": null
-				, "system.attributes.-=sroll": null
-			, });
-			// Set actors to the correct type by creating a new actor object
-			const actorData = foundry.utils.duplicate(actor.toObject());
-			actorData.type = "stand";
-			delete actorData._id;
-			actorData.folder = actor.folder?.id;
-			actorData.ownership = actor.ownership;
-			await actor.delete();
-			await Actor.create(actorData);
-			ui.notifications.info(`BAD6 Migration | Actor ${actor.name} (${actor.id}) migrated to type "${actorData.type}".`);
-		}
-
 	}
 
 	// — First ever world load —
-	if (previous === "0.0.0") {
+	const shouldWelcome = game.settings.get("bizarre-adventures-d6", "welcomed");
+	if (shouldWelcome) {
 		ChatMessage.create({
 			user: game.user.id
 			, speaker: {
@@ -77,6 +58,7 @@ export async function migrateWorld() {
         <p> Please report any problems, ideas, or comments to itpart on Discord. I would love to make this the perfect system with your help! </p>`
 			, whisper: game.users.filter(u => u.isGM).map(u => u.id)
 		});
+		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 	}
 
 	// — 0.9.1 migration: “Learning” → “Luck” —

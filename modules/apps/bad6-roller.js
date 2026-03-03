@@ -15,6 +15,7 @@ import {
 	showMulliganDialog,
 	showPersistDialog,
 	showStatDialog,
+	showSpecialStatSelectionDialog,
 	getActorDisplayName
 } from "../dialog.js";
 import { isDebugEnabled } from "../config.js";
@@ -1052,6 +1053,9 @@ async function prepareOneStep(side, rollIndex, state, messageId = null) {
 
 	rollProcessGambitDefaults.feint = !!stat.gambitSelections?.feint;
 
+	// Ask user to select a special stat if any exist for this stat
+	const specialStatSelected = await showSpecialStatSelectionDialog(actor, stat.key, stat.label);
+
 	return {
 		actorUuid: actor.uuid,
 		luckActorUuid: stat.luckActorUuid || null,
@@ -1062,7 +1066,8 @@ async function prepareOneStep(side, rollIndex, state, messageId = null) {
 		baseFormula: `(${stat.value}d6cs>=5)`,
 		advantage: Number(stat.advantage || 0),
 		feintCount: stat.feintCount || 0,
-		gambitSelections: stat.gambitSelections || null
+		gambitSelections: stat.gambitSelections || null,
+		specialStatSelected: specialStatSelected || null
 	};
 }
 

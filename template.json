@@ -21,7 +21,8 @@
                     "body":     {
                         "dtype": "Number",   
                         "label": "Body",     
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "ustats" 
                     },
 				    "luck":     {
@@ -33,25 +34,29 @@
 				    "menacing": { 
                         "dtype": "Number",   
                         "label": "Menacing", 
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "ustats" 
                     },
                     "pluck":    { 
                         "dtype": "Number",   
                         "label": "Pluck",    
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "ustats" 
                     },
                     "reason":   { 
                         "dtype": "Number",   
                         "label": "Reason",   
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "ustats" 
                     },
                     "wit":      { 
                         "dtype": "Number",   
                         "label": "Wit",      
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "ustats" 
                     }
                 }
@@ -78,7 +83,8 @@
                     "durability": { 
                         "dtype": "Number",   
                         "label": "Durability", 
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "sstats" 
                     },
 					"learning":   { 
@@ -90,25 +96,29 @@
 					"power":      { 
                         "dtype": "Number",   
                         "label": "Power",      
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "sstats" 
                     },
 					"precision":  { 
                         "dtype": "Number",   
                         "label": "Precision",  
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "sstats" 
                     },
 					"range":      { 
                         "dtype": "Number", 
                         "label": "Range",      
                         "value": 0,
+                        "special": [],
                         "group": "sstats" 
                     },
 					"speed":      { 
                         "dtype": "Number",   
                         "label": "Speed",      
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "sstats" 
                     }
                 }
@@ -132,7 +142,8 @@
                     "durability": { 
                         "dtype": "Number",   
                         "label": "Durability", 
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "sstats" 
                     },
                     "learning":   { 
@@ -144,25 +155,29 @@
                     "power":      { 
                         "dtype": "Number",   
                         "label": "Power",      
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "sstats" 
                     },
                     "precision":  { 
                         "dtype": "Number",   
                         "label": "Precision",  
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "sstats" 
                     },
                     "range":      { 
                         "dtype": "Number", 
                         "label": "Range",      
                         "value": 0,
+                        "special": [],
                         "group": "sstats" 
                     },
                     "speed":      { 
                         "dtype": "Number",   
                         "label": "Speed",      
-                        "value": 0, 
+                        "value": 0,
+                        "special": [], 
                         "group": "sstats" 
                     }
                 }

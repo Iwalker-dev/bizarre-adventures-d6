@@ -90,7 +90,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 ### - 2026-2-18
 #### Fixes
 - Migrations now take advantage of foundry migration hooks.
-## [0.9.8-9] - 2026-2-26
+## [0.9.8] - 2026-2-26
 ### - 2026-2-26
 #### Fixes
 - Migrations *now* take advantage of foundry migration hooks.
@@ -101,6 +101,23 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - defined single universal init for readability
 - toggleable debug log option added to settings
 - moved duplicate cost logic to base actor
+### - 2026-2-27
+- Added Special stat handling
+## [0.9.8.1] - 2026-2-28
+#### Fixes
+- Fixed 'infinite' roll logic
+- Attempted fix for potential syncing issues during rolls
+## [0.9.8.2] - 2026-3-2
+#### Fixes
+- Welcome doesnt occur every boot.
+## [0.9.8.3] - 2026-3-3
+#### Fixes
+- Simplified birthday field to avoid bug with saving year
+- Added Function field for Vampires
+
+
+
+
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option

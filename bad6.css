@@ -240,12 +240,65 @@ body {
   cursor: pointer;
   transition: color 0.2s ease;
 }
+.jojo-sheet .stat-star-stack {
+  width: 24px;
+  height: 24px;
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+.jojo-sheet .stat-star-stack .stat-star {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  text-align: center;
+  pointer-events: none;
+}
+.jojo-sheet .stat-star-stack .layer-empty {
+  color: #999;
+  z-index: 1;
+}
+.jojo-sheet .stat-star-stack .layer-behind {
+  color: var(--accent-dark);
+  z-index: 2;
+  transform: scale(1.08) translate(1px, 1px);
+}
+.jojo-sheet .stat-star-stack .layer-base {
+  color: var(--accent-color);
+  z-index: 3;
+}
+.jojo-sheet .stat-star-stack .layer-front {
+  color: var(--accent-dark);
+  z-index: 4;
+  transform: scale(0.78) translate(-1px, -1px);
+}
+.jojo-sheet .stat-star-stack .layer-overlap {
+  color: var(--accent-light);
+  z-index: 5;
+  transform: scale(0.65) translate(0, -2px);
+}
 /* Filled and infinite overrides */
 .jojo-sheet .stat-star.filled {
   color: var(--accent-color);
 }
 .jojo-sheet .stat-stars.infinite .stat-star {
   color: crimson !important;
+}
+.jojo-sheet .stat-star.filled-special {
+  color: var(--accent-dark);
+}
+.jojo-sheet .stat-stars.has-special {
+  position: relative;
+}
+.jojo-sheet .stat-stars.has-special::after {
+  content: "✦";
+  font-size: 10px;
+  color: var(--accent-dark);
+  margin-left: 2px;
+  align-self: center;
 }
 /* ────────────────────────── Info Type Text ────────────────────────── */
 .jojo-sheet .ability-description {
