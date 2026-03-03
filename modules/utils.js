@@ -99,3 +99,18 @@ export async function preloadHandlebarsTemplates() {
 	Handlebars.registerPartial("actor-stats", statsTp1);
 	Handlebars.registerPartial("item-formula", formulaTpl);
 }
+
+// Rolling related helpers
+
+
+
+/**
+ * Check whether the current user can see roll formulas for an actor.
+ * @param {Actor|null} actor
+ * @returns {boolean}
+ */
+export function canViewActorFormula(actor) {
+	if (game.user.isGM) return true;
+	if (!actor) return false;
+	return !!actor.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+}

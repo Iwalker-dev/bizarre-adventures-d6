@@ -114,8 +114,11 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 #### Fixes
 - Simplified birthday field to avoid bug with saving year
 - Added Function field for Vampires
-
-
+## [0.9.8.4] - 2026-3-3
+- Altered contest and roll flow for better user-friendliness
+- Added proper feint logic
+- Replaced depreciating functions
+- Optimized roller for organization, performance, readability, etc.
 
 
 # What's left?
