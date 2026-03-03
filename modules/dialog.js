@@ -173,6 +173,40 @@ export function showMulliganDialog({ gambitDefault = false } = {}) {
 
 
 /**
+ * Prompt for Feint gambit usage.
+ * @param {Object} options
+ * @param {boolean} [options.gambitDefault]
+ * @returns {Promise<{useGambit:boolean}>}
+ */
+export function showFeintGambitDialog({ gambitDefault = false } = {}) {
+	const content = `
+		<label style="display:block;">
+			<input type="checkbox" id="use-gambit-feint" ${gambitDefault ? "checked" : ""}>
+			<strong>Gambit</strong> — Nullify Feint cost
+		</label>
+	`;
+	return showChoiceDialog({
+		title: "Feint",
+		content,
+		buttons: {
+			Yes: {
+				label: "Feint",
+				callback: (html) => ({
+					useGambit: !!html.find("#use-gambit-feint").prop("checked")
+				})
+			},
+			Cancel: {
+				label: "Cancel",
+				callback: (html) => null
+			}
+		},
+		defaultId: "Yes",
+		closeValue: null
+	});
+}
+
+
+/**
  * Prompt for Persist usage.
  * @param {Object} options
  * @param {boolean} [options.gambitDefault]
@@ -268,8 +302,8 @@ export function showPersistDialog({
  * @param {Actor} actor
  * @param {Object} [options]
  * @param {boolean} [options.showLuckOptions]
- * @param {boolean} [options.allowFeint]
  * @param {boolean} [options.allowGambit]
+ * @param {boolean} [options.allowFeint]
  * @param {string} [options.lockMessage]
  * @param {Function|null} [options.canProceed]
  * @param {boolean} [options.advantageLocked]
@@ -277,13 +311,13 @@ export function showPersistDialog({
  * @param {string} [options.advantageChosenBy]
  * @param {string} [options.advantageLockReason]
  * @param {Object} [options.gambitDefaults]
- * @returns {Promise<{key:string,label:string,value:number,advantage:number,feintCount:number,luckActorUuid:string|null,gambitSelections:{feint:boolean}}|null>}
+ * @returns {Promise<{key:string,label:string,value:number,advantage:number,luckActorUuid:string|null,gambitSelections:object,feintCount:number}|null>}
  */
 export async function showStatDialog(actor, options = {}) {
 	const {
 		showLuckOptions = true,
-		allowFeint = true,
 		allowGambit = true,
+		allowFeint = false,
 		lockMessage = "The previous roll must be completed first.",
 		canProceed = null,
 		advantageLocked = false,
@@ -400,11 +434,7 @@ export async function showStatDialog(actor, options = {}) {
 		const luckActorUuid = luckActor?.uuid || null;
 		const luck = luckActor.system?.attributes?.stats?.luck;
 		const tempLuck = luck?.temp || 0;
-		const feintCost = 1;
-		const feintState = { count: 0, messageId: null };
-		const gambitState = {
-			feint: !!gambitDefaults?.feint
-		};
+		const gambitState = {};
 		const selectedAdv = advantageLocked
 			? (Number.isFinite(Number(advantageValue)) ? Number(advantageValue) : 0)
 			: null;
@@ -441,40 +471,13 @@ export async function showStatDialog(actor, options = {}) {
 			resolve(value);
 		};
 
-		/**
-		 * Cancel any pending feints and clean up their chat messages.
-		 * @returns {Promise<void>}
-		 */
-		const cancelFeints = async () => {
-			if (feintState.count > 0) {
-				if (feintState.messageId) {
-					try {
-						const msg = game.messages.get(feintState.messageId);
-						if (msg) await msg.delete();
-					} catch (e) { }
-				}
-				const cancelText = feintState.count > 1 ? ` x${feintState.count}` : "";
-				const displayName = getActorDisplayName(actor);
-				const cancelMsg = await ChatMessage.create({
-					speaker: ChatMessage.getSpeaker({ actor }),
-					content: `<strong>${escapeHtml(displayName)}</strong> - Feint${cancelText} Cancelled!`,
-					whisper: game.users.filter(u => u.isGM).map(u => u.id)
-				});
-				setTimeout(() => {
-					try { cancelMsg.delete(); } catch (e) { }
-				}, 2000);
-			}
-			feintState.count = 0;
-			feintState.messageId = null;
-		};
+
 
 		/**
 		 * Build dialog HTML for stat selection and Luck options.
 		 * @returns {{formHtml: string, dlgClass: string}}
 		 */
 		const buildFormHtml = () => {
-			const canFeint = allowFeint && (gambitState.feint || (tempLuck - feintState.count) >= feintCost);
-			const showClear = feintState.count > 0;
 
 			let content = "";
 
@@ -496,24 +499,6 @@ export async function showStatDialog(actor, options = {}) {
 					</label>`;
 			}
 			content += `</div></div>`;
-
-			if (showLuckOptions && (allowFeint || allowGambit)) {
-				content += `<div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">`;
-				content += `<p><strong>Luck Options</strong></p>`;
-				content += `<div style="margin: 8px 0; padding: 8px; background: #fff; border-radius: 4px;">
-					<p style="margin: 5px 0;"><strong>Feints</strong> (Cost: ${feintCost} Temp Luck each, have: ${tempLuck})</p>
-					${allowGambit ? `<label style="display:block; margin: 6px 0;">
-						<input type="checkbox" id="use-gambit-feint" ${gambitState.feint ? "checked" : ""}>
-						<strong>Gambit</strong> — Nullify Feint cost
-					</label>` : ""}
-					<div style="display: flex; gap: 8px; align-items: center;">
-						<button type="button" id="btn-add-feint" ${!canFeint ? "disabled" : ""} style="padding: 4px 12px; cursor: ${canFeint ? "pointer" : "not-allowed"}; opacity: ${canFeint ? "1" : "0.5"};">+ Feint</button>
-						${showClear ? `<button type="button" id="btn-clear-feint" style="padding: 4px 12px; cursor: pointer;">⊗ Clear</button>` : ""}
-						<span id="feint-display" style="font-weight: bold; min-width: 60px;">Count: ${feintState.count}</span>
-					</div>
-					${allowFeint ? "" : ``}
-				</div></div>`;
-			}
 
 			content += `<p style="margin: 10px 0 5px 0;"><strong>Select a Stat:</strong></p>`;
 
@@ -537,30 +522,10 @@ export async function showStatDialog(actor, options = {}) {
 				const form = root.querySelector(`.${dlgClass}`);
 				if (!form) return;
 
-				const feintGambitCheckbox = (showLuckOptions && allowGambit) ? root.querySelector("#use-gambit-feint") : null;
-				const addFeintBtn = showLuckOptions ? root.querySelector("#btn-add-feint") : null;
-				const clearFeintBtn = showLuckOptions ? root.querySelector("#btn-clear-feint") : null;
-				const feintDisplay = showLuckOptions ? root.querySelector("#feint-display") : null;
-				if (feintDisplay) feintDisplay.textContent = `Count: ${feintState.count}`;
-
 				const getAdvantageValue = () => {
 					const selected = root.querySelector('input[name="advantage"]:checked');
 					return selected ? Number(selected.value) : null;
 				};
-
-				const rerenderDialog = () => {
-					isRerendering = true;
-					if (dialogInstance) dialogInstance.close();
-					isRerendering = false;
-					renderDialog();
-				};
-
-				if (feintGambitCheckbox) {
-					feintGambitCheckbox.addEventListener("change", () => {
-						gambitState.feint = !!feintGambitCheckbox.checked;
-						rerenderDialog();
-					});
-				}
 
 				form.querySelectorAll(".stat-button").forEach(btn => {
 					btn.addEventListener("click", async () => {
@@ -578,55 +543,20 @@ export async function showStatDialog(actor, options = {}) {
 							}
 							statResolved = true;
 							dialogInstance.close();
-							resolveOnce({
-								key: btnData.key,
-								label: btnData.statName,
-								value: btnData.statValue,
-								advantage: advValue,
-								feintCount: feintState.count,
-								luckActorUuid,
-								gambitSelections: {
-									feint: !!(feintGambitCheckbox?.checked ?? gambitState.feint)
-								}
+							
+						// Stat selection confirmed
+						resolveOnce({
+							key: btnData.key,
+							label: btnData.statName,
+							value: btnData.statValue,
+							advantage: advValue,
+							luckActorUuid,
+							gambitSelections: null,
+							feintCount: 0
 							});
 						}
 					});
 				});
-
-				if (addFeintBtn) {
-					addFeintBtn.addEventListener("click", async () => {
-						const usingGambit = feintGambitCheckbox?.checked || false;
-						const effectiveCost = usingGambit ? 0 : feintCost;
-						if (!usingGambit && tempLuck - feintState.count < effectiveCost) {
-							ui.notifications.warn("Not enough temp luck for another feint!");
-							return;
-						}
-						feintState.count++;
-
-						const feintText = feintState.count > 1 ? ` x${feintState.count}` : "";
-						const displayName = getActorDisplayName(actor);
-						const content = `<strong>${escapeHtml(displayName)} is feinting!</strong>${feintText}`;
-						let msg = feintState.messageId ? game.messages.get(feintState.messageId) : null;
-						if (msg) {
-							try { await msg.update({ content }); } catch (e) { }
-						} else {
-							msg = await ChatMessage.create({
-								speaker: ChatMessage.getSpeaker({ actor }),
-								content,
-								whisper: game.users.filter(u => u.isGM).map(u => u.id)
-							});
-							feintState.messageId = msg.id;
-						}
-						rerenderDialog();
-					});
-				}
-
-				if (clearFeintBtn) {
-					clearFeintBtn.addEventListener("click", async () => {
-						await cancelFeints();
-						rerenderDialog();
-					});
-				}
 			}, 50);
 		};
 
@@ -647,7 +577,6 @@ export async function showStatDialog(actor, options = {}) {
 					if (isRerendering) return;
 					if (!statResolved) {
 						resolveOnce(null);
-						await cancelFeints();
 					}
 				}
 			}, {
@@ -675,6 +604,7 @@ export async function showStatDialog(actor, options = {}) {
  * @param {boolean} [options.gambitDefault]
  * @param {Function} [options.computeAdvantageFromLines]
  * @param {string} [options.context] - Context label like "Action 1" or "Reaction 2"
+ * @param {string} [options.luckActorUuid] - UUID of the luck spender actor
  * @returns {Promise<{chosenOptionalIndices:number[], useFudgeSelected:boolean, useGambitSelected:boolean}|null>}
  */
 export function showOptionalFormulaDialog({
@@ -687,7 +617,8 @@ export function showOptionalFormulaDialog({
 	actor,
 	gambitDefault = false,
 	computeAdvantageFromLines,
-	context = ""
+	context = "",
+	luckActorUuid = null
 } = {}) {
 	return new Promise(resolve => {
 		const dlgClass = `optional-lines-${Date.now()}`;
@@ -698,9 +629,10 @@ export function showOptionalFormulaDialog({
 			const initialPreviewAdv = computeAdvantageFromLines
 				? computeAdvantageFromLines([...required, ...optionalLines])
 				: 0;
+			const luckActorOverride = luckActorUuid ? fromUuidSync(luckActorUuid) : null;
 			const fudgeCheck = hasFudgeLock
 				? { canUse: false, reason: fudgeLockReason }
-				: canUseFudge(actor, initialPreviewAdv, useGambitSelected);
+				: canUseFudge(actor, initialPreviewAdv, useGambitSelected, luckActorOverride);
 			const fudgeCost = useGambitSelected ? 0 : 2;
 			const fudgeDisabled = !fudgeCheck.canUse ? "disabled" : "";
 			const fudgeOpacity = fudgeCheck.canUse ? "1" : "0.6";

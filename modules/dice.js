@@ -30,9 +30,10 @@ import { showOptionalFormulaDialog } from "./dialog.js";
  * @param {boolean} [showFudge=true]
  * @param {string} [fudgeLockReason=""]
  * @param {string} [context=""] - Context label like "Action 1" or "Reaction 2"
+ * @param {string} [luckActorUuid=null] - UUID of the luck spender actor
  * @returns {Promise<{formula:string,useFudge:boolean,useGambitForFudge:boolean}|{formula:string,useFudge:boolean}|null>}
  */
-export async function prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge = false, useGambitForFudge = false, showFudge = true, fudgeLockReason = "", context = "") {
+export async function prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge = false, useGambitForFudge = false, showFudge = true, fudgeLockReason = "", context = "", luckActorUuid = null) {
 	try {
 		if (!actor || !baseFormula) return { formula: baseFormula, useFudge: false };
 
@@ -116,7 +117,8 @@ export async function prepareFormula(actor, baseFormula, statKey, statLabel, adv
 				actor,
 				gambitDefault: useGambitSelected,
 				computeAdvantageFromLines,
-				context
+				context,
+				luckActorUuid
 			});
 			if (dialogResult === null) return null;
 			chosenOptionalIndices = dialogResult.chosenOptionalIndices || [];
@@ -250,4 +252,80 @@ function findValueInData(obj, key) {
 		}
 	}
 	return undefined;
+}
+/**
+ * Parse the cs>=N threshold from a formula.
+ * @param {string} formula
+ * @returns {number}
+ */
+export function parseThreshold(formula) {
+	const match = /cs\s*>=\s*([0-9]+)/i.exec(formula || "");
+	return match ? Number(match[1]) : 5;
+}
+
+/**
+ * Extract d6 results from a roll.
+ * @param {Roll} roll
+ * @returns {number[]}
+ */
+export function extractDiceResults(roll) {
+	const dice = roll?.dice?.[0];
+	if (!dice || !Array.isArray(dice.results)) return [];
+	return dice.results.map(r => Number(r.result)).filter(n => !Number.isNaN(n));
+}
+
+/**
+ * Count successes given a threshold.
+ * @param {number[]} results
+ * @param {number} threshold
+ * @returns {number}
+ */
+export function countSuccesses(results, threshold) {
+	return results.reduce((sum, n) => sum + (n >= threshold ? 1 : 0), 0);
+}
+
+/**
+ * Build a roll snapshot for chat rendering and luck logic.
+ * @param {Roll} roll
+ * @param {string} formula
+ * @param {number} advantage
+ * @returns {{formula:string,threshold:number,diceResults:number[],delta:number,advantage:number,total:number}}
+ */
+export function buildRollSnapshot(roll, formula, advantage) {
+	const threshold = parseThreshold(formula);
+	const diceResults = extractDiceResults(roll);
+	const baseSuccesses = countSuccesses(diceResults, threshold);
+	const delta = (roll?.total ?? 0) - baseSuccesses;
+	return {
+		formula,
+		threshold,
+		diceResults,
+		delta,
+		advantage: Number(advantage || 0),
+		total: roll?.total ?? 0
+	};
+}
+
+export function statValueToDiceCount(value) {
+	if (value === 6) return 10;
+	return value;
+}
+
+/**
+ * Play Dice So Nice animation if available.
+ * @param {Roll} roll
+ * @returns {Promise<void>}
+ */
+export async function playDiceAnimation(roll) {
+	const dice3d = game?.dice3d;
+	if (!dice3d?.showForRoll) return;
+
+	const users = game.users
+		.filter(u => u.active)
+		.map(u => u.id);
+
+	await dice3d.showForRoll(roll, game.user, {
+		synchronize: true,
+		users
+	});
 }

@@ -68,7 +68,7 @@ function resolveLinkedActorSync(linked) {
 	return null;
 }
 
-function resolveLuckActorSync(actor) {
+export function resolveLuckActorSync(actor) {
 	if (!actor) return null;
 
 	// Prefer a user-type actor (self or linked) for spending luck
@@ -218,14 +218,94 @@ export async function spendLuckMove(actor, moveKey, hasGambit = false, feintCoun
 }
 
 /**
+ * Refund luck for a luck move with optional cap enforcement.
+ * When refunding to temp luck, if the result would exceed 5 and the actor
+ * didn't already exceed 5 before refunding, cap at 5 and show a warning.
+ * @param {Actor} actor - The actor getting luck refunded
+ * @param {string} moveKey - The luck move key
+ * @param {boolean} hasGambit - Whether Gambit was used (refunds 0 if true)
+ * @param {number} feintCount - Number of feints used (for feint move only)
+ * @param {Actor|null} luckActorOverride - Override luck actor to use
+ * @returns {Promise<{success: boolean, error: string|null, capped: boolean}>}
+ */
+export async function refundLuckMove(actor, moveKey, hasGambit = false, feintCount = 0, luckActorOverride = null) {
+	const move = LUCK_MOVES[moveKey];
+	if (!move) return { success: false, error: "Invalid luck move", capped: false };
+
+	const luckActor = luckActorOverride || await resolveLuckActor(actor);
+	if (!luckActor) return { success: false, error: "No actor with Luck found", capped: false };
+	const luck = luckActor.system.attributes.stats.luck;
+
+	// If Gambit was used, nothing to refund
+	if (hasGambit && moveKey !== "gambit") {
+		console.log(`BAD6 | ${actor.name} refunding ${move.name} - was Gambit, no cost to refund`);
+		return { success: true, error: null, capped: false };
+	}
+
+	// Calculate effective cost
+	let effectiveCost = move.cost;
+	
+	// For feint, multiply cost by feint count
+	if (moveKey === "feint" && feintCount > 0) {
+		effectiveCost = move.cost * feintCount;
+	}
+
+	if (move.costType === "temp") {
+		const currentTemp = luck.temp || 0;
+		const newTemp = currentTemp + effectiveCost;
+		const maxTemp = 5;
+		let finalTemp = newTemp;
+		let capped = false;
+
+		// If refunding would exceed 5 and we weren't already over 5, cap at 5 and warn
+		if (newTemp > maxTemp && currentTemp <= maxTemp) {
+			finalTemp = maxTemp;
+			capped = true;
+			console.log(`BAD6 | ${actor.name} refunded ${effectiveCost} temp luck for ${move.name}, capped at 5 (was ${currentTemp})`);
+		} else {
+			console.log(`BAD6 | ${actor.name} refunded ${effectiveCost} temp luck for ${move.name} (${currentTemp} → ${finalTemp})`);
+		}
+
+		await luckActor.update({
+			"system.attributes.stats.luck.temp": finalTemp
+		});
+
+		return { success: true, error: null, capped };
+	} else if (move.costType === "perm") {
+		const currentPerm = luck.perm || 0;
+		const newPerm = currentPerm + effectiveCost;
+		const maxPerm = 5;
+		let finalPerm = newPerm;
+		let capped = false;
+
+		// If refunding would exceed 5 and we weren't already over 5, cap at 5 and warn
+		if (newPerm > maxPerm && currentPerm <= maxPerm) {
+			finalPerm = maxPerm;
+			capped = true;
+			console.log(`BAD6 | ${actor.name} refunded ${effectiveCost} perm luck for ${move.name}, capped at 5 (was ${currentPerm})`);
+		} else {
+			console.log(`BAD6 | ${actor.name} refunded ${effectiveCost} perm luck for ${move.name} (${currentPerm} → ${finalPerm})`);
+		}
+
+		await luckActor.update({
+			"system.attributes.stats.luck.perm": finalPerm
+		});
+
+		return { success: true, error: null, capped };
+	}
+
+	return { success: false, error: "Unknown cost type", capped: false };
+}
+
+/**
  * Check if Fudge can be used, accounting for advantage cap
  * @param {Actor} actor - The actor
  * @param {number} currentAdvantage - Current advantage level
  * @param {boolean} hasGambit - Whether Gambit is being used
  * @returns {Object} { canUse: boolean, reason: string, currentLuck: number }
  */
-export function canUseFudge(actor, currentAdvantage = 0, hasGambit = false) {
-	const luckActor = resolveLuckActorSync(actor);
+export function canUseFudge(actor, currentAdvantage = 0, hasGambit = false, luckActorOverride = null) {
+	const luckActor = luckActorOverride || resolveLuckActorSync(actor);
 	const luck = luckActor?.system?.attributes?.stats?.luck;
 	if (!luck) return { canUse: false, reason: "Actor has no Luck stat", currentLuck: 0 };
 
@@ -295,91 +375,6 @@ export function getAvailableLuckMoves(actor, timing = "anytime", hasGambit = fal
  * @param {boolean} hasGambit - Whether Gambit is being used
  * @returns {Object} { html: string, feintCount: 0, messageId: null, addFeint, clearFeints, getCount }
  */
-export function createFeintCounter(actor, hasGambit = false) {
-	const state = {
-		feintCount: 0,
-		messageId: null,
-		hasGambit
-	};
-
-	const luck = actor.system.attributes?.stats?.luck;
-	const tempLuck = luck?.temp || 0;
-	const cost = hasGambit ? 0 : 1;
-
-	const html = `
-		<div id="feint-counter" style="border-top: 1px solid #ccc; margin-top: 10px; padding-top: 10px;">
-			<p style="margin: 5px 0;"><strong>Feint Counter</strong></p>
-			<p style="font-size: 0.85em; color: #666;">Cost: ${cost} Temp Luck per feint</p>
-			<div style="display: flex; gap: 8px; align-items: center;">
-				<button id="btn-add-feint" style="padding: 4px 12px; cursor: pointer;">+ Feint</button>
-				<button id="btn-clear-feint" style="padding: 4px 12px; cursor: pointer;">⊗ Clear</button>
-				<span id="feint-display" style="font-weight: bold; min-width: 50px;">Count: 0</span>
-			</div>
-		</div>
-	`;
-
-	return {
-		html,
-		state,
-		canAddFeint: () => {
-			const effectiveCost = hasGambit ? 0 : 1;
-			return tempLuck >= effectiveCost;
-		},
-		addFeint: async function(formElement) {
-			if (!this.canAddFeint()) {
-				ui.notifications.warn("Not enough temp luck for another feint!");
-				return false;
-			}
-			this.state.feintCount++;
-			const display = formElement.querySelector("#feint-display");
-			if (display) {
-				display.textContent = `Count: ${this.state.feintCount}`;
-			}
-			// Delete old message if exists
-			if (this.state.messageId) {
-				const oldMsg = game.messages.get(this.state.messageId);
-				if (oldMsg) await oldMsg.delete();
-			}
-			// Send new feint message
-			const msg = await ChatMessage.create({
-				speaker: ChatMessage.getSpeaker({ actor }),
-				content: `<strong>${actor.name} is feinting!</strong> x${this.state.feintCount}`,
-				whisper: game.users.filter(u => u.isGM).map(u => u.id)
-			});
-			this.state.messageId = msg.id;
-			return true;
-		},
-		clearFeints: async function(formElement) {
-			if (this.state.feintCount > 0) {
-				// Delete feint message
-				if (this.state.messageId) {
-					const msg = game.messages.get(this.state.messageId);
-					if (msg) await msg.delete();
-				}
-				// Send cancel message
-				const cancelMsg = await ChatMessage.create({
-					speaker: ChatMessage.getSpeaker({ actor }),
-					content: `<strong>${actor.name}</strong> Feint x${this.state.feintCount} Cancelled!`,
-					whisper: game.users.filter(u => u.isGM).map(u => u.id)
-				});
-				// Delete cancel message after a short delay
-				setTimeout(() => {
-					cancelMsg.delete();
-				}, 2000);
-			}
-			this.state.feintCount = 0;
-			const display = formElement.querySelector("#feint-display");
-			if (display) {
-				display.textContent = "Count: 0";
-			}
-			this.state.messageId = null;
-		},
-		getCount: function() {
-			return this.state.feintCount;
-		}
-	};
-}
-
 /**
  * Show a dialog to select a luck move for a given timing
  * @param {Actor} actor - The actor to check
