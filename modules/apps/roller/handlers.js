@@ -2,24 +2,66 @@
  * Event handlers for BAD6 contest roller UI.
  */
 
-import { CSS_CLASSES, NOTIFICATION_MESSAGES } from "./constants.js";
+import { CSS_CLASSES, NOTIFICATION_MESSAGES, STATUS_MESSAGES } from "./constants.js";
 import {
 	getContestStateFromMessage,
 	getQuadrantRoll,
-	getPairState,
 	parseQuadrant,
 	clearPreparedRoll,
 	getFirstUnresolvedStep,
 	applyPreparedToState
 } from "./state.js";
-import { buildContestHtml } from "./render.js";
 import { canViewActorFormula } from "../../utils.js";
-import { canUseLuckMove, refundLuckMove } from "../../luck-moves.js";
-import { showFeintGambitDialog } from "../../dialog.js";
+import { handleUnreadyAction } from "./unready-action.js";
+import { handleFeintAction } from "./feint-action.js";
+import { closeContestDialogs } from "./dialog-lifecycle.js";
 
 // Import functions needed from main file (will be defined when we refactor main)
 // These will be exported from the main roller file or a resolution module
 let prepareOneStep, resolveContest, updateContestMessage, resolveActorFromUuidSync, resolveActorFromSpeaker;
+let delegatedClickBound = false;
+let contestSyncHookBound = false;
+
+/**
+ * Handle a delegated roller button click.
+ * @param {MouseEvent} event
+ * @returns {Promise<void>}
+ */
+async function handleDelegatedRollerClick(event) {
+	const target = event.target?.closest?.(`button.${CSS_CLASSES.ROLL_BTN}, button.${CSS_CLASSES.ACTION_BTN}, button[data-action]`);
+	if (!target) return;
+
+	const messageEl = target.closest?.("[data-message-id]");
+	const messageId = messageEl?.dataset?.messageId || "";
+	if (!messageId) return;
+
+	const message = game.messages.get(messageId);
+	const contest = getContestStateFromMessage(message);
+	if (!contest) return;
+
+	event.preventDefault();
+
+	if (target.classList?.contains(CSS_CLASSES.ROLL_BTN)) {
+		const quadrant = target.dataset?.quadrant;
+		const parsed = quadrant ? parseQuadrant(quadrant) : null;
+		if (!parsed || !["action", "reaction"].includes(parsed.side)) return;
+		await handlePrepareClick(messageId, quadrant);
+		return;
+	}
+
+	const action = target.dataset?.action;
+	if (!action) return;
+	const quadrant = target.dataset?.quadrant;
+	const parsed = quadrant ? parseQuadrant(quadrant) : null;
+
+	if (action === "resolve") {
+		await handleResolveClick(messageId);
+	} else if (action === "unready" && parsed && ["action", "reaction"].includes(parsed.side)) {
+		await handleUnreadyClick(messageId, parsed.side, parsed.rollIndex);
+	} else if (action === "feint" && parsed && ["action", "reaction"].includes(parsed.side)) {
+		await handleFeintClick(messageId, parsed.side, parsed.rollIndex);
+	}
+}
 
 /**
  * Initialize handler dependencies.
@@ -87,45 +129,12 @@ export async function handlePrepareClick(messageId, quadrant) {
  * @returns {Promise<void>}
  */
 export async function handleUnreadyClick(messageId, side, rollIndex) {
-	const latest = game.messages.get(messageId);
-	const state = getContestStateFromMessage(latest);
-	if (!state) return;
-	
-	// Get the roll data before clearing it
-	const rollData = getQuadrantRoll(state, side, rollIndex);
-	
-	// If this roll had feints, refund the luck
-	if (rollData && rollData.feintCount > 0) {
-		const actor = rollData.actorUuid ? await fromUuid(rollData.actorUuid) : null;
-		const luckActor = rollData.luckActorUuid ? await fromUuid(rollData.luckActorUuid) : actor;
-		
-		if (actor && luckActor) {
-			// Get the gambit selections for this roll's feints
-			const useGambit = rollData.gambitSelections?.feint || false;
-			
-			const refundResult = await refundLuckMove(actor, "feint", useGambit, rollData.feintCount, luckActor);
-			
-			if (refundResult.success) {
-				if (refundResult.capped) {
-					ui.notifications.warn(NOTIFICATION_MESSAGES.LUCK_REFUNDED_CAPPED);
-				}
-			} else if (refundResult.error) {
-				ui.notifications.error(refundResult.error);
-			}
-		}
-	}
-	
-	// Reset the roll and advantage locks for this side
-	clearPreparedRoll(state, side, rollIndex);
-	// Reset side-wide advantage lock
-	const pairState = getPairState(state, side);
-	if (pairState) {
-		pairState.advantage = null;
-		pairState.advantageChosenBy = null;
-	}
-	state.nextStep = getFirstUnresolvedStep(state);
-	state.result = null;
-	await updateContestMessage(latest, state);
+	await handleUnreadyAction({
+		messageId,
+		side,
+		rollIndex,
+		updateContestMessage
+	});
 }
 
 /**
@@ -136,98 +145,13 @@ export async function handleUnreadyClick(messageId, side, rollIndex) {
  * @returns {Promise<void>}
  */
 export async function handleFeintClick(messageId, side, rollIndex) {
-	const latest = game.messages.get(messageId);
-	const state = getContestStateFromMessage(latest);
-	if (!state) return;
-
-	const currentRoll = getQuadrantRoll(state, side, rollIndex);
-	if (!currentRoll) return;
-
-	// Capture pre-dialog snapshot
-	const snapshotActorUuid = currentRoll.actorUuid;
-	const snapshotFeintCounter = currentRoll.feintCounter || 0;
-
-	// Prepare the new roll (opens stat dialog without feint counter)
-	const preparedData = await prepareOneStep(side, rollIndex, state, messageId, true);
-	
-	if (!preparedData) {
-		// Dialog was cancelled
-		const cancelledMessage = game.messages.get(messageId);
-		if (cancelledMessage) {
-			const cancelledState = getContestStateFromMessage(cancelledMessage);
-			if (cancelledState) await updateContestMessage(cancelledMessage, cancelledState);
-		}
-		return;
-	}
-
-	// Show feint gambit dialog
-	const gambitResult = await showFeintGambitDialog({
-		gambitDefault: !!preparedData.gambitSelections?.feint
+	await handleFeintAction({
+		messageId,
+		side,
+		rollIndex,
+		prepareOneStep,
+		updateContestMessage
 	});
-
-	if (gambitResult === null) {
-		// Feint was cancelled in gambit dialog
-		const cancelledMessage = game.messages.get(messageId);
-		if (cancelledMessage) {
-			const cancelledState = getContestStateFromMessage(cancelledMessage);
-			if (cancelledState) await updateContestMessage(cancelledMessage, cancelledState);
-		}
-		return;
-	}
-
-	// Run failsafe checks
-	const freshMessage = game.messages.get(messageId);
-	const freshState = getContestStateFromMessage(freshMessage);
-	if (!freshState) {
-		ui.notifications.error(NOTIFICATION_MESSAGES.FEINT_STATE_CHANGED_DELETED);
-		return;
-	}
-
-	const freshRoll = getQuadrantRoll(freshState, side, rollIndex);
-	if (!freshRoll) {
-		ui.notifications.error(NOTIFICATION_MESSAGES.FEINT_STATE_CHANGED_MISSING);
-		return;
-	}
-	if (freshRoll.resolved) {
-		ui.notifications.error(NOTIFICATION_MESSAGES.FEINT_STATE_CHANGED_RESOLVED);
-		return;
-	}
-	if (freshRoll.actorUuid !== snapshotActorUuid) {
-		ui.notifications.error(NOTIFICATION_MESSAGES.FEINT_STATE_CHANGED_ACTOR);
-		return;
-	}
-
-	// When feinting, clear the advantage lock so the new action can have a different advantage
-	const freshPair = getPairState(freshState, side);
-	if (freshPair) {
-		freshPair.advantage = null;
-		freshPair.advantageChosenBy = null;
-	}
-
-	// Apply feint flags
-	preparedData.isFeinting = true;
-	preparedData.feintCounter = snapshotFeintCounter + 1;
-	preparedData.gambitSelections = { feint: gambitResult.useGambit };
-
-	applyPreparedToState(freshState, side, rollIndex, preparedData);
-	
-	// Update the other roll in the pair to use the new advantage
-	const otherRollIndex = rollIndex === 1 ? 2 : 1;
-	const otherRoll = getQuadrantRoll(freshState, side, otherRollIndex);
-	if (otherRoll && otherRoll.prepared && !otherRoll.resolved) {
-		// Update the other roll's advantage to match the new pair advantage
-		const newAdvantage = freshPair?.advantage !== null && freshPair?.advantage !== undefined 
-			? freshPair.advantage 
-			: Number(preparedData.advantage || 0);
-		otherRoll.advantage = newAdvantage;
-	}
-	
-	freshState.nextStep = getFirstUnresolvedStep(freshState);
-
-	const refreshed = game.messages.get(messageId);
-	if (refreshed) {
-		await updateContestMessage(refreshed, freshState);
-	}
 }
 
 /**
@@ -247,52 +171,39 @@ export async function handleResolveClick(messageId) {
  * Register the renderChatMessageHTML hook for contest messages.
  */
 export function registerChatMessageHook() {
+	if (!delegatedClickBound) {
+		document.addEventListener("click", handleDelegatedRollerClick);
+		delegatedClickBound = true;
+	}
+
+	if (!contestSyncHookBound) {
+		Hooks.on("updateChatMessage", (message) => {
+			const contest = getContestStateFromMessage(message);
+			if (!contest?.isResolving) return;
+			closeContestDialogs();
+		});
+		contestSyncHookBound = true;
+	}
+
 	Hooks.on("renderChatMessageHTML", (message, html) => {
 		const contest = getContestStateFromMessage(message);
 		
 		if (contest) {
 			// Wrap HTMLElement in jQuery for selector compatibility
 			const $html = $(html);
-			
-			// Handler for Prepare/Edit buttons
-			$html.find(`button.${CSS_CLASSES.ROLL_BTN}`).on("click", async (event) => {
-				event.preventDefault();
-				const quadrant = event.currentTarget?.dataset?.quadrant;
-				if (!quadrant) return;
-				await handlePrepareClick(message.id, quadrant);
-			});
-
-			// Handler for action buttons (Unready, Feint, Resolve)
-			$html.find(`button.${CSS_CLASSES.ACTION_BTN}, button[data-action]`).on("click", async (event) => {
-				event.preventDefault();
-				const action = event.currentTarget?.dataset?.action;
-				if (!action) return;
-				
-				const quadrant = event.currentTarget?.dataset?.quadrant;
-				const parsed = quadrant ? parseQuadrant(quadrant) : null;
-				
-				// Route to appropriate handler
-				if (action === "resolve") {
-					await handleResolveClick(message.id);
-				} else if (action === "unready" && parsed) {
-					await handleUnreadyClick(message.id, parsed.side, parsed.rollIndex);
-				} else if (action === "feint" && parsed) {
-					await handleFeintClick(message.id, parsed.side, parsed.rollIndex);
-				}
-			});
 
 			// Hide roll formulas for users without permission
 			$html.find(".bad6-roll-card[data-actor-uuid]").each((_, el) => {
 				const actorUuid = el?.dataset?.actorUuid || "";
 				const actor = resolveActorFromUuidSync(actorUuid);
 				if (!canViewActorFormula(actor)) {
-					el.innerHTML = "<em>Formula hidden</em>";
+					el.innerHTML = `<em>${STATUS_MESSAGES.FORMULA_HIDDEN}</em>`;
 				}
 			});
 
 			const speakerActor = resolveActorFromSpeaker(message?.speaker);
 			if (speakerActor && !canViewActorFormula(speakerActor)) {
-				$html.find(".dice-formula").text("Formula hidden");
+				$html.find(".dice-formula").text(STATUS_MESSAGES.FORMULA_HIDDEN);
 			}
 		}
 	});

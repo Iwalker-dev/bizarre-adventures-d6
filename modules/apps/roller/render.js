@@ -2,7 +2,7 @@
  * Rendering functions for BAD6 contest roller UI.
  */
 
-import { CSS_CLASSES, QUADRANT_LABELS, BUTTON_LABELS, NOTIFICATION_MESSAGES, STATUS_MESSAGES } from "./constants.js";
+import { CSS_CLASSES, QUADRANT_LABELS, BUTTON_LABELS, NOTIFICATION_MESSAGES, STATUS_MESSAGES, LUCK_MOVE_VISUALS } from "./constants.js";
 import { 
 	getQuadrantRoll, 
 	allQuadrantsPrepared, 
@@ -50,10 +50,20 @@ export function formatPreparedSummary(roll) {
 	const statusText = roll.isFeinting
 		? `<em>${STATUS_MESSAGES.FEINTING} (x${roll.feintCounter || 1})</em>`
 		: `<em>${STATUS_MESSAGES.READY_TO_RESOLVE}</em>`;
+	const preparedLuckMoves = [];
+	if (Number(roll.feintCount || 0) > 0) {
+		preparedLuckMoves.push({
+			move: "feint",
+			gambit: !!roll?.gambitSelections?.feint,
+			count: Number(roll.feintCount || 1)
+		});
+	}
+	const luckStrip = renderLuckMoveStrip(preparedLuckMoves);
 	
 	return `
 		<div style="${lineStyle}"><strong>${actorName}</strong> — ${statLabel}${advDisplay}</div>
 		${feintDisplay}
+		${luckStrip}
 		<div style="font-size:0.85em; color:#666; margin-top:2px;">${statusText}</div>
 	`;
 }
@@ -64,7 +74,7 @@ export function formatPreparedSummary(roll) {
  * @returns {string}
  */
 export function formatRollSummary(roll) {
-	if (!roll?.resolved) return "<em>Pending</em>";
+	if (!roll?.resolved) return `<em>${STATUS_MESSAGES.PENDING}</em>`;
 	const actorName = escapeHtml(roll.actorName || "Unknown");
 	const statLabel = escapeHtml(roll.statLabel || "Stat");
 	const lineStyle = "white-space:normal; overflow-wrap:anywhere; word-break:break-word;";
@@ -73,13 +83,43 @@ export function formatRollSummary(roll) {
 		? `<div class="bad6-roll-card" data-actor-uuid="${actorUuid}" style="margin:4px 0;">${roll.rollHtml}</div>`
 		: "";
 	const mulliganBanner = roll?.mulliganApplied
-		? `<div style="margin-top:4px; color:#2f6; font-weight:bold;">✨ ${escapeHtml(roll.mulliganNote || "Mulligan applied (+1 Advantage)")}</div>`
+		? `<div style="margin-top:4px; color:#2f6; font-weight:bold;">✨ ${escapeHtml(roll.mulliganNote || STATUS_MESSAGES.MULLIGAN_APPLIED)}</div>`
 		: "";
+	const luckStrip = renderLuckMoveStrip(roll?.luckMovesUsed || []);
 	return `
 		<div style="${lineStyle}"><strong>${actorName}</strong> — ${statLabel}</div>
+		${luckStrip}
 		${rollCard}
 		${mulliganBanner}
 	`;
+}
+
+/**
+ * Render compact luck move chips for a quadrant.
+ * Gambit moves are highlighted with a gold outline.
+ * @param {Array<{move:string,gambit?:boolean,count?:number}>} moves
+ * @returns {string}
+ */
+export function renderLuckMoveStrip(moves = []) {
+	if (!Array.isArray(moves) || !moves.length) return "";
+	const normalized = moves
+		.map((entry) => ({
+			move: String(entry?.move || "").toLowerCase(),
+			gambit: !!entry?.gambit,
+			count: Number(entry?.count || 1)
+		}))
+		.filter((entry) => !!entry.move && LUCK_MOVE_VISUALS[entry.move]);
+	if (!normalized.length) return "";
+
+	const chips = normalized.map((entry) => {
+		const visual = LUCK_MOVE_VISUALS[entry.move];
+		const countLabel = entry.count > 1 ? ` ×${entry.count}` : "";
+		const tooltip = `${visual.title}${countLabel}${entry.gambit ? ` ${STATUS_MESSAGES.GAMBIT_SUFFIX}` : ""}`;
+		const classes = `bad6-luck-chip${entry.gambit ? " bad6-luck-chip--gambit" : ""}`;
+		return `<span class="${classes}" title="${escapeHtml(tooltip)}">${escapeHtml(visual.short)}${escapeHtml(countLabel)}</span>`;
+	});
+
+	return `<div class="bad6-luck-strip" title="${STATUS_MESSAGES.LUCK_MOVES_USED}">${chips.join("")}</div>`;
 }
 
 // ============================================================================
@@ -94,7 +134,7 @@ export function formatRollSummary(roll) {
  */
 export function getQuadrantLabel(side, rollIndex) {
 	const key = `${side}-${rollIndex}`;
-	return QUADRANT_LABELS[key] || `${side} Roll ${rollIndex}`;
+	return QUADRANT_LABELS[key] || QUADRANT_LABELS.FALLBACK(side, rollIndex);
 }
 
 /**
@@ -107,12 +147,12 @@ export function getQuadrantLabel(side, rollIndex) {
 export function getQuadrantButtonLabel(side, rollIndex, rollData) {
 	if (rollData?.prepared && !rollData?.resolved) {
 		const sideLabel = side === "reaction" ? BUTTON_LABELS.EDIT_REACTION.split(" ")[1] : BUTTON_LABELS.EDIT_ACTION.split(" ")[1];
-		return `Edit ${sideLabel} ${rollIndex}`;
+		return BUTTON_LABELS.EDIT_ROLL(sideLabel, rollIndex);
 	}
 	if (side === "reaction" && rollIndex === 1) return BUTTON_LABELS.PREPARE_REACTION;
 	if (side === "action" && rollIndex === 1) return BUTTON_LABELS.PREPARE_ACTION;
 	const sideLabel = side === "reaction" ? "Reaction" : "Action";
-	return `Prepare ${sideLabel} ${rollIndex}`;
+	return BUTTON_LABELS.PREPARE_ROLL(sideLabel, rollIndex);
 }
 
 // ============================================================================
@@ -275,7 +315,7 @@ export function renderQuadrantCell(side, rollIndex, rollData, pairData, state, n
 	} else if (rollData?.prepared) {
 		content = formatPreparedSummary(rollData);
 	} else {
-		content = "<em>Pending</em>";
+		content = `<em>${STATUS_MESSAGES.PENDING}</em>`;
 	}
 	
 	// Render buttons based on state
@@ -296,7 +336,7 @@ export function renderQuadrantCell(side, rollIndex, rollData, pairData, state, n
  */
 export function buildContestHtml(state) {
 	const actionAdvNote = state.action?.advantage !== null && state.action?.advantage !== undefined
-		? `<div style="margin-top:4px; font-style:italic; color:#666;">Advantage: ${state.action.advantage} (chosen by ${escapeHtml(state.action.advantageChosenBy || "Unknown")})</div>`
+		? `<div style="margin-top:4px; font-style:italic; color:#666;">${STATUS_MESSAGES.ADVANTAGE}: ${state.action.advantage} ${STATUS_MESSAGES.ADVANTAGE_CHOSEN_BY(escapeHtml(state.action.advantageChosenBy || "Unknown"))}</div>`
 		: "";
 	const actionPersistNote = state.action?.persistNote
 		? `<div style="margin-top:4px; font-style:italic; color:#666;">${state.action.persistNote}</div>`
@@ -311,7 +351,7 @@ export function buildContestHtml(state) {
 		</div>
 	`;
 	const reactionAdvNote = state.reaction?.advantage !== null && state.reaction?.advantage !== undefined
-		? `<div style="margin-top:4px; font-style:italic; color:#666;">Advantage: ${state.reaction.advantage} (chosen by ${escapeHtml(state.reaction.advantageChosenBy || "Unknown")})</div>`
+		? `<div style="margin-top:4px; font-style:italic; color:#666;">${STATUS_MESSAGES.ADVANTAGE}: ${state.reaction.advantage} ${STATUS_MESSAGES.ADVANTAGE_CHOSEN_BY(escapeHtml(state.reaction.advantageChosenBy || "Unknown"))}</div>`
 		: "";
 	const reactionPersistNote = state.reaction?.persistNote
 		? `<div style="margin-top:4px; font-style:italic; color:#666;">${state.reaction.persistNote}</div>`
@@ -339,7 +379,7 @@ export function buildContestHtml(state) {
 		: "";
 	
 	const resultHtml = state.result
-		? `<div style="margin-top:8px; padding-top:6px; border-top:1px solid #999;"><strong>Result:</strong> ${state.result.label}</div>`
+		? `<div style="margin-top:8px; padding-top:6px; border-top:1px solid #999;"><strong>${STATUS_MESSAGES.RESULT}</strong> ${state.result.label}</div>`
 		: "";
 	return `
 		<div class="${CSS_CLASSES.CONTEST}" style="border:1px solid #777; padding:6px; background:#f8f8f8;">

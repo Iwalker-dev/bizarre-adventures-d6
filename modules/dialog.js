@@ -1,4 +1,32 @@
 import { canUseFudge } from "./luck-moves.js";
+import { DIALOG_MESSAGES } from "./apps/roller/constants.js";
+
+export const ROLLER_DIALOG_CLASS = "bad6-roller-dialog";
+export const ROLLER_DIALOG_IDS = {
+	ROLL_READY: "roll-ready",
+	CONFIRM_ROLLER: "confirm-roller",
+	MULLIGAN: "mulligan",
+	FEINT_GAMBIT: "feint-gambit",
+	PERSIST: "persist",
+	CHOOSE_LUCK_SPENDER: "choose-luck-spender",
+	STAT_SELECTION: "stat-selection",
+	OPTIONAL_FORMULA: "optional-formula",
+	SPECIAL_STAT_SELECTION: "special-stat-selection"
+};
+
+function getRollerDialogClasses(classes = []) {
+	const base = Array.isArray(classes) ? classes : [];
+	return Array.from(new Set([ROLLER_DIALOG_CLASS, ...base]));
+}
+
+function tagRollerDialog(dialog, dialogId = "") {
+	const root = dialog?.element?.[0];
+	if (!root) return;
+	root.classList.add(ROLLER_DIALOG_CLASS);
+	if (dialogId) {
+		root.dataset.bad6DialogId = String(dialogId);
+	}
+}
 
 /**
  * Dialog utilities for BAD6 rolling, stat selection, and formula configuration.
@@ -28,9 +56,9 @@ export function escapeHtml(str) {
  * @returns {string}
  */
 export function getActorDisplayName(actor, token = null) {
-	if (!actor) return "Unknown";
+	if (!actor) return DIALOG_MESSAGES.COMMON.UNKNOWN;
 	const speaker = ChatMessage.getSpeaker({ actor, token: token || undefined });
-	return speaker?.alias || actor.name || "Unknown";
+	return speaker?.alias || actor.name || DIALOG_MESSAGES.COMMON.UNKNOWN;
 }
 
 
@@ -52,6 +80,7 @@ export function showChoiceDialog({
 	buttons = {},
 	defaultId = null,
 	classes = [],
+	dialogId = "",
 	width = undefined,
 	closeValue = undefined
 } = {}) {
@@ -87,10 +116,11 @@ export function showChoiceDialog({
 				if (closeValue !== undefined) resolveOnce(closeValue);
 			}
 		}, {
-			classes,
+			classes: getRollerDialogClasses(classes),
 			width
 		});
 		dlg.render(true);
+		tagRollerDialog(dlg, dialogId);
 	});
 }
 
@@ -104,13 +134,14 @@ export function showChoiceDialog({
  * @returns {Promise<boolean>}
  */
 export function showRollReadyDialog({ statLabel, advantagePhrase = "", formula = "" } = {}) {
-	const content = `<p>Roll <strong>${escapeHtml(statLabel)}</strong>${advantagePhrase}? <code>${escapeHtml(formula)}</code></p>`;
+	const content = DIALOG_MESSAGES.ROLL_READY.CONTENT(escapeHtml(statLabel), advantagePhrase, escapeHtml(formula));
 	return showChoiceDialog({
-		title: "A Roll is Ready",
+		title: DIALOG_MESSAGES.ROLL_READY.TITLE,
+		dialogId: ROLLER_DIALOG_IDS.ROLL_READY,
 		content,
 		buttons: {
-			Yes: { label: "Yes", callback: () => true },
-			No: { label: "No", callback: () => false }
+			Yes: { label: DIALOG_MESSAGES.COMMON.YES, callback: () => true },
+			No: { label: DIALOG_MESSAGES.COMMON.NO, callback: () => false }
 		},
 		defaultId: "No"
 	});
@@ -123,11 +154,12 @@ export function showRollReadyDialog({ statLabel, advantagePhrase = "", formula =
  */
 export function showConfirmRollerDialog() {
 	return showChoiceDialog({
-		title: "Player Owner Detected",
-		content: "<p>Have the player finish this roll?</p>",
+		title: DIALOG_MESSAGES.CONFIRM_ROLLER.TITLE,
+		dialogId: ROLLER_DIALOG_IDS.CONFIRM_ROLLER,
+		content: DIALOG_MESSAGES.CONFIRM_ROLLER.CONTENT,
 		buttons: {
-			Yes: { label: "Yes", callback: () => true },
-			No: { label: "No", callback: () => false }
+			Yes: { label: DIALOG_MESSAGES.COMMON.YES, callback: () => true },
+			No: { label: DIALOG_MESSAGES.COMMON.NO, callback: () => false }
 		},
 		defaultId: "No"
 	});
@@ -140,26 +172,21 @@ export function showConfirmRollerDialog() {
  * @returns {Promise<{confirmed:boolean,useGambit:boolean}>}
  */
 export function showMulliganDialog({ gambitDefault = false } = {}) {
-	const content = `
-		<p>Use <strong>Mulligan</strong> to add +1 Advantage to the last two rolls?</p>
-		<label style="display:block; margin-top:8px;">
-			<input type="checkbox" id="use-gambit-mulligan" ${gambitDefault ? "checked" : ""}>
-			<strong>Gambit</strong> — Nullify Mulligan cost
-		</label>
-	`;
+	const content = DIALOG_MESSAGES.MULLIGAN.CONTENT(!!gambitDefault);
 	return showChoiceDialog({
-		title: "Mulligan",
+		title: DIALOG_MESSAGES.MULLIGAN.TITLE,
+		dialogId: ROLLER_DIALOG_IDS.MULLIGAN,
 		content,
 		buttons: {
 			Yes: {
-				label: "Yes",
+				label: DIALOG_MESSAGES.COMMON.YES,
 				callback: (html) => ({
 					confirmed: true,
 					useGambit: !!html.find("#use-gambit-mulligan").prop("checked")
 				})
 			},
 			No: {
-				label: "No",
+				label: DIALOG_MESSAGES.COMMON.NO,
 				callback: (html) => ({
 					confirmed: false,
 					useGambit: !!html.find("#use-gambit-mulligan").prop("checked")
@@ -179,24 +206,20 @@ export function showMulliganDialog({ gambitDefault = false } = {}) {
  * @returns {Promise<{useGambit:boolean}>}
  */
 export function showFeintGambitDialog({ gambitDefault = false } = {}) {
-	const content = `
-		<label style="display:block;">
-			<input type="checkbox" id="use-gambit-feint" ${gambitDefault ? "checked" : ""}>
-			<strong>Gambit</strong> — Nullify Feint cost
-		</label>
-	`;
+	const content = DIALOG_MESSAGES.FEINT_GAMBIT.CONTENT(!!gambitDefault);
 	return showChoiceDialog({
-		title: "Feint",
+		title: DIALOG_MESSAGES.FEINT_GAMBIT.TITLE,
+		dialogId: ROLLER_DIALOG_IDS.FEINT_GAMBIT,
 		content,
 		buttons: {
 			Yes: {
-				label: "Feint",
+				label: DIALOG_MESSAGES.FEINT_GAMBIT.CONFIRM_LABEL,
 				callback: (html) => ({
 					useGambit: !!html.find("#use-gambit-feint").prop("checked")
 				})
 			},
 			Cancel: {
-				label: "Cancel",
+				label: DIALOG_MESSAGES.COMMON.CANCEL,
 				callback: (html) => null
 			}
 		},
@@ -236,29 +259,23 @@ export function showPersistDialog({
 		};
 
 		const content = `
-			<p>Use <strong>Persist</strong> to redo the last two rolls?</p>
-			<p style="color:#c00;"><strong>Costs PERMANENT Luck</strong></p>
-			<label style="display:block; margin-top:8px;">
-				<input type="checkbox" id="use-gambit-persist" ${gambitDefault ? "checked" : ""}>
-				<strong>Gambit</strong> — Nullify Persist cost
-			</label>
-			<div id="persist-lock-reason" style="margin-top:6px; color:#b00; font-size:0.9em;">${escapeHtml(lockReason || "")}</div>
+			${DIALOG_MESSAGES.PERSIST.CONTENT(!!gambitDefault, escapeHtml(lockReason || ""))}
 		`;
 
-		const dialogTitle = context ? `Persist — ${context}` : "Persist";
+		const dialogTitle = DIALOG_MESSAGES.PERSIST.TITLE(context);
 		const dlg = new Dialog({
 			title: dialogTitle,
 			content,
 			buttons: {
 				yes: {
-					label: "Yes",
+					label: DIALOG_MESSAGES.COMMON.YES,
 					callback: (html) => resolveOnce({
 						confirmed: true,
 						useGambit: !!html.find("#use-gambit-persist").prop("checked")
 					})
 				},
 				no: {
-					label: "No",
+					label: DIALOG_MESSAGES.COMMON.NO,
 					callback: (html) => resolveOnce({
 						confirmed: false,
 						useGambit: !!html.find("#use-gambit-persist").prop("checked")
@@ -268,10 +285,12 @@ export function showPersistDialog({
 			default: "no",
 			close: () => resolveOnce({ confirmed: false, useGambit: false })
 		}, {
-			width: 420
+			width: 420,
+			classes: getRollerDialogClasses(["roller-dialog"]) 
 		});
 
 		dlg.render(true);
+		tagRollerDialog(dlg, ROLLER_DIALOG_IDS.PERSIST);
 
 		const applyLock = (reason) => {
 			const root = dlg?.element;
@@ -279,7 +298,7 @@ export function showPersistDialog({
 			const yesBtn = root.find('button[data-button="yes"]');
 			const reasonEl = root.find("#persist-lock-reason");
 			if (yesBtn.length) yesBtn.prop("disabled", true).css("opacity", 0.6);
-			if (reasonEl.length) reasonEl.text(reason || "Persist already chosen by another reactor.");
+			if (reasonEl.length) reasonEl.text(reason || DIALOG_MESSAGES.PERSIST.LOCK_FALLBACK);
 			if (!autoCloseTimer) {
 				autoCloseTimer = setTimeout(() => {
 					try { dlg.close(); } catch (e) { }
@@ -318,14 +337,14 @@ export async function showStatDialog(actor, options = {}) {
 		showLuckOptions = true,
 		allowGambit = true,
 		allowFeint = false,
-		lockMessage = "The previous roll must be completed first.",
+		lockMessage = DIALOG_MESSAGES.STAT_SELECTION.LOCK_MESSAGE,
 		canProceed = null,
 		advantageLocked = false,
 		advantageValue = 0,
 		advantageChosenBy = "",
 		advantageLockReason = "",
 		gambitDefaults = {},
-		title = "Choose a Stat & Luck Options"
+		title = DIALOG_MESSAGES.STAT_SELECTION.TITLE
 	} = options || {};
 
 	let sources;
@@ -343,7 +362,7 @@ export async function showStatDialog(actor, options = {}) {
 			ustats: actor.system.attributes?.stats || {}
 		};
 	} else {
-		ui.notifications.warn("Unsupported actor format.");
+		ui.notifications.warn(DIALOG_MESSAGES.STAT_SELECTION.UNSUPPORTED_ACTOR_FORMAT);
 		return null;
 	}
 
@@ -413,13 +432,14 @@ export async function showStatDialog(actor, options = {}) {
 			const perm = luck?.perm ?? 0;
 			const displayName = getActorDisplayName(cand);
 			buttons[cand.uuid] = {
-				label: `${displayName} (${cand.type}) — Luck: ${temp}T / ${perm}P`,
+				label: DIALOG_MESSAGES.STAT_SELECTION.LUCK_SPENDER_LABEL(displayName, cand.type, temp, perm),
 				callback: () => cand
 			};
 		}
 		selectedLuckActor = await showChoiceDialog({
-			title: "Choose Luck Spender",
-			content: "<p>Select the actor whose Luck will be spent:</p>",
+			title: DIALOG_MESSAGES.STAT_SELECTION.CHOOSE_LUCK_SPENDER_TITLE,
+			dialogId: ROLLER_DIALOG_IDS.CHOOSE_LUCK_SPENDER,
+			content: DIALOG_MESSAGES.STAT_SELECTION.CHOOSE_LUCK_SPENDER_CONTENT,
 			buttons,
 			defaultId: luckCandidates[0]?.uuid,
 			closeValue: null
@@ -456,7 +476,7 @@ export async function showStatDialog(actor, options = {}) {
 		}
 
 		if (!Object.keys(buttons).length) {
-			ui.notifications.warn("No numeric stats found.");
+			ui.notifications.warn(DIALOG_MESSAGES.STAT_SELECTION.NO_NUMERIC_STATS);
 			return resolve(null);
 		}
 
@@ -482,9 +502,9 @@ export async function showStatDialog(actor, options = {}) {
 			let content = "";
 
 			content += `<div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">`;
-			content += `<p><strong>Advantage</strong></p>`;
+			content += `<p><strong>${escapeHtml(DIALOG_MESSAGES.STAT_SELECTION.ADVANTAGE_HEADER)}</strong></p>`;
 			if (advantageLocked) {
-				content += `<div style="color:#b00; font-size:0.9em; margin-bottom:6px;">Advantage chosen by ${escapeHtml(advantageChosenBy || "Unknown")}</div>`;
+				content += `<div style="color:#b00; font-size:0.9em; margin-bottom:6px;">${escapeHtml(DIALOG_MESSAGES.STAT_SELECTION.ADVANTAGE_CHOSEN_BY(advantageChosenBy || DIALOG_MESSAGES.COMMON.UNKNOWN))}</div>`;
 			}
 			if (advantageLockReason) {
 				content += `<div style="color:#b00; font-size:0.9em; margin-bottom:6px;">${escapeHtml(advantageLockReason)}</div>`;
@@ -500,7 +520,7 @@ export async function showStatDialog(actor, options = {}) {
 			}
 			content += `</div></div>`;
 
-			content += `<p style="margin: 10px 0 5px 0;"><strong>Select a Stat:</strong></p>`;
+			content += `<p style="margin: 10px 0 5px 0;"><strong>${escapeHtml(DIALOG_MESSAGES.STAT_SELECTION.SELECT_STAT_PROMPT)}</strong></p>`;
 
 			const dlgClass = `stat-selector-${Date.now()}`;
 			let formHtml = content + `<form class="${dlgClass}">`;
@@ -538,7 +558,7 @@ export async function showStatDialog(actor, options = {}) {
 							}
 							const advValue = advantageLocked ? selectedAdv : getAdvantageValue();
 							if (!advantageLocked && (advValue === null || Number.isNaN(advValue))) {
-								ui.notifications.warn("Select an Advantage level before rolling.");
+								ui.notifications.warn(DIALOG_MESSAGES.STAT_SELECTION.SELECT_ADVANTAGE_WARNING);
 								return;
 							}
 							statResolved = true;
@@ -570,7 +590,7 @@ export async function showStatDialog(actor, options = {}) {
 				title: title,
 				content: formHtml,
 				buttons: {
-					cancel: { label: "Cancel", callback: () => resolveOnce(null) }
+					cancel: { label: DIALOG_MESSAGES.COMMON.CANCEL, callback: () => resolveOnce(null) }
 				},
 				default: "cancel",
 				close: async () => {
@@ -581,9 +601,10 @@ export async function showStatDialog(actor, options = {}) {
 				}
 			}, {
 				width: 500,
-				classes: ["roller-dialog"]
+				classes: getRollerDialogClasses(["roller-dialog"])
 			});
 			dialogInstance.render(true);
+			tagRollerDialog(dialogInstance, ROLLER_DIALOG_IDS.STAT_SELECTION);
 			bindDialog(dlgClass);
 		};
 
@@ -624,12 +645,12 @@ export function showOptionalFormulaDialog({
 		const dlgClass = `optional-lines-${Date.now()}`;
 		let html = `<form class="${dlgClass}">`;
 		let useGambitSelected = !!gambitDefault;
+		const luckActorOverride = luckActorUuid ? fromUuidSync(luckActorUuid) : null;
 
 		if (showFudge) {
 			const initialPreviewAdv = computeAdvantageFromLines
 				? computeAdvantageFromLines([...required, ...optionalLines])
 				: 0;
-			const luckActorOverride = luckActorUuid ? fromUuidSync(luckActorUuid) : null;
 			const fudgeCheck = hasFudgeLock
 				? { canUse: false, reason: fudgeLockReason }
 				: canUseFudge(actor, initialPreviewAdv, useGambitSelected, luckActorOverride);
@@ -641,36 +662,41 @@ export function showOptionalFormulaDialog({
 				<div style="margin-bottom:8px; padding:8px; background:#f5f5f5; border-radius:4px;">
 					<label id="fudge-label" style="display:block; opacity:${fudgeOpacity};">
 						<input type="checkbox" id="use-fudge" class="fudge-checkbox" ${useFudgeSelected ? "checked" : ""} ${fudgeDisabled}>
-						<strong>Fudge</strong> (+1 Advantage) — Cost: ${fudgeCost} Temp
+						<strong>${DIALOG_MESSAGES.OPTIONAL_FORMULA.FUDGE_LABEL}</strong> ${DIALOG_MESSAGES.OPTIONAL_FORMULA.FUDGE_BONUS} ${DIALOG_MESSAGES.OPTIONAL_FORMULA.FUDGE_COST(fudgeCost)}
 						<span class="fudge-reason" style="color:#b00; font-size:0.9em;">${escapeHtml(fudgeReason)}</span>
 					</label>
 					<label style="display:block; margin-top:6px;">
 						<input type="checkbox" id="use-gambit-fudge" ${useGambitSelected ? "checked" : ""}>
-						<strong>Gambit</strong> — Nullify Fudge cost
+						<strong>${DIALOG_MESSAGES.OPTIONAL_FORMULA.GAMBIT_LABEL}</strong> ${DIALOG_MESSAGES.OPTIONAL_FORMULA.GAMBIT_DESC}
 					</label>
 				</div>
 			`;
 		}
 
 		if (optionalLines.length) {
-			html += `<p>Select optional formula lines to include:</p><div style="max-height:320px;overflow:auto;">`;
+			html += `<p>${DIALOG_MESSAGES.OPTIONAL_FORMULA.SELECT_PROMPT}</p><div style="max-height:320px;overflow:auto;">`;
 			optionalLines.forEach((opt, i) => {
 				const op = (opt.line?.operand || "+").toString();
 				const varOrVal = opt.line?.variable ? `${opt.line.variable}` : (opt.line?.value !== undefined ? `${opt.line.value}` : "");
-				const label = `${opt.actorName || "Actor"} - ${opt.itemName || "Item"}: ${op} ${varOrVal}`;
+				const label = DIALOG_MESSAGES.OPTIONAL_FORMULA.ROLL_LINE_LABEL(
+					opt.actorName || DIALOG_MESSAGES.OPTIONAL_FORMULA.FALLBACK_ACTOR,
+					opt.itemName || DIALOG_MESSAGES.OPTIONAL_FORMULA.FALLBACK_ITEM,
+					op,
+					varOrVal
+				);
 				html += `<div><label><input type="checkbox" class="opt-checkbox" data-idx="${i}" checked> ${escapeHtml(label)}</label></div>`;
 			});
 			html += `</div>`;
 		}
 		html += `</form>`;
 
-		const dialogTitle = context ? `Optional Formula Lines — ${context}` : "Optional Formula Lines";
+		const dialogTitle = DIALOG_MESSAGES.OPTIONAL_FORMULA.TITLE(context);
 		const dialogInstance = new Dialog({
 			title: dialogTitle,
 			content: html,
 			buttons: {
 				include: {
-					label: "Include Selected",
+					label: DIALOG_MESSAGES.OPTIONAL_FORMULA.INCLUDE_SELECTED,
 					callback: () => {
 						const form = document.querySelector(`.${dlgClass}`);
 						const checked = [];
@@ -704,14 +730,17 @@ export function showOptionalFormulaDialog({
 					}
 				},
 				cancel: {
-					label: "Cancel",
+					label: DIALOG_MESSAGES.COMMON.CANCEL,
 					callback: () => resolve(null)
 				}
 			},
 			default: "include"
+		}, {
+			classes: getRollerDialogClasses(["roller-dialog"])
 		});
 
 		dialogInstance.render(true);
+		tagRollerDialog(dialogInstance, ROLLER_DIALOG_IDS.OPTIONAL_FORMULA);
 
 		setTimeout(() => {
 			const form = document.querySelector(`.${dlgClass}`);
@@ -748,7 +777,7 @@ export function showOptionalFormulaDialog({
 				const previewAdv = computeAdvantageFromLines ? computeAdvantageFromLines(currentLines) : 0;
 				const gambitBox = form.querySelector("#use-gambit-fudge");
 				const gambitActive = !!(gambitBox && gambitBox.checked);
-				const fudgeCheckNow = canUseFudge(actor, previewAdv, gambitActive);
+				const fudgeCheckNow = canUseFudge(actor, previewAdv, gambitActive, luckActorOverride);
 
 				const fudgeBox = form.querySelector("#use-fudge");
 				const fudgeReasonEl = form.querySelector(".fudge-reason");
@@ -807,7 +836,7 @@ export async function showSpecialStatSelectionDialog(actor, statKey, statLabel) 
 		
 		// Add button for base stat (no special)
 		buttons["base-stat"] = {
-			label: `${escapeHtml(statLabel)} (Base)`,
+			label: DIALOG_MESSAGES.SPECIAL_STAT.BASE_LABEL(escapeHtml(statLabel)),
 			callback: () => resolve(null)
 		};
 		
@@ -821,17 +850,19 @@ export async function showSpecialStatSelectionDialog(actor, statKey, statLabel) 
 			};
 		});
 
-		const content = `<p>Select which special stat to use for this roll of <strong>${escapeHtml(statLabel)}</strong>:</p>`;
+		const content = DIALOG_MESSAGES.SPECIAL_STAT.CONTENT(escapeHtml(statLabel));
 
-		new Dialog({
-			title: `Choose Special Stat — ${escapeHtml(statLabel)}`,
+		const dlg = new Dialog({
+			title: DIALOG_MESSAGES.SPECIAL_STAT.TITLE(escapeHtml(statLabel)),
 			content,
 			buttons,
 			default: "base-stat",
 			close: () => resolve(null) // Cancel returns null (base stat)
 		}, {
 			width: 400,
-			classes: ["special-stat-dialog"]
-		}).render(true);
+			classes: getRollerDialogClasses(["special-stat-dialog"])
+		});
+		dlg.render(true);
+		tagRollerDialog(dlg, ROLLER_DIALOG_IDS.SPECIAL_STAT_SELECTION);
 	});
 }

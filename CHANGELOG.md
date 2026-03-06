@@ -119,6 +119,18 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Added proper feint logic
 - Replaced depreciating functions
 - Optimized roller for organization, performance, readability, etc.
+## [0.9.8.5] - 2026-3-6
+### Added
+- Roller modularity
+- Luck chips per roll
+- Gambit indicator on luck chips (gold outline)
+### Fixed
+- Feint logic
+- Unready logic
+### Optimizations
+- Single overhead message handler instead of per-message handler
+- message-store state sync
+- Centralized remaining roller user-facing text into `modules/apps/roller/constants.js` (notifications, participant dialogs, status labels, result labels/messages)
 
 
 # What's left?
@@ -131,4 +143,6 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Implement Learning automation
 - Allow privatizing of roll formula
 - Show feint count at result
+- Include hit examples in contst resolutions
+- Fix Persist logic
 
