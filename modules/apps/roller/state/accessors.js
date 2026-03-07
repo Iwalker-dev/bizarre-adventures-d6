@@ -1,5 +1,6 @@
 /**
  * Core state accessors.
+ * Simple getters for accessing state data, with safety checks.
  */
 
 import { SYSTEM_ID, CONTEST_FLAG } from "../constants.js";

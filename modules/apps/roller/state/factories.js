@@ -1,5 +1,6 @@
 /**
  * State creation helpers.
+ * Object creation and initialization
  */
 
 /**

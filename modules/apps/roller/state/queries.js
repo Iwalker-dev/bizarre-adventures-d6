@@ -1,5 +1,6 @@
 /**
  * State query and ordering helpers.
+ * Complex accessors
  */
 
 import { getQuadrantRoll } from "./accessors.js";

@@ -1,5 +1,6 @@
 /**
  * State mutation helpers.
+ * Edits to existing objects
  */
 
 import { createEmptyRollState, createPairState } from "./factories.js";
