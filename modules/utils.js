@@ -74,23 +74,28 @@ export function registerHandlebarsHelpers() {
 	Handlebars.registerHelper('getProperty', (obj, path) => {
 		return foundry.utils.getProperty(obj, path);
 	});
+	Handlebars.registerHelper("getActor", (id) => game.actors.get(id));
 }
 
 export async function preloadHandlebarsTemplates() {
 	const templatePaths = [
-    "systems/bizarre-adventures-d6/templates/partials/actor-shell.hbs"
+    "systems/bizarre-adventures-d6/templates/actor/partials/actor-shell.hbs"
     
-		, "systems/bizarre-adventures-d6/templates/partials/actor-nav.hbs"
+		, "systems/bizarre-adventures-d6/templates/actor/partials/actor-nav.hbs"
     
-		, "systems/bizarre-adventures-d6/templates/partials/actor-class.hbs"
+		, "systems/bizarre-adventures-d6/templates/actor/partials/actor-class.hbs"
     
-		, "systems/bizarre-adventures-d6/templates/partials/actor-stats.hbs"
+		, "systems/bizarre-adventures-d6/templates/actor/partials/actor-stats.hbs"
 
-		,"systems/bizarre-adventures-d6/templates/partials/item-formula.hbs"
+		,"systems/bizarre-adventures-d6/templates/item/partials/item-formula.hbs"
+
+		, "systems/bizarre-adventures-d6/templates/chat/partials/quadrant.hbs"
+
+		, "systems/bizarre-adventures-d6/templates/chat/action.hbs"
   
 	, ];
 
-	const [shellTpl, navTpl, classTpl, statsTp1, formulaTpl] = await foundry.applications.handlebars.loadTemplates(templatePaths);
+	const [shellTpl, navTpl, classTpl, statsTp1, formulaTpl, quadrantTpl, actionTpl] = await foundry.applications.handlebars.loadTemplates(templatePaths);
 
 	// Register based on hbs naming convention
 	Handlebars.registerPartial("actor-shell", shellTpl);
@@ -98,6 +103,8 @@ export async function preloadHandlebarsTemplates() {
 	Handlebars.registerPartial("actor-class", classTpl);
 	Handlebars.registerPartial("actor-stats", statsTp1);
 	Handlebars.registerPartial("item-formula", formulaTpl);
+	Handlebars.registerPartial("roll-quadrant", quadrantTpl);
+	Handlebars.registerPartial("action-card", actionTpl)
 }
 
 // Rolling related helpers

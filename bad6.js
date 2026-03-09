@@ -2,7 +2,7 @@
 import { BAD6, isDebugEnabled } from "./modules/config.js";
 import { setupStats } from "./modules/listenerFunctions.js";
 import { registerHandlebarsHelpers, preloadHandlebarsTemplates } from "./modules/utils.js"; 
-import { rollerControl } from './modules/apps/bad6-roller.js';
+import { rollerControl, registerChatListeners } from './modules/apps/rollerRework/bad6-roller-rework.js';
 import { HueShiftControl } from "./modules/apps/hue-shift.js";
 import { outroControl } from './modules/apps/stylizedOutro.js';
 import { migrateWorld } from "./modules/migration.js";
@@ -103,6 +103,7 @@ Hooks.once("ready", async () => {
 	
 	// Run migrations
 	await migrateWorld();
+	registerChatListeners();
 	
 	const lancerModule = game.modules.get("lancer-initiative");
 	const libWrapperModule = game.modules.get("lib-wrapper");

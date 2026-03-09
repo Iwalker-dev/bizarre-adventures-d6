@@ -1,0 +1,27 @@
+<div class="advantage-selection">
+    <label>Advantage:</label>
+     {{!-- example formula: (@stat)d(@sides)cs>=(5-@advantage) + (@modifier) --}}
+     {{!-- advantage options are 0, 1, 2, 3 --}}
+    <input type="radio" name="advantage" value="0"> 0
+    <input type="radio" name="advantage" value="1"> 1
+    <input type="radio" name="advantage" value="2"> 2
+    <input type="radio" name="advantage" value="3"> 3
+</div>
+
+<div class="quadrant-divider" style="border-top:1px solid #a1a1a1;"></div>
+
+<div class="stat-selection-dialog">
+    {{#each actors}}
+            <h4>{{name}}</h4>
+            <div class="stat-options">
+                {{#each stats}}
+                    <button class="stat-option" 
+                        type="button" 
+                        data-stat="{{key}}"
+                        data-actor-id="{{../id}}">
+                        {{name}}
+                    </button>
+                {{/each}}
+            </div>
+    {{/each}}
+</div>

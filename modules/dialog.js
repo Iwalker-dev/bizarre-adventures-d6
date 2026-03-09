@@ -808,6 +808,15 @@ export function showOptionalFormulaDialog({
  * @returns {Promise<string|null>} - Returns the special stat name if selected, null for base stat
  */
 export async function showSpecialStatSelectionDialog(actor, statKey, statLabel) {
+	const normalizeSpecial = (special, index) => {
+		const fallbackKey = (special?.name ?? `special-${index + 1}`).toString().trim();
+		return {
+			key: (special?.key ?? fallbackKey).toString(),
+			label: (special?.label ?? special?.name ?? special?.key ?? fallbackKey).toString(),
+			value: Number(special?.value ?? special?.points ?? 0)
+		};
+	};
+
 	// Get the special stats array from the actor's stat
 	let specialStats = [];
 	
@@ -824,7 +833,11 @@ export async function showSpecialStatSelectionDialog(actor, statKey, statLabel) 
 	}
 	
 	// Normalize and validate special stats
-	specialStats = Array.isArray(specialStats) ? specialStats.filter(s => s && typeof s === "object" && s.name) : [];
+	specialStats = Array.isArray(specialStats)
+		? specialStats
+			.map((special, index) => normalizeSpecial(special, index))
+			.filter(special => special && typeof special === "object" && special.label)
+		: [];
 	
 	if (!specialStats.length) {
 		// No special stats, return null (use base stat)
@@ -842,11 +855,11 @@ export async function showSpecialStatSelectionDialog(actor, statKey, statLabel) 
 		
 		// Add buttons for each special stat
 		specialStats.forEach((special, index) => {
-			const displayName = `${escapeHtml(special.name)}`;
-			const points = special.points ? ` [${special.points}pts]` : "";
+			const displayName = `${escapeHtml(special.label)}`;
+			const points = Number.isFinite(special.value) && special.value > 0 ? ` [${special.value}pts]` : "";
 			buttons[`special-${index}`] = {
 				label: `${displayName}${points}`,
-				callback: () => resolve(special.name)
+				callback: () => resolve(special.key)
 			};
 		});
 

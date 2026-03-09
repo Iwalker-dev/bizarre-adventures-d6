@@ -1,0 +1,15 @@
+{{#if rolled}}
+  {{{rollHtml}}}
+{{else if formula}}
+  <div class="formula-prepared">{{formula}}</div>
+{{/if}}
+
+{{#if lock}}
+    <em>Pending</em>
+{{else}}
+  <label>Ready</label>
+{{/if}}
+
+<button class="select-stat" data-quadrant="{{quadrantNum}}" {{#if lock}}disabled{{/if}}>
+  {{#if lock}}Locked...{{else}}Select Stat{{/if}}
+</button>

@@ -131,7 +131,11 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Single overhead message handler instead of per-message handler
 - message-store state sync
 - Centralized remaining roller user-facing text into `modules/apps/roller/constants.js` (notifications, participant dialogs, status labels, result labels/messages)
-
+## [0.9.9] - 2026-3-9
+### Features
+## Roller Rework
+- Affected dialog, contest, and action design
+- Next: NEED TO SETUP APPENDING TO QUADRANTS
 
 # What's left?
 - Create different backgrounds for all user types
@@ -145,4 +149,5 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Show feint count at result
 - Include hit examples in contst resolutions
 - Fix Persist logic
+- Migrate special from old to new state
 

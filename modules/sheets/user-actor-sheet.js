@@ -21,7 +21,7 @@ import { typeConfigs, isDebugEnabled }    from "../config.js";
   	static get defaultOptions() {
   		return foundry.utils.mergeObject(super.defaultOptions, {
   			classes: ["bizarre-adventures-d6", "sheet", "actor", "user"]
-  			, template: "systems/bizarre-adventures-d6/templates/sheets/user-actor-sheet.hbs"
+  			, template: "systems/bizarre-adventures-d6/templates/actor/sheets/user-actor-sheet.hbs"
   			, width: 800
   			, height: 900
   			, tabs: [{

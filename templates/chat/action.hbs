@@ -1,0 +1,7 @@
+<div class="action-class">
+    {{#each quadrants}}
+        <div class="action-header">{{label}}</div>
+        {{> roll-quadrant quadrantNum=this.index}}
+        {{#unless @last}}<div class="quadrant-divider" style="border-top:1px solid #a1a1a1;"></div>{{/unless}}
+    {{/each}}
+</div>
