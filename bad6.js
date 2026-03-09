@@ -25,7 +25,7 @@ Hooks.once("init", async () => {
 		scope: "world",
 		config: false,
 		type: String,
-		default: "0.9.8"
+		default: "0.9.10"
 	});
 
 	game.settings.register("bizarre-adventures-d6", "welcomed", {

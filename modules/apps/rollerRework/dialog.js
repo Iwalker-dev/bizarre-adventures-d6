@@ -99,11 +99,11 @@ export async function renderDialog(dialog, dialogData = {}) {
         const specials = specialArray.slice(1).map((special, index) => {
             const fallbackKey = (special?.name ?? `special-${index}`).toString().trim();
             return {
-            key: (special?.key ?? fallbackKey).toString()
-            ,label: (special?.label ?? special?.name ?? special?.key ?? fallbackKey).toString()
-            ,value: Number(special?.value ?? special?.points ?? 0)
-        };
-        }));
+                key: (special?.key ?? fallbackKey).toString(),
+                label: (special?.label ?? special?.name ?? special?.key ?? fallbackKey).toString(),
+                value: Number(special?.value ?? special?.points ?? 0)
+            };
+        });
 
 
         // Render template

@@ -1,4 +1,40 @@
 // modules/migration.js
+function toSpecialKey(label, fallback = "special") {
+	const source = (label ?? "").toString().trim().toLowerCase();
+	const normalized = source
+		.normalize("NFKD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+	return normalized || fallback;
+}
+
+function normalizeSpecialArray(rawSpecials = []) {
+	const used = new Set();
+	return rawSpecials
+		.map((entry, index) => {
+			const label = (entry?.label ?? entry?.name ?? "").toString().trim();
+			const value = Number(entry?.value ?? entry?.points ?? 0);
+			const keyBase = (entry?.key ?? "").toString().trim() || toSpecialKey(label, `special-${index + 1}`);
+			if (!label || !Number.isFinite(value) || value <= 0) return null;
+
+			let key = keyBase;
+			let suffix = 2;
+			while (used.has(key)) {
+				key = `${keyBase}-${suffix}`;
+				suffix += 1;
+			}
+			used.add(key);
+
+			return {
+				key,
+				label,
+				value: Math.floor(value)
+			};
+		})
+		.filter(entry => entry);
+}
+
 export async function migrateWorld() {
 	const current = game.system.version;
 	if (!current) {
@@ -132,6 +168,35 @@ export async function migrateWorld() {
 			}
 		}
 		console.log("BAD6 | Applied 0.9.6 migration (moved info to bio) x");
+	}
+
+	// — 0.9.10 migration: normalize stat specials to key/label/value —
+	if (isNewer(current, previous) &&
+		isNewer("0.9.10", previous) &&
+		!isNewer("0.9.10", current)
+	) {
+		for (const actor of game.actors.filter(a => ["user", "stand", "power", "character"].includes(a.type))) {
+			const stats = actor.system.attributes?.stats;
+			if (!stats || typeof stats !== "object") continue;
+
+			const updates = {};
+			let changed = false;
+
+			for (const [statKey, statData] of Object.entries(stats)) {
+				if (!Array.isArray(statData?.special)) continue;
+
+				const normalized = normalizeSpecialArray(statData.special);
+				const before = JSON.stringify(statData.special);
+				const after = JSON.stringify(normalized);
+				if (before === after) continue;
+
+				updates[`system.attributes.stats.${statKey}.special`] = normalized;
+				changed = true;
+			}
+
+			if (changed) await actor.update(updates);
+		}
+		console.log("BAD6 | Applied 0.9.10 migration (special stats normalized to key/label/value).");
 	}
 	// — Record that we’re now at `current` —
 	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);

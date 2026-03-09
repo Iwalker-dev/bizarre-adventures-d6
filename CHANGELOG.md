@@ -137,6 +137,12 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Affected dialog, contest, and action design
 - Next: NEED TO SETUP APPENDING TO QUADRANTS
 
+## [0.9.10] - 2026-3-9
+### Fixes
+- Standardized special stats to `key`, `label`, and `value`.
+- Added world migration to convert older special entries (`name`/`points`) to the new schema.
+- Updated roller rework and dialog selection flows to read the standardized schema with backward-compatible fallbacks.
+
 # What's left?
 - Create different backgrounds for all user types
 - Use Lancer as the default combat option
