@@ -1,6 +1,11 @@
 import { actionLabels } from "./constants.js";
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
+function capitalizeFirst(text) {
+    const s = String(text ?? "").trim();
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 export async function renderDialog(dialog, dialogData = {}) {
     if (dialog == 'statAndAdvantage') {
         // Render template
@@ -18,6 +23,8 @@ export async function renderDialog(dialog, dialogData = {}) {
                         callback: (html) => {
                             const selectedAdvantage = html.find('input[name="advantage"]:checked').val();
                             const selectedStat = html.find(".stat-option.selected").data("stat");
+                            const selectedSourceUuid = html.find(".stat-option.selected").data("sourceUuid");
+                            const selectedActorId = html.find(".stat-option.selected").data("actorId");
 
                             // Block if either missing
                             if (selectedAdvantage === undefined || !selectedStat) {
@@ -28,7 +35,8 @@ export async function renderDialog(dialog, dialogData = {}) {
                             resolve({
                                 advantage: parseInt(selectedAdvantage, 10) // allows 0
                                 ,stat: selectedStat
-                                ,actorId: html.find(".stat-option.selected").data("actorId")
+                                ,sourceUuid: selectedSourceUuid
+                                ,actorId: selectedActorId
                             });
                         }
                     },
@@ -92,18 +100,23 @@ export async function renderDialog(dialog, dialogData = {}) {
     }
     else if (dialog == "special") {
         const specialArray = dialogData.specialArray;
-        const baseStat = dialogData.specialArray[0];
+        const baseStat = specialArray[0];
         const baseStatKey = typeof baseStat === "string" ? baseStat : baseStat.key;
-        const baseStatLabel = typeof baseStat === "string" ? baseStat : baseStat.label || baseStat?.key;
+        const baseStatLabel = capitalizeFirst(typeof baseStat === "string" ? baseStat : baseStat.label);
+        const baseStatValue = typeof baseStat === "string" ? null : baseStat.value;
 
         const specials = specialArray.slice(1).map((special, index) => {
-            const fallbackKey = (special?.name ?? `special-${index}`).toString().trim();
+            const fallbackKey = (`special-${index}`).toString().trim();
+            const specialLabel = capitalizeFirst(special?.label ?? special?.key ?? fallbackKey).toString()
             return {
                 key: (special?.key ?? fallbackKey).toString(),
-                label: (special?.label ?? special?.name ?? special?.key ?? fallbackKey).toString(),
-                value: Number(special?.value ?? special?.points ?? 0)
+                label: `${baseStatLabel} (${specialLabel})`,
+                value: Number(special?.value ?? 0)
             };
         });
+
+        const stats = [{ key: baseStatKey, label: baseStatLabel, value: baseStatValue }, ...specials];
+        
 
 
         // Render template
@@ -111,7 +124,7 @@ export async function renderDialog(dialog, dialogData = {}) {
             "systems/bizarre-adventures-d6/templates/dialog/special.hbs"
             , { key: baseStatKey
                 , label: baseStatLabel
-                , stats: specials
+                , stats: stats
              }
         );
         return await new Promise((resolve) => {
@@ -152,6 +165,7 @@ export async function renderDialog(dialog, dialogData = {}) {
                     const updateConfirmState = () => {
                         const enabled = isReady();
                             confirmBtn
+                                .prop("disabled", !enabled)
                                 .attr("title", enabled ? "" : "Pick both a Stat first.")
                                 .attr("aria-disabled", !enabled)
                                 .toggleClass("is-disabled", !enabled);

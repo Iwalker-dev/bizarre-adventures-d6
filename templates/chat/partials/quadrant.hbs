@@ -1,15 +1,23 @@
-{{#if rolled}}
-  {{{rollHtml}}}
-{{else if formula}}
-  <div class="formula-prepared">{{formula}}</div>
-{{/if}}
-
-{{#if lock}}
-    <em>Pending</em>
-{{else}}
-  <label>Ready</label>
-{{/if}}
-
-<button class="select-stat" data-quadrant="{{quadrantNum}}" {{#if lock}}disabled{{/if}}>
-  {{#if lock}}Locked...{{else}}Select Stat{{/if}}
-</button>
+<div class="quadrant content">
+  {{#if rolled}}
+    {{{rollHtml}}}
+  {{else if prepared}}
+    <div class="quadrant-prepared">
+      {{actorName}}
+      {{#if statLabel}}({{statLabel}}){{/if}} {{#if specialLabel}}({{specialLabel}}){{/if}}
+      <div class="prepared-details">
+        <span class="prepared-value">Value: {{statValue}}</span>
+        <span class="prepared-advantage">Advantage: {{advantage}}</span>
+      </div>
+      {{#if allPrepared}}
+        <button class="feint-button" data-quadrant="{{quadrantNum}}">Feint</button>
+      {{/if}}
+    </div>
+  {{else if lock}}
+      <em>Pending</em>
+      {{else}}
+        <button class="select-stat" data-quadrant="{{quadrantNum}}" {{#if lock}}disabled{{/if}}>
+          {{#if lock}}Locked...{{else}}Select Stat{{/if}}
+        </button>
+    {{/if}}
+</div>

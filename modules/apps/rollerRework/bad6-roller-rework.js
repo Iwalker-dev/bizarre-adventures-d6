@@ -123,39 +123,42 @@
 // import "./templates/chat/action.hbs";
 import { actionLabels } from "./constants.js";
 import { renderDialog } from "./dialog.js";
+import { LUCK_MOVES } from "./luck-moves.js";
+import { isDebugEnabled } from "../../config.js";
 
-async function renderAction(data) {
-    data = {
-        actionSide: {
-            quadrants: [
-                { index: 1, label: actionLabels[0].label },
-                { index: 2, label: actionLabels[1].label }
-            ]
-        }
-    }
+async function renderAction(data = {}) {
+
+    const quadrants = data.quadrants
+        ? [data.quadrants[1], data.quadrants[2]] // ensure order for actions
+        : [
+            { quadrantNum: 1, label: actionLabels[0].label, prepared: false }
+            , { quadrantNum: 2, label: actionLabels[1].label, prepared: false }
+        ];
+
   return await renderTemplateV1(
     "systems/bizarre-adventures-d6/templates/chat/action.hbs",
-    data
+    { quadrants}
   );
 }
-async function renderContest(data) {
-    data = {
-        actionSide: {
-            quadrants: [
-                { index: 1, label: actionLabels[0].label },
-                { index: 2, label: actionLabels[1].label }
-            ]
-        },
-        reactionSide: {
-            quadrants: [
-                { index: 1, label: actionLabels[2].label },
-                { index: 2, label: actionLabels[3].label }
-            ]
-        }
-    }
+async function renderContest(data = {}) {
+    const quadrants = data.quadrants; // array literal
+
   return await renderTemplateV1(
     "systems/bizarre-adventures-d6/templates/chat/contest.hbs",
-    data
+    {
+            actionSide: {
+                quadrants: [
+                    quadrants[1] || { quadrantNum: 1, label: actionLabels[0].label, prepared: false },
+                    quadrants[2] || { quadrantNum: 2, label: actionLabels[1].label, prepared: false }
+                ]
+            },
+            reactionSide: {
+                quadrants: [
+                    quadrants[3] || { quadrantNum: 3, label: actionLabels[2].label, prepared: false },
+                    quadrants[4] || { quadrantNum: 4, label: actionLabels[3].label, prepared: false }
+                ]
+            }
+    }
   );
 }
 let rollerClickTimer = null;
@@ -212,24 +215,31 @@ export function rollerControl() {
 	});
 }
 
-async function createActionMessage() {
-    let roll = new Roll("2d6 + 3");
-    // await roll.evaluate();
-    return ChatMessage.create({
-        content: await renderAction({ rollHtml: await roll.render() })
+async function createActionMessage() { 
+    const message = await ChatMessage.create({
+        content: await renderAction()
     });
+    await message.setFlag("bizarre-adventures-d6", "type", "action");
+    return message;
 }
 
 async function updateToContest(messageId) {
-    const content = await renderContest();
-    const message = game.messages.get(messageId);
+    let message = game.messages.get(messageId);
 
     if (message?.isOwner) {
+        await message.setFlag("bizarre-adventures-d6", "type", "contest");
+        const quadrants = {
+            1: message.getFlag("bizarre-adventures-d6", "quadrant1"),
+            2: message.getFlag("bizarre-adventures-d6", "quadrant2")
+        };
+        const content = await renderContest({ quadrants });
         await message.update({ content });   // keeps same message id
         return message;
     }
 
-    return ChatMessage.create({ content }); // fallback if missing/uneditable
+    const msg = await ChatMessage.create({ content: await renderContest() });
+    await msg.setFlag("bizarre-adventures-d6", "type", "contest");
+    return msg;
 }
 
 // Prepare Phase ----------------------------------------------------------------------------------------------
@@ -241,19 +251,25 @@ export function registerChatListeners() {
             const quadrantNum = button.dataset.quadrant;
             const messageId = $(button).closest(".chat-message").data("messageId");
             
-            await renderStatSelectionDialog(quadrantNum);
+            const prepare = await renderStatSelectionDialog(quadrantNum);
+            if (!prepare) return;
+
+            await updateQuadrant( messageId, quadrantNum, prepare);
+
+
 
 
         });
 }
 
 async function renderStatSelectionDialog(quadrantNum) {
-    const actorIds = getRollableActorIds();
-    if (!actorIds.length) return;
-    // Create map of ids
-    const actors = actorIds.map(id => {
-        // For each id, find the actor
-        const actor = game.actors.get(id);
+    const actorSources = getRollableActorSources();
+    if (!actorSources.length) return;
+    // Create map of sources
+    const actors = actorSources.map(source => {
+        // Resolve actor from sourceUuid or actorId
+        const actor = resolveActorFromSource(source);
+        if (!actor) return null;
         // Extract the number type stats of the actor, specifically the key, actor name, and stat value
         const statsArray = Object.entries(actor.system.attributes.stats)
             .filter(([, stat]) => String(stat?.dtype || "").toLowerCase() === "number")
@@ -263,26 +279,37 @@ async function renderStatSelectionDialog(quadrantNum) {
                 value: stat.value ?? 0
         }));
         return {
-            id: actor.id,
-            name: actor.name,
+            sourceUuid: source.sourceUuid,
+            actorId: source.actorId,
+            name: source.name,
             stats: statsArray
         };
-    });
+    }).filter(a => a);
 
     // Create dialog
     const statDialogResult = await renderDialog('statAndAdvantage', { actors, quadrantNum });
     if (!statDialogResult) return;
 
-    const { stat, advantage, actorId } = statDialogResult;
-    if (!stat || advantage === undefined || !actorId) return;
+    const { stat, advantage, sourceUuid, actorId } = statDialogResult;
+    if (!stat || advantage === undefined) return;
+    if (!sourceUuid && !actorId) return;
 
-    const actor = game.actors.get(actorId);
+    const actor = resolveActorFromSource({ sourceUuid, actorId });
     if (!actor) return;
 
     const specialArray = Array.isArray(actor.system.attributes.stats?.[stat]?.special)
         ? actor.system.attributes.stats[stat].special
         : [];
     let statValue = actor.system.attributes.stats[stat].value;
+    let selectedSpecial = null;
+    if (isDebugEnabled()) {
+        console.log(`[Rework] Selected stat: "${stat}", Actor: ${actor.name}`
+        , {
+            hasSpecialProperty: !!actor.system.attributes.stats?.[stat]?.special,
+            specialArray: specialArray,
+            length: specialArray.length
+        });
+    }
 
     if (specialArray.length > 0) {
         const specialWithStat = [stat, ...specialArray];
@@ -296,72 +323,241 @@ async function renderStatSelectionDialog(quadrantNum) {
             });
             const selectedValue = Number(selected?.value ?? selected?.points ?? statValue);
             statValue = Number.isFinite(selectedValue) ? selectedValue : statValue;
+            selectedSpecial = selected;
+        }
+    } else {
+        if (isDebugEnabled()) {
+        console.log(`[Rework] No specials found for stat "${stat}"`);
         }
     }
+
+  return { stat, advantage, sourceUuid, actorId, statValue, selectedSpecial };
     
 };
 
 
-function getRollableActorIds(user = game.user) {
+function getRollableActorSources(user = game.user) {
     // TODO: Add setting to manipulate the roles which can highlight tokens.
-    // Also, use highlighted tokens instead of their actors incase they're unlinked
     // Also, look into the extend of flatMaps and if they can be optimized
     if (user.isGM) {
-        // Pull highlighted token's related actors and their linked actors, then create a list of their ids
+        // Pull highlighted token's related actors and their linked actors, then create a list of sources
         const highlighted = canvas.tokens.controlled
             .map(t => {
                 const actor = t.actor;
-                return actor?.isToken ? (t.document?.baseActor || actor) : actor;
+                if (!actor) return null;
+                return {
+                    sourceUuid: t.document.uuid,
+                    actorId: actor.id,
+                    name: t.name
+                };
             })
-            .filter(a => a)
-            .map(a => a.id);
+            .filter(s => s);
 
         if (!highlighted.length) {
             ui.notifications.warn("No tokens highlighted. Please highlight tokens to prepare rolls.");
             return [];
         }
-        const linked = highlighted.flatMap((actorid) => {
-            const actor = game.actors.get(actorid);
+        const linked = highlighted.flatMap((source) => {
+            const actor = resolveActorFromSource(source);
+            if (!actor) return [];
             const linkedActors = actor.system.bio.linkedActors.value || [];
             return linkedActors
                 .map((entry) => {
                     const uuid = entry?.uuid;
                     if (typeof uuid !== "string") return null;
 
-                    if (uuid.startsWith("Actor.")) {
-                        return uuid.split(".")[1] || null;
+                    const doc = fromUuidSync(uuid);
+                    if (!doc) return null;
+
+                    let actorId;
+                    if (doc.documentName === "Actor") {
+                        actorId = doc.id;
+                    } else if (doc.actor) {
+                        actorId = doc.actor.id;
+                    } else {
+                        return null;
                     }
 
-                    const linkedDocument = fromUuidSync(uuid);
-                    return linkedDocument?.id || null;   
+                    return {
+                        sourceUuid: uuid,
+                        actorId,
+                        name: entry.name || doc.name
+                    };
                 })
-                .filter(id => !!id);
+                .filter(s => s);
         });
-        return [...new Set([...highlighted, ...linked])];
+        // Deduplicate by sourceUuid
+        const all = [...highlighted, ...linked];
+        const seen = new Set();
+        return all.filter(s => {
+            if (seen.has(s.sourceUuid)) return false;
+            seen.add(s.sourceUuid);
+            return true;
+        });
     } else {
-        // Pull owned actors and their linked actors, then create a list of their ids
-        const owned = game.actors.filter(a => a.isOwner).map(a => a.id);
+        // Pull owned actors and their linked actors, then create a list of sources
+        const owned = game.actors.filter(a => a.isOwner).map(a => ({
+            sourceUuid: a.uuid,
+            actorId: a.id,
+            name: a.name
+        }));
         if (!owned.length) {
             ui.notifications.warn("No owned actors. Please ask your GM to assign you ownership of an actor to prepare rolls.");
             return [];
         }
-        const linked = owned.flatMap((actorid) => {
-            const actor = game.actors.get(actorid);
+        const linked = owned.flatMap((source) => {
+            const actor = game.actors.get(source.actorId);
+            if (!actor) return [];
             const linkedActors = actor.system.bio.linkedActors.value || [];
             return linkedActors
                 .map((entry) => {
                     const uuid = entry?.uuid;
                     if (typeof uuid !== "string") return null;
 
-                    if (uuid.startsWith("Actor.")) {
-                        return uuid.split(".")[1] || null;
+                    const doc = fromUuidSync(uuid);
+                    if (!doc) return null;
+
+                    let actorId;
+                    if (doc.documentName === "Actor") {
+                        actorId = doc.id;
+                    } else if (doc.actor) {
+                        actorId = doc.actor.id;
+                    } else {
+                        return null;
                     }
 
-                    const linkedDocument = fromUuidSync(uuid);
-                    return linkedDocument?.id || null;   
+                    return {
+                        sourceUuid: uuid,
+                        actorId,
+                        name: entry.name || doc.name
+                    };
                 })
-                .filter(id => !!id);
+                .filter(s => s);
         });
-        return [...new Set([...owned, ...linked])];
+        // Deduplicate by sourceUuid
+        const all = [...owned, ...linked];
+        const seen = new Set();
+        return all.filter(s => {
+            if (seen.has(s.sourceUuid)) return false;
+            seen.add(s.sourceUuid);
+            return true;
+        });
+    }
+}
+
+async function updateQuadrant(messageId, quadrantNum, { sourceUuid, actorId, stat, advantage, statValue }) {
+
+    let message = game.messages.get(messageId);
+
+    if (!message) {
+        ui.notifications.error("Could not find message to update with prepared roll.");
+        return;
+    }
+
+    if (message.getFlag("bizarre-adventures-d6", `Locked`)) {
+        ui.notifications.warn("Previous update for message still processing. Please wait...");
+        const unlocked = await waitForUnlock(message)
+        if (!unlocked) {
+            ui.notifications.error("Message is still locked. Cannot update.");
+            return;
+        }
+        message = game.messages.get(messageId); // refetch to ensure we have the latest state after unlocking
+    }
+
+    if (!message) return;
+
+    await message.setFlag("bizarre-adventures-d6", `Locked`, true);
+    message = game.messages.get(messageId); // refetch to ensure we have the latest state after locking
+    await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, {
+        sourceUuid,
+        actorId,
+        stat,
+        advantage,
+        statValue
+    });
+
+    await rerenderMessage(message);
+
+    await message.setFlag("bizarre-adventures-d6", `Locked`, false);
+}
+
+/**
+ * Resolve actor from sourceUuid+actorId with priority fallback.
+ * @param {Object} source - { sourceUuid?, actorId? }
+ * @returns {Actor|null}
+ */
+function resolveActorFromSource({ sourceUuid, actorId }) {
+    if (sourceUuid) {
+        const doc = fromUuidSync(sourceUuid);
+        if (doc) {
+            if (doc.actor) return doc.actor;
+            if (doc.documentName === "Actor") return doc;
+        }
+    }
+    if (actorId) {
+        return game.actors.get(actorId);
+    }
+    return null;
+}
+
+async function waitForUnlock(message, maxWaitMs = 5000) {
+    const startTime = Date.now();
+    while (message.getFlag("bizarre-adventures-d6", `Locked`)) {
+        if (Date.now() - startTime > maxWaitMs) {
+            return false; // timeout
+        }
+        await new Promise(resolve => setTimeout(resolve, 100)); // wait 100ms
+        message = game.messages.get(message.id); // refetch to get updated flags
+    }
+    return true;
+}
+
+async function rerenderMessage(message) {
+    const type = message.getFlag("bizarre-adventures-d6", "type") || "action";
+    const quadrants = {};
+    let count = 4; // default for contests
+    let allPrepared = true;
+
+    if (type === "action") {
+        count = 2;
+    }
+    
+    // Read all quadrant flags
+    for (let i = 1; i <= count; i++) {
+        const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${i}`);
+        if (flagData) {
+            const actor = resolveActorFromSource(flagData);
+            quadrants[i] = {
+                quadrantNum: i,
+                label: actionLabels[i - 1].label,
+                prepared: true,
+                actorName: actor?.name || "Unknown",
+                statLabel: flagData.stat || "",
+                statValue: flagData.statValue || 0,
+                advantage: flagData.advantage || 0,
+                specialLabel: null, // TODO: resolve from stat special key
+                rolled: false,
+                rollHtml: null,
+                lock: false
+            };
+        } else {
+            // Unprepared quadrant
+            allPrepared = false;
+            quadrants[i] = {
+                quadrantNum: i,
+                label: actionLabels[i - 1].label,
+                prepared: false,
+                lock: false
+            };
+        }
+    }
+    
+    // Add allPrepared flag to each quadrant
+    Object.values(quadrants).forEach(q => q.allPrepared = allPrepared);
+    
+    if (type == "action") {
+        await message.update({ content: await renderAction({ quadrants }) });
+    } else { //its a contest
+        await message.update({ content: await renderContest({ quadrants }) });
     }
 }
