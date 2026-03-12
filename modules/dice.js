@@ -70,6 +70,111 @@ export function modifyFormula(formula, stat = null, sides = null, advantage = nu
     .replace(/@modifier/g, newValues[3]);
 }
 
+function applyOperand(currentValue, operand, lineValue) {
+    switch (operand) {
+        case "+":
+            return currentValue + lineValue;
+        case "-":
+            return currentValue - lineValue;
+        case "*":
+            return currentValue * lineValue;
+        case "/":
+            return lineValue !== 0 ? currentValue / lineValue : currentValue;
+        case "=":
+            return lineValue;
+        default:
+            return currentValue;
+    }
+}
+
+function formatTrace(label, tokens, unclampedValue, clampedValue) {
+    const expression = `${label}: ${tokens.join(" ")}`;
+    if (unclampedValue !== clampedValue) {
+        return `${expression} = ${unclampedValue} (${clampedValue})`;
+    }
+    return `${expression} = ${clampedValue}`;
+}
+
+export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = []) {
+    const selectedIds = new Set((selectedOptionalIds || []).map(String));
+    const values = {
+        stat: Number(base.stat ?? 0),
+        sides: Number(base.sides ?? 6),
+        advantage: Number(base.advantage ?? 0),
+        modifier: Number(base.modifier ?? 0)
+    };
+
+    const traceTokens = {
+        stat: [`${values.stat} (${base.statLabel || "Stat"})`],
+        sides: [String(values.sides)],
+        advantage: [String(values.advantage)],
+        modifier: [String(values.modifier)]
+    };
+
+    const appliedLines = [];
+    const variableOrder = ["stat", "sides", "advantage", "modifier"];
+
+    for (const rawLine of lines || []) {
+        const line = rawLine || {};
+        const variable = String(line.variable || "").trim();
+        if (!variableOrder.includes(variable)) continue;
+
+        const lineStat = String(line.stat || "").trim().toLowerCase();
+        const selectedStat = String(base.statKey || "").trim().toLowerCase();
+        if (lineStat && selectedStat && lineStat !== selectedStat) continue;
+        if (line.optional && !selectedIds.has(String(line.id ?? ""))) continue;
+
+        const operand = String(line.operand || "+").trim();
+        const lineValue = Number(line.value ?? 0);
+        if (!Number.isFinite(lineValue)) continue;
+
+        const before = values[variable];
+        const after = applyOperand(before, operand, lineValue);
+        if (!Number.isFinite(after)) continue;
+
+        values[variable] = after;
+        const sourceLabel = String(line.sourceName || "Custom").trim() || "Custom";
+        traceTokens[variable].push(`${operand} ${lineValue} (${sourceLabel})`);
+        appliedLines.push({
+            id: line.id,
+            sourceName: sourceLabel,
+            stat: line.stat || "",
+            optional: !!line.optional,
+            variable,
+            operand,
+            value: lineValue,
+            before,
+            after
+        });
+    }
+
+    const unclamped = {
+        stat: values.stat,
+        sides: values.sides,
+        advantage: values.advantage,
+        modifier: values.modifier
+    };
+
+    values.stat = Math.max(0, Math.floor(values.stat));
+    values.sides = Math.max(1, Math.floor(values.sides));
+    values.advantage = Math.max(0, Math.min(3, Math.floor(values.advantage)));
+    values.modifier = Math.floor(values.modifier);
+
+    const traceParts = [];
+    if (traceTokens.stat.length > 1) traceParts.push(formatTrace("Stat", traceTokens.stat, unclamped.stat, values.stat));
+    if (traceTokens.sides.length > 1) traceParts.push(formatTrace("Sides", traceTokens.sides, unclamped.sides, values.sides));
+    if (traceTokens.advantage.length > 1) traceParts.push(formatTrace("Advantage", traceTokens.advantage, unclamped.advantage, values.advantage));
+    if (traceTokens.modifier.length > 1) traceParts.push(formatTrace("Result", traceTokens.modifier, unclamped.modifier, values.modifier));
+
+    return {
+        formula: createFormula(values.stat, values.sides, values.advantage, values.modifier),
+        values,
+        appliedLines,
+        customApplied: appliedLines.length > 0,
+        customTooltip: traceParts.join(" | ")
+    };
+}
+
 export async function executeRoll(formula) {
     const roll = new Roll(formula);
     await roll.evaluate({ async: true });

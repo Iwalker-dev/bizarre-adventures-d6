@@ -19,10 +19,20 @@
                         type="button" 
                         data-stat="{{key}}"
                         data-source-uuid="{{../sourceUuid}}"
-                        data-actor-id="{{../actorId}}">
+                        data-actor-id="{{../actorId}}"
+                        data-modifiers="{{customModifiers}}">
                         {{name}}
                     </button>
                 {{/each}}
             </div>
     {{/each}}
+</div>
+
+<div class="quadrant-divider" style="border-top:1px solid #a1a1a1;"></div>
+
+<div class="custom-modifier-dialog">
+    <h4>Custom</h4>
+    <div class="custom-modifier-list">
+        <em>Select a stat to view custom modifiers.</em>
+    </div>
 </div>

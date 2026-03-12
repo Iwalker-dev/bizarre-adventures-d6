@@ -79,7 +79,12 @@ export function registerHandlebarsHelpers() {
 	Handlebars.registerHelper("displayCount", function(value) {
     const count = Number(value ?? 0);
     return count > 1 ? count : "";
-});
+	});
+
+	Handlebars.registerHelper("capitalize", function(value) {
+		if (!value) return "";
+		return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+	});
 }
 
 export async function preloadHandlebarsTemplates() {

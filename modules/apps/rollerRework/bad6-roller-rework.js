@@ -2,7 +2,7 @@ import { actionLabels, LUCK_MOVE_HINTS, HitDC, HitDCFlavor, DC, DCDifficulty, DC
 import { renderDialog } from "./dialog.js";
 import { chooseLuckSpenders, executeLuckMove, trySpendLuck, LUCK_MOVES} from "./luck-moves.js";
 import { isDebugEnabled } from "../../config.js";
-import { createFormula, executeRoll } from "../../dice.js";
+import { createFormula, executeRoll, applyFormulaLines } from "../../dice.js";
 
 async function renderAction(data = {}) {
 
@@ -194,8 +194,32 @@ export async function registerChatListeners() {
 async function prepareQuadrant(messageId, quadrantNum, actorSources) {
     const prepare = await renderStatSelectionDialog(quadrantNum, actorSources);
     if (!prepare) return;
-    const formula = createFormula(prepare.statValue, 6, prepare.advantage, 0);
-    await updateQuadrant( messageId, quadrantNum, { ...prepare, formula });
+    const actor = resolveActorFromSource({ sourceUuid: prepare.sourceUuid, actorId: prepare.actorId });
+    const customLines = actor ? collectActorFormulaLines(actor) : [];
+
+    const baseFormula = createFormula(prepare.statValue, 6, prepare.advantage, 0);
+    const evaluated = applyFormulaLines(
+        {
+            stat: prepare.statValue,
+            sides: 6,
+            advantage: prepare.advantage,
+            modifier: 0,
+            statKey: prepare.stat,
+            statLabel: prepare.selectedSpecial?.label || prepare.stat
+        },
+        customLines,
+        prepare.selectedModifierIds || []
+    );
+
+    const formula = evaluated?.formula || baseFormula;
+    await updateQuadrant(messageId, quadrantNum, {
+        ...prepare,
+        formula,
+        baseFormula,
+        customApplied: !!evaluated?.customApplied,
+        customTooltip: evaluated?.customTooltip || "",
+        customLinesApplied: evaluated?.appliedLines || []
+    });
 }
 export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
     let message = game.messages.get(messageId);
@@ -240,13 +264,16 @@ async function renderStatSelectionDialog(quadrantNum, actorSources) {
         // Resolve actor from sourceUuid or actorId
         const actor = resolveActorFromSource(source);
         if (!actor) return null;
+        const customLines = collectActorFormulaLines(actor);
+        const customModifiers = encodeURIComponent(JSON.stringify(customLines));
         // Extract the number type stats of the actor, specifically the key, actor name, and stat value
         const statsArray = Object.entries(actor.system.attributes.stats)
             .filter(([, stat]) => String(stat?.dtype || "").toLowerCase() === "number")
             .map(([key, stat]) => ({
                 key,
                 name: stat.label || key,
-                value: stat.value ?? 0
+                value: stat.value ?? 0,
+                customModifiers
         }));
         return {
             sourceUuid: source.sourceUuid,
@@ -260,7 +287,7 @@ async function renderStatSelectionDialog(quadrantNum, actorSources) {
     const statDialogResult = await renderDialog('statAndAdvantage', { actors, quadrantNum });
     if (!statDialogResult) return;
 
-    const { stat, advantage, sourceUuid, actorId } = statDialogResult;
+    const { stat, advantage, sourceUuid, actorId, selectedModifierIds = [] } = statDialogResult;
     if (!stat || advantage === undefined) return;
     if (!sourceUuid && !actorId) return;
 
@@ -301,7 +328,7 @@ async function renderStatSelectionDialog(quadrantNum, actorSources) {
         }
     }
 
-  return { stat, advantage, sourceUuid, actorId, statValue, selectedSpecial };
+    return { stat, advantage, sourceUuid, actorId, statValue, selectedSpecial, selectedModifierIds };
     
 };
 
@@ -417,7 +444,7 @@ function getRollableActorSources(user = game.user) {
 
 async function updateQuadrant(messageId
     , quadrantNum
-    , { sourceUuid, actorId, stat, advantage, statValue, formula, selectedSpecial }) 
+    , { sourceUuid, actorId, stat, advantage, statValue, formula, baseFormula, selectedSpecial, customApplied, customTooltip, customLinesApplied }) 
     {
 
     let message = game.messages.get(messageId);
@@ -445,7 +472,11 @@ async function updateQuadrant(messageId
         advantage,
         statValue,
         formula,
+        baseFormula: baseFormula || formula,
         selectedSpecial: selectedSpecial ?? null,
+        customApplied: !!customApplied,
+        customTooltip: customTooltip || "",
+        customLinesApplied: Array.isArray(customLinesApplied) ? customLinesApplied : [],
         luckCounts: existingQuadrant.luckCounts || {},
         gambitCounts: existingQuadrant.gambitCounts || {}
     });
@@ -472,6 +503,40 @@ function resolveActorFromSource({ sourceUuid, actorId }) {
         return game.actors.get(actorId);
     }
     return null;
+}
+
+function collectActorFormulaLines(actor) {
+    if (!actor) return [];
+    const lines = [];
+    const validVariables = new Set(["stat", "sides", "advantage", "modifier"]);
+
+    for (const item of actor.items || []) {
+        const rawLines = item?.system?.formula?.lines;
+        const normalized = Array.isArray(rawLines)
+            ? rawLines
+            : (rawLines && typeof rawLines === "object" ? Object.values(rawLines) : []);
+
+        normalized.forEach((line, index) => {
+            const variable = String(line?.variable || "").trim();
+            if (!validVariables.has(variable)) return;
+
+            const operand = String(line?.operand || "+").trim();
+            const value = Number(line?.value ?? 0);
+            if (!Number.isFinite(value)) return;
+
+            lines.push({
+                id: `${item.id}:${index}`,
+                sourceName: item.name || "Custom",
+                optional: !!line?.optional,
+                stat: String(line?.stat || "").trim().toLowerCase(),
+                variable,
+                operand,
+                value
+            });
+        });
+    }
+
+    return lines;
 }
 
 async function waitForUnlock(message, maxWaitMs = 5000) {
@@ -528,6 +593,8 @@ async function rerenderMessage(message) {
                     || flagData.selectedSpecial?.name
                     || flagData.selectedSpecial?.key
                     || null,
+                customApplied: !!flagData.customApplied,
+                customTooltip: flagData.customTooltip || "",
                 luckCounts: {
                     feint: flagData.luckCounts?.feint || 0,
                     fudge: flagData.luckCounts?.fudge || 0,

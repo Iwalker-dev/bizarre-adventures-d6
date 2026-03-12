@@ -25,6 +25,9 @@ export async function renderDialog(dialog, dialogData = {}) {
                             const selectedStat = html.find(".stat-option.selected").data("stat");
                             const selectedSourceUuid = html.find(".stat-option.selected").data("sourceUuid");
                             const selectedActorId = html.find(".stat-option.selected").data("actorId");
+                            const selectedModifierIds = html.find(".custom-modifier-option:checked")
+                                .map((_, el) => String(el.value))
+                                .get();
 
                             // Block if either missing
                             if (selectedAdvantage === undefined || !selectedStat) {
@@ -37,6 +40,7 @@ export async function renderDialog(dialog, dialogData = {}) {
                                 ,stat: selectedStat
                                 ,sourceUuid: selectedSourceUuid
                                 ,actorId: selectedActorId
+                                ,selectedModifierIds
                             });
                         }
                     },
@@ -84,13 +88,89 @@ export async function renderDialog(dialog, dialogData = {}) {
 
                     confirmBtn[0]?.addEventListener("click", onConfirmAttemptCapture, true);
 
+                    const parseSelectedModifiers = () => {
+                        const selectedButton = html.find(".stat-option.selected");
+                        if (!selectedButton.length) return [];
+                        const encoded = selectedButton.attr("data-modifiers") || "";
+                        if (!encoded) return [];
+                        try {
+                            const parsed = JSON.parse(decodeURIComponent(encoded));
+                            return Array.isArray(parsed) ? parsed : [];
+                        } catch (_error) {
+                            return [];
+                        }
+                    };
+
+                    const formatModifierLabel = (line) => {
+                        const variable = capitalizeFirst(line.variable || "modifier");
+                        const sourceName = line.sourceName || "Custom";
+                        const lineValue = Number(line.value ?? 0);
+                        return `${variable} ${line.operand || "+"} ${lineValue} (${sourceName})`;
+                    };
+
+                    const renderCustomModifierChoices = () => {
+                        const container = html.find(".custom-modifier-list");
+                        if (!container.length) return;
+
+                        const selectedButton = html.find(".stat-option.selected");
+                        if (!selectedButton.length) {
+                            container.html("<em>Select a stat to view custom modifiers.</em>");
+                            return;
+                        }
+
+                        const existingChecked = new Set(
+                            container.find(".custom-modifier-option:checked").map((_, el) => String(el.value)).get()
+                        );
+
+                        const selectedStat = String(selectedButton.data("stat") || "").trim().toLowerCase();
+                        const allLines = parseSelectedModifiers();
+                        const filtered = allLines.filter((line) => {
+                            const lineStat = String(line?.stat || "").trim().toLowerCase();
+                            return !lineStat || lineStat === selectedStat;
+                        });
+
+                        const required = filtered.filter((line) => !line.optional);
+                        const optional = filtered.filter((line) => !!line.optional);
+
+                        if (!required.length && !optional.length) {
+                            container.html("<em>No custom modifiers for this stat.</em>");
+                            return;
+                        }
+
+                        const chunks = [];
+                        if (required.length) {
+                            chunks.push('<div class="custom-modifier-group"><strong>Auto-applied</strong></div>');
+                            for (const line of required) {
+                                chunks.push(`<div class="custom-modifier-auto">• ${formatModifierLabel(line)}</div>`);
+                            }
+                        }
+
+                        if (optional.length) {
+                            chunks.push('<div class="custom-modifier-group"><strong>Optional</strong></div>');
+                            for (const line of optional) {
+                                const lineId = String(line.id || "");
+                                const checked = existingChecked.has(lineId) ? "checked" : "";
+                                chunks.push(
+                                    `<label class="custom-modifier-option-row">` +
+                                    `<input class="custom-modifier-option" type="checkbox" value="${lineId}" ${checked} /> ` +
+                                    `${formatModifierLabel(line)}` +
+                                    `</label>`
+                                );
+                            }
+                        }
+
+                        container.html(chunks.join(""));
+                    };
+
                     html.find(".stat-option").on("click", function () {
                         html.find(".stat-option").removeClass("selected");
                         $(this).addClass("selected");
+                        renderCustomModifierChoices();
                         updateConfirmState();
                     });
 
                 html.find('input[name="advantage"]').on("change", updateConfirmState);
+                renderCustomModifierChoices();
                 updateConfirmState(); // IMPORTANT: start disabled
             },
             close: () => resolve(null),

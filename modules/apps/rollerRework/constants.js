@@ -10,23 +10,23 @@ export const LUCK_MOVE_HINTS = {
 }
 
 export const HitDC = {
-    0 : "None",
+    0 : "0 - None",
 	
-	1 : "Minor",
+	1 : "+1 - Minor",
 
-	2 : "Moderate",
+	2 : "+2 - Moderate",
 
-	3 : "Serious",
+	3 : "+3 - Serious",
 
-	4 : "Debilitating",
+	4 : "+4 - Debilitating",
 
-	5 : "Critical",
+	5 : "+5 - Critical",
 
-	6 : "Macabre",
+	6 : "+6 - Macabre",
 
-	7 : "Grindhouse",
+	7 : "+7 - Grindhouse",
 
-    default : "Grindhouse"
+    default : "7+ - Grindhouse"
 }
 
 export const HitDCFlavor = {
@@ -106,39 +106,39 @@ Star Platinum adds an extra second to the earth’s day with a punch.
 */
 
 export const DC = {
-    0 : "Trivial",
+    0 : "0 - Trivial",
 
-    1 : "Easy",
+    1 : "1 - Easy",
 
-    2 : "Challenging",
+    2 : "2 - Challenging",
 
-    3 : "Dire",
+    3 : "3 - Dire",
 
-    4 : "Herculean",
+    4 : "4 - Herculean",
 
-    5 : "Extraordinary",
+    5 : "5 - Extraordinary",
 
-    6 : "Superhuman",
+    6 : "6 - Superhuman",
 
-    7 : "Unbelievable",
+    7 : "7 - Unbelievable",
 
-    8 : "Surreal",
+    8 : "8 - Surreal",
 
-    9 : "Absurd",
+    9 : "9 - Absurd",
 
-    10 : "Nigh-Impossible",
+    10 : "10 - Nigh-Impossible",
 
-    11 : "Nigh-Impossible",
+    11 : "11 - Nigh-Impossible",
 
-    12 : "Nigh-Impossible",
+    12 : "12 - Nigh-Impossible",
 
-    13 : "Nigh-Impossible",
+    13 : "13 - Nigh-Impossible",
 
-    14 : "Nigh-Impossible",
+    14 : "14 - Nigh-Impossible",
 
-    15 : "Impossible",
+    15 : "15 - Impossible",
 
-    default: "Impossible"
+    default: "15+ - Impossible"
 
 }
 

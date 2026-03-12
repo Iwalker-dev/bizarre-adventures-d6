@@ -1,4 +1,4 @@
-<div class="quadrant-context">
+<div class="quadrant-context {{#if rolled}}is-rolled{{else if prepared}}is-prepared{{else}}is-pending{{/if}}">
   <div class="luck-chips">
     {{#if luckCounts.feint}}
       <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="Feint (-1 Temp): Edit your Action/Reaction after hearing the enemy's">
@@ -42,6 +42,13 @@
         {{#if (isGreater luckCounts.persist 1)}}
           <span class="luck-chip-count">{{displayCount luckCounts.persist}}</span>
         {{/if}}
+      </span>
+    {{/if}}
+
+    {{#if customApplied}}
+      <span class="luck-chip luck-chip--custom luck-chip--active" data-tooltip="{{customTooltip}}">
+        <i class="fas fa-sliders-h"></i>
+        Custom
       </span>
     {{/if}}
   </div>
@@ -91,11 +98,9 @@
 
     {{#if rolled}}
       <div class="quadrant-rolled">
+        <div class= "rolled-actor">{{actorName}}</div>
         {{{rollHtml}}}
-        {{#if rollTotal}}
-          <div class="roll-total">Total: {{rollTotal}}</div>
-        {{/if}}
-
+        <div class="quadrant-actor-divider"></div>
         <div class="quadrant-buttons">
           <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-mulligan" data-tooltip="Right-Click to Gambit">Mulligan</button>
           <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-persist" data-tooltip="Right-Click to Gambit">Persist</button>
@@ -106,11 +111,14 @@
       <div class="quadrant-prepared">
         <div class="prepared-label">
           <div class="prepared-label-actor">{{actorName}}</div>
+          <div class="quadrant-actor-divider"></div>
           <div>Has Readied:</div>
           <div class="prepared-label-stat">
-            {{#if statLabel}}({{statLabel}}){{/if}}
-            {{#if specialLabel}}({{specialLabel}}){{/if}}
-            <span class="prepared-advantage">{{advantage}}</span>
+            <span class="prepared-stat-box">
+              {{#if statLabel}}{{capitalize statLabel}}{{/if}}
+              {{#if specialLabel}} ({{specialLabel}}){{/if}}
+            </span>
+            <span class="prepared-advantage-right">Advantage: {{advantage}}</span>
           </div>
         </div>
 
