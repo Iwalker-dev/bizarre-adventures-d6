@@ -131,18 +131,27 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Single overhead message handler instead of per-message handler
 - message-store state sync
 - Centralized remaining roller user-facing text into `modules/apps/roller/constants.js` (notifications, participant dialogs, status labels, result labels/messages)
+## [0.9.9] - 2026-3-9
+### Features
+- Reworked roller for optimization, readability and simplicity
+- Reworked dialogs for simplicity
+- Added all luck moves
+### Fixes
+- Standardized special stats to `key`, `label`, and `value`.
+- Added world migration to convert older special entries (`name`/`points`) to the new schema.
+- Retuned actor migrator functionality outside of per-version migrations.
+- Set flashback to be always useable
+- Allow privatizing of roll formula (game setting since easier)
+- Allow privitizing of actor names (game setting since easier)
 
 
 # What's left?
 - Create different backgrounds for all user types
-- Use Lancer as the default combat option
-- Clean up code
 - Make more User-Friendly
-- Remove Depreciated methods
 - Add custom images for user and stand type actors
 - Implement Learning automation
-- Allow privatizing of roll formula
-- Show feint count at result
-- Include hit examples in contst resolutions
-- Fix Persist logic
+- Rerender messages when locking them
+
+
+
 

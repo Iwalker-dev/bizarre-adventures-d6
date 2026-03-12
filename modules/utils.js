@@ -74,23 +74,38 @@ export function registerHandlebarsHelpers() {
 	Handlebars.registerHelper('getProperty', (obj, path) => {
 		return foundry.utils.getProperty(obj, path);
 	});
+	Handlebars.registerHelper("getActor", (id) => game.actors.get(id));
+
+	Handlebars.registerHelper("displayCount", function(value) {
+    const count = Number(value ?? 0);
+    return count > 1 ? count : "";
+	});
+
+	Handlebars.registerHelper("capitalize", function(value) {
+		if (!value) return "";
+		return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+	});
 }
 
 export async function preloadHandlebarsTemplates() {
 	const templatePaths = [
-    "systems/bizarre-adventures-d6/templates/partials/actor-shell.hbs"
+    "systems/bizarre-adventures-d6/templates/actor/partials/actor-shell.hbs"
     
-		, "systems/bizarre-adventures-d6/templates/partials/actor-nav.hbs"
+		, "systems/bizarre-adventures-d6/templates/actor/partials/actor-nav.hbs"
     
-		, "systems/bizarre-adventures-d6/templates/partials/actor-class.hbs"
+		, "systems/bizarre-adventures-d6/templates/actor/partials/actor-class.hbs"
     
-		, "systems/bizarre-adventures-d6/templates/partials/actor-stats.hbs"
+		, "systems/bizarre-adventures-d6/templates/actor/partials/actor-stats.hbs"
 
-		,"systems/bizarre-adventures-d6/templates/partials/item-formula.hbs"
+		,"systems/bizarre-adventures-d6/templates/item/partials/item-formula.hbs"
+
+		, "systems/bizarre-adventures-d6/templates/chat/partials/quadrant.hbs"
+
+		, "systems/bizarre-adventures-d6/templates/chat/action.hbs"
   
 	, ];
 
-	const [shellTpl, navTpl, classTpl, statsTp1, formulaTpl] = await foundry.applications.handlebars.loadTemplates(templatePaths);
+	const [shellTpl, navTpl, classTpl, statsTp1, formulaTpl, quadrantTpl, actionTpl] = await foundry.applications.handlebars.loadTemplates(templatePaths);
 
 	// Register based on hbs naming convention
 	Handlebars.registerPartial("actor-shell", shellTpl);
@@ -98,9 +113,67 @@ export async function preloadHandlebarsTemplates() {
 	Handlebars.registerPartial("actor-class", classTpl);
 	Handlebars.registerPartial("actor-stats", statsTp1);
 	Handlebars.registerPartial("item-formula", formulaTpl);
+	Handlebars.registerPartial("roll-quadrant", quadrantTpl);
+	Handlebars.registerPartial("action-card", actionTpl)
 }
 
 // Rolling related helpers
+
+const BAD6_MODULE_ID = "bizarre-adventures-d6";
+export const HIDDEN_ACTOR_NAME = "Hidden Actor";
+
+export function getVisibilityRoleChoices() {
+	return {
+		[CONST.USER_ROLES.NONE]: "None",
+		[CONST.USER_ROLES.PLAYER]: "Player",
+		[CONST.USER_ROLES.TRUSTED]: "Trusted Player",
+		[CONST.USER_ROLES.ASSISTANT]: "Assistant GM",
+		[CONST.USER_ROLES.GAMEMASTER]: "Game Master"
+	};
+}
+
+function getWorldSetting(settingKey, fallbackValue) {
+	try {
+		return game.settings.get(BAD6_MODULE_ID, settingKey);
+	} catch (_error) {
+		return fallbackValue;
+	}
+}
+
+function userMeetsRoleThreshold(minimumRole = CONST.USER_ROLES.GAMEMASTER) {
+	return Number(game.user?.role ?? CONST.USER_ROLES.NONE) >= Number(minimumRole);
+}
+
+function isActorOwner(actor, sourceUuid) {
+	if (!game.user) return false;
+
+	if (sourceUuid) {
+		const sourceDoc = fromUuidSync(sourceUuid);
+		if (sourceDoc?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
+			return true;
+		}
+		if (sourceDoc?.actor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
+			return true;
+		}
+	}
+
+	if (!actor) return false;
+	return !!actor.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+}
+
+function canViewActorData(actor, context, { roleSettingKey, ownerOverrideSettingKey, defaultRole, defaultOwnerOverride }) {
+	if (game.user?.isGM) return true;
+
+	const minimumRole = Number(getWorldSetting(roleSettingKey, defaultRole));
+	const ownerOverride = !!getWorldSetting(ownerOverrideSettingKey, defaultOwnerOverride);
+	const sourceUuid = context?.sourceUuid;
+
+	if (ownerOverride && isActorOwner(actor, sourceUuid)) {
+		return true;
+	}
+
+	return userMeetsRoleThreshold(minimumRole);
+}
 
 
 
@@ -109,8 +182,25 @@ export async function preloadHandlebarsTemplates() {
  * @param {Actor|null} actor
  * @returns {boolean}
  */
-export function canViewActorFormula(actor) {
-	if (game.user.isGM) return true;
-	if (!actor) return false;
-	return !!actor.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+export function canViewActorFormula(actor, context = {}) {
+	return canViewActorData(actor, context, {
+		roleSettingKey: "formulaVisibilityRole",
+		ownerOverrideSettingKey: "formulaVisibilityOwnerOverride",
+		defaultRole: CONST.USER_ROLES.GAMEMASTER,
+		defaultOwnerOverride: true
+	});
+}
+
+/**
+ * Check whether the current user can see actor names for an actor.
+ * @param {Actor|null} actor
+ * @returns {boolean}
+ */
+export function canViewActorName(actor, context = {}) {
+	return canViewActorData(actor, context, {
+		roleSettingKey: "actorNameVisibilityRole",
+		ownerOverrideSettingKey: "actorNameVisibilityOwnerOverride",
+		defaultRole: CONST.USER_ROLES.PLAYER,
+		defaultOwnerOverride: true
+	});
 }

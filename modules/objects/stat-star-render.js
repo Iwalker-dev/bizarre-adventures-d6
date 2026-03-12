@@ -3,30 +3,53 @@ function getRankTitle(starNumber) {
 	return `Rank ${["E", "D", "C", "B", "A"][starNumber - 1] ?? starNumber}`;
 }
 
+function toSpecialKey(label, fallback = "special") {
+	const source = (label ?? "").toString().trim().toLowerCase();
+	const normalized = source
+		.normalize("NFKD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+	return normalized || fallback;
+}
+
 function normalizeSpecialStats(statData) {
 	const raw = Array.isArray(statData?.special) ? statData.special : [];
+	const usedKeys = new Set();
 	return raw
 		.map((entry, idx) => ({
-			name: (entry?.name ?? "").toString().trim(),
-			points: Number(entry?.points ?? 0),
+			label: (entry?.label ?? entry?.name ?? "").toString().trim(),
+			value: Number(entry?.value ?? entry?.points ?? 0),
+			key: (entry?.key ?? "").toString().trim(),
 			createdIndex: idx
 		}))
-		.filter(entry => entry.name.length > 0 && Number.isFinite(entry.points) && entry.points > 0);
+		.filter(entry => entry.label.length > 0 && Number.isFinite(entry.value) && entry.value > 0)
+		.map((entry, idx) => {
+			let key = entry.key || toSpecialKey(entry.label, `special-${idx + 1}`);
+			while (usedKeys.has(key)) {
+				key = `${key}-${idx + 1}`;
+			}
+			usedKeys.add(key);
+			return {
+				...entry,
+				key
+			};
+		});
 }
 
 function getSpecialsAtValue(specialStats, value) {
-	return specialStats.filter(s => Math.floor(s.points) === value);
+	return specialStats.filter(s => Math.floor(s.value) === value);
 }
 
 async function showSpecialStatDialog(actor, statName, seed = null) {
 	const statData = actor.system.attributes.stats?.[statName] ?? {};
 	const current = normalizeSpecialStats(statData);
 	const options = current
-		.map((entry, idx) => `<option value="${idx}">${entry.name} (S(${Math.floor(entry.points)}))</option>`)
+		.map((entry, idx) => `<option value="${idx}">${entry.label} (S(${Math.floor(entry.value)}))</option>`)
 		.join("");
 
-	const seedName = seed?.name ?? "";
-	const seedPoints = Number(seed?.points ?? 1);
+	const seedLabel = seed?.label ?? seed?.name ?? "";
+	const seedValue = Number(seed?.value ?? seed?.points ?? 1);
 
 	const content = `
 		<form class="bad6-special-stat-dialog">
@@ -39,11 +62,11 @@ async function showSpecialStatDialog(actor, statName, seed = null) {
 			</div>
 			<div class="form-group">
 				<label>Name</label>
-				<input id="specialName" type="text" value="${seedName}" placeholder="e.g. Requiem">
+				<input id="specialName" type="text" value="${seedLabel}" placeholder="e.g. Requiem">
 			</div>
 			<div class="form-group">
 				<label>Points</label>
-				<input id="specialPoints" type="number" min="1" max="30" step="1" value="${seedPoints}">
+				<input id="specialPoints" type="number" min="1" max="30" step="1" value="${seedValue}">
 			</div>
 		</form>
 	`;
@@ -56,31 +79,34 @@ async function showSpecialStatDialog(actor, statName, seed = null) {
 				label: "Save",
 				callback: async (html) => {
 					const selected = html.find("#specialExisting").val();
-					const name = String(html.find("#specialName").val() ?? "").trim();
-					const points = Math.max(1, Math.floor(Number(html.find("#specialPoints").val() ?? 1)));
+					const label = String(html.find("#specialName").val() ?? "").trim();
+					const value = Math.max(1, Math.floor(Number(html.find("#specialPoints").val() ?? 1)));
 
-					if (!name) {
+					if (!label) {
 						ui.notifications.warn("Special stats need a name.");
 						return;
 					}
 
 					const next = [...current];
+					const safeKey = toSpecialKey(label, `special-${next.length + 1}`);
 					if (selected !== "") {
 						next[Number(selected)] = {
-							name,
-							points,
+							key: next[Number(selected)]?.key || safeKey,
+							label,
+							value,
 							createdIndex: next[Number(selected)]?.createdIndex ?? Number(selected)
 						};
 					} else {
 						next.push({
-							name,
-							points,
+							key: safeKey,
+							label,
+							value,
 							createdIndex: next.length
 						});
 					}
 
 					await actor.update({
-						[`system.attributes.stats.${statName}.special`]: next.map(({ name: n, points: p }) => ({ name: n, points: p }))
+						[`system.attributes.stats.${statName}.special`]: next.map(({ key, label: l, value: v }) => ({ key, label: l, value: v }))
 					});
 				}
 			},
@@ -92,7 +118,7 @@ async function showSpecialStatDialog(actor, statName, seed = null) {
 					const idx = Number(selected);
 					const next = current.filter((_, i) => i !== idx);
 					await actor.update({
-						[`system.attributes.stats.${statName}.special`]: next.map(({ name: n, points: p }) => ({ name: n, points: p }))
+						[`system.attributes.stats.${statName}.special`]: next.map(({ key, label: l, value: v }) => ({ key, label: l, value: v }))
 					});
 				}
 			},
@@ -136,7 +162,7 @@ export function renderStars(html, actor) {
 		baseValue = Math.floor(baseValue);
 
 		const specialStats = isBurn ? [] : normalizeSpecialStats(statData);
-		const maxSpecial = specialStats.reduce((max, entry) => Math.max(max, Math.floor(entry.points)), 0);
+		const maxSpecial = specialStats.reduce((max, entry) => Math.max(max, Math.floor(entry.value)), 0);
 		const maxStars = Math.max(6, baseValue, maxSpecial);
 
 		$container.empty()
@@ -166,10 +192,10 @@ export function renderStars(html, actor) {
 				isFilled = true;
 				if (hasMultipleSpecials) {
 					star.classList.add("special-multiple");
-					title = `${specialsAtValue.map(s => s.name).join(", ")} · S(${specialsAtValue[0].points})`;
+					title = `${specialsAtValue.map(s => s.label).join(", ")} · S(${specialsAtValue[0].value})`;
 				} else {
 					star.classList.add("special-single");
-					title = `${specialsAtValue[0].name} · S(${Math.floor(specialsAtValue[0].points)})`;
+					title = `${specialsAtValue[0].label} · S(${Math.floor(specialsAtValue[0].value)})`;
 				}
 			}
 
@@ -192,7 +218,7 @@ export function renderStars(html, actor) {
 			if (!isBurn) {
 				star.addEventListener("contextmenu", async (event) => {
 					event.preventDefault();
-					const existing = specialsAtValue[0] ?? { points: starNumber, name: "" };
+					const existing = specialsAtValue[0] ?? { value: starNumber, label: "", key: "" };
 					await showSpecialStatDialog(actor, statName, existing);
 				});
 			}
