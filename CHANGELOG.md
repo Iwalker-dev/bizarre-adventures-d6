@@ -144,6 +144,8 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Allow privatizing of roll formula through game settings
 - Allow privitizing of actor names through game settings
 - Override through actor owner
+## [0.9.9.1] - 2026-3-12
+- updated user-facing instructions
 
 
 # What's left?
