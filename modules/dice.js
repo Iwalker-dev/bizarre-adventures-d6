@@ -8,7 +8,7 @@ parseFormula(component, formula) - parses a specific component (stat, sides, adv
 */
 
 export function createFormula(stat, sides, advantage, modifier) {
-  return `${stat}d${sides}cs>=${advantage} + ${modifier}`;
+  return `${stat}d${sides}cs>=${5-advantage} + ${modifier}`;
 }
 
 export function modifyFormula(formula, stat = null, sides = null, advantage = null, modifier = null, operands = []) {
@@ -70,9 +70,9 @@ export function modifyFormula(formula, stat = null, sides = null, advantage = nu
     .replace(/@modifier/g, newValues[3]);
 }
 
-export function executeRoll(formula) {
+export async function executeRoll(formula) {
     const roll = new Roll(formula);
-    roll.evaluate({ async: true });
+    await roll.evaluate({ async: true });
     return roll;
 }
 

@@ -1,4 +1,4 @@
-import { actionLabels, LUCK_MOVE_HINTS } from "./constants.js";
+import { actionLabels, LUCK_MOVE_HINTS, HitDC, HitDCFlavor, DC, DCDifficulty, DCFlavor } from "./constants.js";
 import { renderDialog } from "./dialog.js";
 import { chooseLuckSpenders, executeLuckMove, trySpendLuck, LUCK_MOVES} from "./luck-moves.js";
 import { isDebugEnabled } from "../../config.js";
@@ -9,33 +9,36 @@ async function renderAction(data = {}) {
     const quadrants = data.quadrants
         ? [data.quadrants[1], data.quadrants[2]] // ensure order for actions
         : [
-            { quadrantNum: 1, label: actionLabels[0].label, prepared: false }
-            , { quadrantNum: 2, label: actionLabels[1].label, prepared: false }
+            { quadrantNum: 1, label: actionLabels[0].label, prepared: false, isResolved: false },
+            { quadrantNum: 2, label: actionLabels[1].label, prepared: false, isResolved: false }
         ];
 
   return await renderTemplateV1(
     "systems/bizarre-adventures-d6/templates/chat/action.hbs",
-    { quadrants}
+    { quadrants, showResolve: true, isResolved: !!data.isResolved, resolveLabel: data.resolveLabel ?? "Resolve", resolveTooltip: data.resolveTooltip ?? "" }
   );
 }
 async function renderContest(data = {}) {
-    const quadrants = data.quadrants; // array literal
+    const quadrants = data.quadrants || {}; // object map by quadrant number
 
   return await renderTemplateV1(
     "systems/bizarre-adventures-d6/templates/chat/contest.hbs",
     {
             actionSide: {
                 quadrants: [
-                    quadrants[1] || { quadrantNum: 1, label: actionLabels[0].label, prepared: false },
-                    quadrants[2] || { quadrantNum: 2, label: actionLabels[1].label, prepared: false }
+                    quadrants[1] || { quadrantNum: 1, label: actionLabels[0].label, prepared: false, isResolved: false },
+                    quadrants[2] || { quadrantNum: 2, label: actionLabels[1].label, prepared: false, isResolved: false }
                 ]
             },
             reactionSide: {
                 quadrants: [
-                    quadrants[3] || { quadrantNum: 3, label: actionLabels[2].label, prepared: false },
-                    quadrants[4] || { quadrantNum: 4, label: actionLabels[3].label, prepared: false }
+                    quadrants[3] || { quadrantNum: 3, label: actionLabels[2].label, prepared: false, isResolved: false },
+                    quadrants[4] || { quadrantNum: 4, label: actionLabels[3].label, prepared: false, isResolved: false }
                 ]
-            }
+            },
+            isResolved: !!data.isResolved, 
+            resolveLabel: data.resolveLabel ?? "Resolve", 
+            resolveTooltip: data.resolveTooltip ?? ""
     }
   );
 }
@@ -488,6 +491,11 @@ async function rerenderMessage(message) {
     const quadrants = {};
     let count = 4; // default for contests
     let allPrepared = true;
+    const result = message.getFlag("bizarre-adventures-d6", "result") || {};
+    const required = type === "action" ? [1, 2] : [1, 2, 3, 4];
+    const isResolved = required.every((index) => !!message.getFlag("bizarre-adventures-d6", `quadrant${index}`)?.rolled);
+    const resolveLabel = result.label ?? "Resolve";
+    const resolveTooltip = result.flavor ?? "";
 
     if (type === "action") {
         count = 2;
@@ -569,9 +577,9 @@ async function rerenderMessage(message) {
     });
     
     if (type == "action") {
-        await message.update({ content: await renderAction({ quadrants }) });
+        await message.update({ content: await renderAction({ quadrants, isResolved, resolveLabel, resolveTooltip }) });
     } else { //its a contest
-        await message.update({ content: await renderContest({ quadrants }) });
+        await message.update({ content: await renderContest({ quadrants, isResolved, resolveLabel, resolveTooltip }) });
     }
 }
 
@@ -586,54 +594,86 @@ async function rollAll(messageId) {
         return;
     }
     await message.setFlag("bizarre-adventures-d6", `Locked`, true);
-    message = game.messages.get(messageId);
-    const type = message.getFlag("bizarre-adventures-d6", "type");
-    const order = type === "action" ? [1, 2] : [3, 4, 1, 2];
-    const results = {};
-    for (let i = 0; i < order.length; i++) {
-        const quadrant = message.getFlag("bizarre-adventures-d6", `quadrant${order[i]}`);
-        if (quadrant.rolled) continue;
-        const roll = await executeRoll(quadrant.formula);
-        await message.setFlag("bizarre-adventures-d6", `quadrant${order[i]}`, { 
-            ...quadrant
-            , rolled: true
-            , rollTotal: roll.total
-            , rollHtml: await roll.render() 
-            , rollData: roll.toJSON()
-        });
-    }
-    // seperate loop incase of desync issues
-    for (let i = 1; i <= (type === "action" ? 2 : 4); i++) {
-        results[i] = message.getFlag("bizarre-adventures-d6", `quadrant${i}`)?.rollTotal || 0;
-    }
-    
-    if (type === "contest") {
-        const actionTotal = results[1] + results[2] || 0;
-        const reactionTotal = results[3] + results[4] || 0;
-        const difference = Math.max(actionTotal - reactionTotal, 0);
-        await message.setFlag("bizarre-adventures-d6", `result`, {
-            actionTotal,
-            reactionTotal,
-            difference
-        });
-        if (difference == 0) {
-            await ChatMessage.create({
-                content: `<p><strong>Clash!</strong></p>`
-            });
-            await createContestMessage();
-        }
-    } else {
-        const action1Total = results[1] || 0;
-        const action2Total = results[2] || 0;
-        await message.setFlag("bizarre-adventures-d6", `result`, {
-            action1Total,
-            action2Total
-        });
-    }
+    try {
+        message = game.messages.get(messageId);
+        const type = message.getFlag("bizarre-adventures-d6", "type");
+        const order = type === "action" ? [1, 2] : [3, 4, 1, 2];
+        const results = {};
 
+        for (const i of order) {
+        const q = message.getFlag("bizarre-adventures-d6", `quadrant${i}`);
+        if (!q?.formula) {
+            ui.notifications.warn("All required quadrants must be prepared before resolving.");
+            return;
+        }
+        }
+
+        for (let i = 0; i < order.length; i++) {
+            const quadrant = message.getFlag("bizarre-adventures-d6", `quadrant${order[i]}`);
+            if (quadrant.rolled) continue;
+            const roll = await executeRoll(quadrant.formula);
+            await message.setFlag("bizarre-adventures-d6", `quadrant${order[i]}`, { 
+                ...quadrant
+                , rolled: true
+                , rollTotal: roll.total
+                , rollHtml: await roll.render() 
+                , rollData: roll.toJSON()
+            });
+        }
+        // seperate loop incase of desync issues
+        for (let i = 1; i <= (type === "action" ? 2 : 4); i++) {
+            results[i] = message.getFlag("bizarre-adventures-d6", `quadrant${i}`)?.rollTotal || 0;
+        }
+        
+        // Resolve
+        if (type === "contest") {
+            const actionTotal = results[1] + results[2] || 0;
+            const reactionTotal = results[3] + results[4] || 0;
+            const difference = actionTotal - reactionTotal;
+            const { label: label, flavor: flavor } = getHitDCMeta(difference);
+
+            if (difference == 0) {
+                await ChatMessage.create({
+                    content: `<p><strong>Clash!</strong></p>`
+                });
+                await createContestMessage();
+            }
+            await message.setFlag("bizarre-adventures-d6", `result`, {
+                difference
+                , label
+                , flavor
+            });
+        } else {
+            const result = results[1] + results[2] || 0;
+            const { label, flavor } = getActionDCMeta(result);
+            await message.setFlag("bizarre-adventures-d6", `result`, {
+                result
+                , label
+                , flavor
+            });
+        }
+    } finally {
+    await rerenderMessage(game.messages.get(messageId));
     await message.setFlag("bizarre-adventures-d6", `Locked`, false);
+    }
 }
 
+function getHitDCMeta(value) {
+  const numeric = Number(value ?? 0);
+  const key = Math.min(7, Math.max(0, Math.floor(numeric)));
+  return {
+    label: HitDC[key] ?? HitDC.default,
+    flavor: HitDCFlavor[key] ?? HitDCFlavor.default
+  };
+}
 
+function getActionDCMeta(value) {
+  const key = Math.min(15, Math.max(0, Math.floor(Number(value ?? 0))));
+  const context = DCDifficulty[key] + "\n" + DCFlavor[key];
+  return {
+    label: DC[key] ?? DC.default,
+    flavor: context
+  };
+}
     
     

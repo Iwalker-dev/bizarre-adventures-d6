@@ -315,6 +315,7 @@ async function executePersist(messageId, quadrantNum) {
 	const newMessage = await ChatMessage.create({
 		content: `<p><strong>Persist!</strong></p>`
 	});
+	await message.setFlag("bizarre-adventures-d6", "locked", true);
 	const type = message.getFlag("bizarre-adventures-d6", "type");
 	if (type === "action") {
 		createActionMessage();
