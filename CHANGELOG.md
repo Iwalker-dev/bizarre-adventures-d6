@@ -146,6 +146,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Override through actor owner
 ## [0.9.9.1] - 2026-3-12
 - updated user-facing instructions
+- updated me-facing instructions
 
 
 # What's left?
