@@ -172,10 +172,10 @@ export async function migrateWorld() {
 		console.log("BAD6 | Applied 0.9.6 migration (moved info to bio) x");
 	}
 
-	// — 0.9.10 migration: normalize stat specials to key/label/value —
+	// — 0.9.9 migration: normalize stat specials to key/label/value —
 	if (isNewer(current, previous) &&
-		isNewer("0.9.8", previous) &&
-		!isNewer("0.9.8", current)
+		isNewer("0.9.9", previous) &&
+		!isNewer("0.9.9", current)
 	) {
 		for (const actor of game.actors.filter(a => ["user", "stand", "power", "character"].includes(a.type))) {
 			const stats = actor.system.attributes?.stats;
@@ -199,7 +199,7 @@ export async function migrateWorld() {
 
 			if (changed) await actor.update(updates);
 		}
-		console.log("BAD6 | Applied 0.9.8 migration (special stats normalized to key/label/value).");
+		console.log("BAD6 | Applied 0.9.9 migration (special stats normalized to key/label/value).");
 	}
 	// — Record that we’re now at `current` —
 	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
