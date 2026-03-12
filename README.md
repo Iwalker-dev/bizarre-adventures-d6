@@ -42,17 +42,16 @@ Enter the system into FoundryVTT
 
 **Use Info**
 
+(Updated March 12, 2026)
+
 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue.
 
 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called Outro and it will automatically switch to it afterwards.
 
-Roller - Rolls happen once, then continue via buttons in the same chat message.
-- GM: Select 1 token for the action roll. If multiple tokens are highlighted it starts a contest.
-- Player: If you have a target, it starts a contest. Otherwise, roll from owned actors.
-- Double-click the D6 Roller control to force a contest in chat.
-- Contest rolls are resolved in the same chat message using the quadrant buttons (Action/Reaction, Roll 1/2).
-- Second rolls only resolve when their quadrant button is clicked.
-- Dice So Nice animations are supported.
+Roller - Click the button in token controls. Double click for a contest
+- GM: May select from their highlighted actors.
+- Player: Can select from their owned actors.
+- Dice So Nice animations are supported. Other modifications can be made on request.
 
 Luck - Feint/Fudge are pre-roll. Mulligan/Persist are after.
 - Fudge affects the current roll and the immediately following roll.

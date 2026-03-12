@@ -37,7 +37,7 @@ Hooks.once("init", async () => {
 		scope: "world",
 		config: false,
 		type: Boolean,
-		default: true
+		default: false
 	});
 
 	game.settings.register("bizarre-adventures-d6", "debugLogs", {
