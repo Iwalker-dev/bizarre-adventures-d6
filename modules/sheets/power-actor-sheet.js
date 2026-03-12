@@ -6,7 +6,7 @@ export class PowerSheet extends BaseActorSheet {
 	static get defaultOptions() {
 		return mergeObject(super.defaultOptions, {
 			classes: ["bizarre-adventures-d6", "sheet", "actor", "power"]
-			, template: "systems/bizarre-adventures-d6/templates/sheets/power-actor-sheet.hbs"
+			, template: "systems/bizarre-adventures-d6/templates/actor/sheets/power-actor-sheet.hbs"
 			, width: 800
 			, height: 800
 			, tabs: [{

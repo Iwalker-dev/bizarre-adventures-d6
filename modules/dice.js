@@ -1,331 +1,203 @@
-/**
- * dice.js
- * Helpers to assemble and prepare roll formulas based on actor/item formula lines.
- *
- * Exports:
- *   - prepareFormula(actor, baseFormula, statLabel, advantage, data, useFudge, useGambitForFudge)
- *
- * Behavior:
- *   - Scans the actor's items for `system.formula.lines` arrays (normalizes object -> array)
- *   - Builds additional arithmetic terms from each line (operand, variable/value)
- *   - Tries to resolve variables from the actor's roll data, falling back to `line.value` or 0
- *   - Returns a final Roll-compatible formula string and whether Fudge was selected
- *   - Includes Fudge luck move handling as a special formula modifier
- */
+ // {{!-- example formula: (@stat)d(@sides)cs>=(@advantage) + (@modifier) --}}
 
-import { showOptionalFormulaDialog } from "./dialog.js";
+/* Exports:
+createFormula(stat, sides, advantage, modifier) - creates a formula string based on the provided parameters
+modifyFormula(formula, stat = null, sides = null, advantage = null, modifier = null, operands = []) - modifies an existing formula based on the provided parameters and operands
+createRoll(formula) - creates a new Roll object based on the provided formula
+parseFormula(component, formula) - parses a specific component (stat, sides, advantage, modifier) from the provided formula
+*/
 
-/**
- * Build a roll formula by combining the base stat roll with item formula lines.
- * Includes optional line selection and Fudge handling.
- *
- * @param {Actor} actor
- * @param {string} baseFormula
- * @param {string} statKey
- * @param {string} statLabel
- * @param {number} advantage
- * @param {Object} data
- * @param {boolean} [useFudge=false]
- * @param {boolean} [useGambitForFudge=false]
- * @param {boolean} [showFudge=true]
- * @param {string} [fudgeLockReason=""]
- * @param {string} [context=""] - Context label like "Action 1" or "Reaction 2"
- * @param {string} [luckActorUuid=null] - UUID of the luck spender actor
- * @returns {Promise<{formula:string,useFudge:boolean,useGambitForFudge:boolean}|{formula:string,useFudge:boolean}|null>}
- */
-export async function prepareFormula(actor, baseFormula, statKey, statLabel, advantage, data, useFudge = false, useGambitForFudge = false, showFudge = true, fudgeLockReason = "", context = "", luckActorUuid = null) {
-	try {
-		if (!actor || !baseFormula) return { formula: baseFormula, useFudge: false };
-
-		const lines = [];
-		const collectFromActor = (act) => {
-			for (const item of act.items) {
-				const formula = item?.system?.formula;
-				if (!formula) continue;
-				let lns = formula.lines;
-				if (!Array.isArray(lns) && lns && typeof lns === 'object') lns = Object.values(lns);
-				if (!lns || !lns.length) continue;
-				for (const line of lns) {
-					if (!line) continue;
-					lines.push({ line, itemName: item.name, actorName: act.name });
-				}
-			}
-		};
-
-		collectFromActor(actor);
-		// Include linked actor items/hits if present
-		const linked = actor.system?.bio?.linkedActors?.value || [];
-		if (Array.isArray(linked) && linked.length) {
-			for (const ln of linked) {
-				try {
-					const linkedActor = await fromUuid(ln.uuid);
-					if (linkedActor) collectFromActor(linkedActor);
-				} catch (e) {
-					// ignore missing linked actor
-				}
-			}
-		}
-
-		// Filter lines: include only those that are global (no stat) or match the current statKey
-		const statKeyLc = (statKey || '').toString().toLowerCase();
-		const relevant = lines.filter(x => {
-			const lineStat = (x.line?.stat || '').toString().toLowerCase();
-			return !lineStat || (statKeyLc && lineStat === statKeyLc);
-		});
-
-		const required = relevant.filter(x => !x.line?.optional);
-		const optionalLines = relevant.filter(x => !!x.line?.optional);
-
-		// Helper to apply operand semantics
-		const applyOperand = (cur, op, val) => {
-			val = Number(val) || 0;
-			switch (op) {
-				case '+': return cur + val;
-				case '-': return cur - val;
-				case '*': return Math.max(0, Math.round(cur * val));
-				case '/': return Math.round(cur / (val || 1));
-				case '=': return val;
-				default: return cur + val;
-			}
-		};
-
-		const computeAdvantageFromLines = (linesToUse) => {
-			let advFromLines = 0;
-			for (const obj of linesToUse) {
-				const line = obj.line;
-				const variable = (line?.variable || '').toString().toLowerCase();
-				if (variable !== 'advantage') continue;
-				const val = resolveVariableValue(line, data, statKey, statLabel, advantage);
-				const op = (line?.operand || '+').toString();
-				advFromLines = applyOperand(advFromLines, op, val);
-			}
-			return Number(advFromLines) + Number(advantage || 0);
-		};
-
-		let chosenOptionalIndices = [];
-		let useFudgeSelected = !!useFudge;
-		let useGambitSelected = !!useGambitForFudge;
-		const hasFudgeLock = !!fudgeLockReason;
-		if (optionalLines.length || showFudge) {
-			const dialogResult = await showOptionalFormulaDialog({
-				required,
-				optionalLines,
-				showFudge,
-				useFudgeSelected,
-				hasFudgeLock,
-				fudgeLockReason,
-				actor,
-				gambitDefault: useGambitSelected,
-				computeAdvantageFromLines,
-				context,
-				luckActorUuid
-			});
-			if (dialogResult === null) return null;
-			chosenOptionalIndices = dialogResult.chosenOptionalIndices || [];
-			useFudgeSelected = !!dialogResult.useFudgeSelected;
-			useGambitSelected = !!dialogResult.useGambitSelected;
-		}
-		const chosenSet = new Set(chosenOptionalIndices);
-		const selected = [
-			...required,
-			...optionalLines.filter((o, i) => chosenSet.has(i))
-		];
-
-		// Parse base formula for stat, sides, and cs threshold if present
-		let statVal = null;
-		let sidesVal = null;
-		let baseThreshold = null;
-		const diceMatch = /([0-9]+)\s*d\s*([0-9]+)/i.exec(baseFormula);
-		const csMatch = /cs\s*>=\s*([0-9]+)/i.exec(baseFormula);
-		if (diceMatch) {
-			statVal = Number(diceMatch[1]);
-			sidesVal = Number(diceMatch[2]);
-		}
-		if (csMatch) baseThreshold = Number(csMatch[1]);
-
-		// Fall back to data if not parsed
-		if (statVal === null) {
-			const found = findValueInData(data, statKey) ?? findValueInData(data, statLabel);
-			statVal = Number(found) || 0;
-		}
-		if (sidesVal === null) sidesVal = Number(findValueInData(data, 'sides')) || 6;
-		if (baseThreshold === null) baseThreshold = 5;
-
-		let advFromLines = 0;
-		let modifierVal = Number(findValueInData(data, 'modifier')) || 0;
-		const extraTerms = [];
-
-		for (const obj of selected) {
-			const line = obj.line;
-			const variable = (line?.variable || '').toString().toLowerCase();
-			const val = resolveVariableValue(line, data, statKey, statLabel, advantage);
-			const op = (line?.operand || '+').toString();
-
-			if (variable === 'stat') {
-				statVal = applyOperand(statVal, op, val);
-				statVal = Math.max(0, Math.round(statVal));
-			} else if (variable === 'sides') {
-				sidesVal = applyOperand(sidesVal, op, val);
-				sidesVal = Math.max(2, Math.round(sidesVal));
-			} else if (variable === 'advantage') {
-				advFromLines = applyOperand(advFromLines, op, val);
-			} else if (variable === 'modifier') {
-				modifierVal = applyOperand(modifierVal, op, val);
-			} else {
-				// Unknown/extra variable -> append as arithmetic term
-				extraTerms.push(`${op}(${Number(val) || 0})`);
-			}
-		}
-
-		let totalAdvantage = Number(advFromLines) + Number(advantage || 0);
-
-		// Apply Fudge as +1 Advantage (cap at 3)
-		if (useFudgeSelected && totalAdvantage <= 2) {
-			totalAdvantage += 1;
-		}
-		
-		const adjustedThreshold = Math.max(0, baseThreshold - totalAdvantage);
-
-		// Build final formula from parsed and adjusted pieces
-		let finalFormula = `(${Math.max(0, Math.round(statVal))}d${Math.max(2, Math.round(sidesVal))}cs>=${adjustedThreshold})`;
-		if (modifierVal) finalFormula += ` + (${modifierVal})`;
-		if (extraTerms.length) finalFormula += ' ' + extraTerms.join(' ');
-
-		return { formula: finalFormula, useFudge: useFudgeSelected, useGambitForFudge: useGambitSelected };
-	} catch (err) {
-		console.error('BAD6 | prepareFormula error', err);
-		return { formula: baseFormula, useFudge: false };
-	}
+export function createFormula(stat, sides, advantage, modifier) {
+  return `${stat}d${sides}cs>=${5-advantage} + ${modifier}`;
 }
 
-/**
- * Resolve a formula line variable/value against roll data.
- * @param {Object} line
- * @param {Object} data
- * @param {string} statKey
- * @param {string} statLabel
- * @param {number} advantage
- * @returns {number}
- */
-function resolveVariableValue(line, data, statKey, statLabel, advantage) {
-	const variable = (line?.variable || '').toString();
-	// Prefer an explicit numeric 'value'
-	if (line?.value !== undefined && line?.value !== null && line?.value !== '') {
-		const n = Number(line.value);
-		if (!Number.isNaN(n)) return n;
-	}
-	if (variable === 'advantage') return Number(advantage || 0);
-	if (variable === 'stat') {
-		// try finding the stat value by key first, then label
-		let found = findValueInData(data, statKey);
-		if (typeof found !== 'number') found = findValueInData(data, statLabel);
-		if (typeof found === 'number') return found;
-	}
-	// Search for the variable name in the provided roll data
-	const found = findValueInData(data, variable);
-	if (typeof found === 'number') return found;
-	// Fallback to 0
-	return 0;
+export function modifyFormula(formula, stat = null, sides = null, advantage = null, modifier = null, operands = []) {
+    // Collect the base values from the formula
+    const baseStat = parseFormula("stat", formula);
+    const baseSides = parseFormula("sides", formula);
+    const baseAdvantage = parseFormula("advantage", formula);
+    const baseModifier = parseFormula("modifier", formula);
+    const baseValues = [baseStat, baseSides, baseAdvantage, baseModifier];
+    const newValues = [stat, sides, advantage, modifier];
+    // Track which values are being modified
+    const modifiedValues = [];
+
+    // If any of the new values are undefined or null, use the base value from the formula
+    for (let i = 0; i < newValues.length; i++) {
+        if (newValues[i] === undefined || newValues[i] === null) {
+            newValues[i] = baseValues[i];
+            modifiedValues[i] = false;
+        } else {
+            modifiedValues[i] = true;
+        }
+    }
+
+    let index = 0;
+
+
+    // Apply the operands to the new values
+    // consider using (const i, i=0, i++) in the future to look cleaner, but this works for now
+    for (const operand of operands) {
+        index++;
+        while (!modifiedValues[index]) {
+            index++;
+        }
+        switch (operand) {
+            case "+":
+                newValues[index] = baseValues[index] + newValues[index];
+                break;
+            case "-":
+                newValues[index] = baseValues[index] - newValues[index];
+                break;
+            case "*":
+                newValues[index] = baseValues[index] * newValues[index];
+                break;
+            case "/":
+                newValues[index] = baseValues[index] / newValues[index];
+                break;
+            case "=":
+                // Do nothing, the new value is already set
+                break;
+            default:
+                notifications.info.warn("Invalid operand: " + operand);
+        }
+    }
+
+  return formula
+    .replace(/@stat/g, newValues[0])
+    .replace(/@sides/g, newValues[1])
+    .replace(/@advantage/g, newValues[2])
+    .replace(/@modifier/g, newValues[3]);
 }
 
-/**
- * Find a numeric value in a nested roll data object by key.
- * @param {Object} obj
- * @param {string} key
- * @returns {number|undefined}
- */
-function findValueInData(obj, key) {
-	if (!obj || !key) return undefined;
-	const lk = key.toString().toLowerCase();
-	const stack = [obj];
-	const seen = new Set();
-	while (stack.length) {
-		const cur = stack.pop();
-		if (!cur || typeof cur !== 'object' || seen.has(cur)) continue;
-		seen.add(cur);
-		for (const [k, v] of Object.entries(cur)) {
-			if (k.toString().toLowerCase() === lk) {
-				if (typeof v === 'number') return v;
-				if (v && typeof v === 'object' && typeof v.value === 'number') return v.value;
-			}
-			if (v && typeof v === 'object') stack.push(v);
-		}
-	}
-	return undefined;
-}
-/**
- * Parse the cs>=N threshold from a formula.
- * @param {string} formula
- * @returns {number}
- */
-export function parseThreshold(formula) {
-	const match = /cs\s*>=\s*([0-9]+)/i.exec(formula || "");
-	return match ? Number(match[1]) : 5;
+function applyOperand(currentValue, operand, lineValue) {
+    switch (operand) {
+        case "+":
+            return currentValue + lineValue;
+        case "-":
+            return currentValue - lineValue;
+        case "*":
+            return currentValue * lineValue;
+        case "/":
+            return lineValue !== 0 ? currentValue / lineValue : currentValue;
+        case "=":
+            return lineValue;
+        default:
+            return currentValue;
+    }
 }
 
-/**
- * Extract d6 results from a roll.
- * @param {Roll} roll
- * @returns {number[]}
- */
-export function extractDiceResults(roll) {
-	const dice = roll?.dice?.[0];
-	if (!dice || !Array.isArray(dice.results)) return [];
-	return dice.results.map(r => Number(r.result)).filter(n => !Number.isNaN(n));
+function formatTrace(label, tokens, unclampedValue, clampedValue) {
+    const expression = `${label}: ${tokens.join(" ")}`;
+    if (unclampedValue !== clampedValue) {
+        return `${expression} = ${unclampedValue} (${clampedValue})`;
+    }
+    return `${expression} = ${clampedValue}`;
 }
 
-/**
- * Count successes given a threshold.
- * @param {number[]} results
- * @param {number} threshold
- * @returns {number}
- */
-export function countSuccesses(results, threshold) {
-	return results.reduce((sum, n) => sum + (n >= threshold ? 1 : 0), 0);
+export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = []) {
+    const selectedIds = new Set((selectedOptionalIds || []).map(String));
+    const values = {
+        stat: Number(base.stat ?? 0),
+        sides: Number(base.sides ?? 6),
+        advantage: Number(base.advantage ?? 0),
+        modifier: Number(base.modifier ?? 0)
+    };
+
+    const traceTokens = {
+        stat: [`${values.stat} (${base.statLabel || "Stat"})`],
+        sides: [String(values.sides)],
+        advantage: [String(values.advantage)],
+        modifier: [String(values.modifier)]
+    };
+
+    const appliedLines = [];
+    const variableOrder = ["stat", "sides", "advantage", "modifier"];
+
+    for (const rawLine of lines || []) {
+        const line = rawLine || {};
+        const variable = String(line.variable || "").trim();
+        if (!variableOrder.includes(variable)) continue;
+
+        const lineStat = String(line.stat || "").trim().toLowerCase();
+        const selectedStat = String(base.statKey || "").trim().toLowerCase();
+        if (lineStat && selectedStat && lineStat !== selectedStat) continue;
+        if (line.optional && !selectedIds.has(String(line.id ?? ""))) continue;
+
+        const operand = String(line.operand || "+").trim();
+        const lineValue = Number(line.value ?? 0);
+        if (!Number.isFinite(lineValue)) continue;
+
+        const before = values[variable];
+        const after = applyOperand(before, operand, lineValue);
+        if (!Number.isFinite(after)) continue;
+
+        values[variable] = after;
+        const sourceLabel = String(line.sourceName || "Custom").trim() || "Custom";
+        traceTokens[variable].push(`${operand} ${lineValue} (${sourceLabel})`);
+        appliedLines.push({
+            id: line.id,
+            sourceName: sourceLabel,
+            stat: line.stat || "",
+            optional: !!line.optional,
+            variable,
+            operand,
+            value: lineValue,
+            before,
+            after
+        });
+    }
+
+    const unclamped = {
+        stat: values.stat,
+        sides: values.sides,
+        advantage: values.advantage,
+        modifier: values.modifier
+    };
+
+    values.stat = Math.max(0, Math.floor(values.stat));
+    values.sides = Math.max(1, Math.floor(values.sides));
+    values.advantage = Math.max(0, Math.min(3, Math.floor(values.advantage)));
+    values.modifier = Math.floor(values.modifier);
+
+    const traceParts = [];
+    if (traceTokens.stat.length > 1) traceParts.push(formatTrace("Stat", traceTokens.stat, unclamped.stat, values.stat));
+    if (traceTokens.sides.length > 1) traceParts.push(formatTrace("Sides", traceTokens.sides, unclamped.sides, values.sides));
+    if (traceTokens.advantage.length > 1) traceParts.push(formatTrace("Advantage", traceTokens.advantage, unclamped.advantage, values.advantage));
+    if (traceTokens.modifier.length > 1) traceParts.push(formatTrace("Result", traceTokens.modifier, unclamped.modifier, values.modifier));
+
+    return {
+        formula: createFormula(values.stat, values.sides, values.advantage, values.modifier),
+        values,
+        appliedLines,
+        customApplied: appliedLines.length > 0,
+        customTooltip: traceParts.join(" | ")
+    };
 }
 
-/**
- * Build a roll snapshot for chat rendering and luck logic.
- * @param {Roll} roll
- * @param {string} formula
- * @param {number} advantage
- * @returns {{formula:string,threshold:number,diceResults:number[],delta:number,advantage:number,total:number}}
- */
-export function buildRollSnapshot(roll, formula, advantage) {
-	const threshold = parseThreshold(formula);
-	const diceResults = extractDiceResults(roll);
-	const baseSuccesses = countSuccesses(diceResults, threshold);
-	const delta = (roll?.total ?? 0) - baseSuccesses;
-	return {
-		formula,
-		threshold,
-		diceResults,
-		delta,
-		advantage: Number(advantage || 0),
-		total: roll?.total ?? 0
-	};
+export async function executeRoll(formula) {
+    const roll = new Roll(formula);
+    await roll.evaluate({ async: true });
+
+    if (game.dice3d?.showForRoll) {
+        try {
+            await game.dice3d.showForRoll(roll, game.user, true);
+        } catch (error) {
+            console.warn("BAD6 | Dice So Nice roll display failed", error);
+        }
+    }
+
+    return roll;
 }
 
-export function statValueToDiceCount(value) {
-	if (value === 6) return 10;
-	return value;
-}
-
-/**
- * Play Dice So Nice animation if available.
- * @param {Roll} roll
- * @returns {Promise<void>}
- */
-export async function playDiceAnimation(roll) {
-	const dice3d = game?.dice3d;
-	if (!dice3d?.showForRoll) return;
-
-	const users = game.users
-		.filter(u => u.active)
-		.map(u => u.id);
-
-	await dice3d.showForRoll(roll, game.user, {
-		synchronize: true,
-		users
-	});
+export function parseFormula(component, formula) {
+    const map = {
+        stat: /^(\d+)d/,      // first number before 'd'
+        sides: /d(\d+)cs/,    // number between 'd' and 'cs'
+        advantage: /cs>=(\d+)/,  // number after 'cs>='
+        modifier: /\+ (\d+)$/    // number after '+'
+    };
+    const regex = map[component];
+    const match = formula.match(regex);
+    return match ? parseInt(match[1]) : null;
 }

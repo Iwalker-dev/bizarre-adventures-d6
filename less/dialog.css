@@ -4,25 +4,111 @@
   gap: 0.5em;
   /* optional spacing between rows */
 }
-.bad6-contest .bad6-luck-strip {
+.stat-selection-dialog .stat-options {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
+  flex-wrap: nowrap;
+  /* force one row */
+  gap: 0.25rem;
+  width: 100%;
 }
-.bad6-contest .bad6-luck-chip {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.72rem;
-  line-height: 1;
-  padding: 2px 6px;
-  border-radius: 999px;
-  border: 1px solid #a8a8a8;
-  background: rgba(0, 0, 0, 0.06);
-  color: #222;
-  font-weight: 600;
+.stat-selection-dialog button.stat-option {
+  flex: 1 1 0;
+  /* equal width fill */
+  min-width: 0;
+  /* allow shrinking */
+  max-width: none;
+  width: auto;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  box-sizing: border-box;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.bad6-contest .bad6-luck-chip.bad6-luck-chip--gambit {
-  border-color: #d4af37;
-  box-shadow: inset 0 0 0 1px #d4af37;
+.custom-modifier-dialog {
+  margin-top: 0.35rem;
+}
+.custom-modifier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-height: 11rem;
+  overflow-y: auto;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.03);
+}
+.custom-modifier-group {
+  margin-top: 0.15rem;
+}
+.custom-modifier-auto,
+.custom-modifier-option-row {
+  font-size: 0.9em;
+}
+.custom-modifier-option-row {
+  display: block;
+}
+.special-selection-dialog .special-options {
+  display: grid;
+  grid-auto-flow: column;
+  /* force one column */
+  gap: 0.25rem;
+  width: 100%;
+}
+.special-selection-dialog button.special-option {
+  flex: 1 1 0;
+  /* equal width fill */
+  min-width: 0;
+  /* allow shrinking */
+  max-width: none;
+  width: auto;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  box-sizing: border-box;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@keyframes bad6-invalid-shake {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(3px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+.dialog .dialog-buttons button.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+.dialog .dialog-buttons button.bad6-invalid-shake {
+  animation: bad6-invalid-shake 0.22s ease-in-out;
+}
+/* Stat picker - selected looks pressed */
+.stat-selection-dialog .stat-option {
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+.stat-selection-dialog .stat-option.selected {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  filter: brightness(0.95);
+}
+/* Optional: tactile press while clicking any stat button */
+.stat-selection-dialog .stat-option:active {
+  transform: translateY(1px);
 }

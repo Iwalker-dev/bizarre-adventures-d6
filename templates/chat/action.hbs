@@ -1,0 +1,22 @@
+<div class="action-class">
+  {{#each quadrants}}
+    <div class="action-header">{{label}}</div>
+    {{> roll-quadrant this}}
+    {{#unless @last}}
+      <div class="quadrant-divider" style="border-top:1px solid #a1a1a1;"></div>
+    {{/unless}}
+  {{/each}}
+  {{#if showResolve}}
+    {{#if (getProperty quadrants "0.allPrepared")}}
+        {{#if isResolved}}
+            <div class="contest-resolve">
+                <span class="select-stat is-disabled" data-tooltip="{{resolveTooltip}}">{{resolveLabel}}</span>
+            </div>
+        {{else}}
+            <div class="contest-resolve">
+                <button class="select-stat" data-action="resolve" data-tooltip="{{resolveTooltip}}">Resolve</button>
+            </div>
+        {{/if}}
+    {{/if}}
+  {{/if}}
+</div>
