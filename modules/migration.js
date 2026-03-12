@@ -82,8 +82,8 @@ export async function migrateWorld() {
       <p> Controls: </p>
         <ul>
           <li>🎲 Use the "D6 Roller" in token controls for actions. Double click for Contests.</li>
-          <li>🎲 As a GM, select 1 token for the action roll. If multiple tokens are highlighted, it starts a contest.</li>
-          <li>🎯 As a player, selecting targets starts a contest. Otherwise, you roll from owned actors.</li>
+          <li>🎲 As a GM, your highlighted tokens are the roll's context.</li>
+          <li>🎯 As a player your owned actors are the roll's context.</li>
           <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
           <li>🔧 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue</li>
           <li>🌟 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called "Outro" and it will automatically switch to it afterwards.</li>
@@ -91,12 +91,12 @@ export async function migrateWorld() {
         </ul>
         <p> This system is unfinished! Certain features are not yet implemented such as...</p>
         <ul>
-          <li> Flashbacks (You will have to manually take the cost).</li>
+          <li> Learning Automation.</li>
         </ul>
         <p> Please report any problems, ideas, or comments to itpart on Discord. I would love to make this the perfect system with your help! </p>`
 			, whisper: game.users.filter(u => u.isGM).map(u => u.id)
 		});
-		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
+		await game.settings.set("bizarre-adventures-d6", "welcomed", true);
 	}
 
 	// — 0.9.1 migration: “Learning” → “Luck” —
@@ -174,12 +174,13 @@ export async function migrateWorld() {
 
 	// — 0.9.10 migration: normalize stat specials to key/label/value —
 	if (isNewer(current, previous) &&
-		isNewer("0.9.9", previous) &&
-		!isNewer("0.9.9", current)
+		isNewer("0.9.8", previous) &&
+		!isNewer("0.9.8", current)
 	) {
 		for (const actor of game.actors.filter(a => ["user", "stand", "power", "character"].includes(a.type))) {
 			const stats = actor.system.attributes?.stats;
 			if (!stats || typeof stats !== "object") continue;
+			await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 
 			const updates = {};
 			let changed = false;
@@ -198,7 +199,7 @@ export async function migrateWorld() {
 
 			if (changed) await actor.update(updates);
 		}
-		console.log("BAD6 | Applied 0.9.9 migration (special stats normalized to key/label/value).");
+		console.log("BAD6 | Applied 0.9.8 migration (special stats normalized to key/label/value).");
 	}
 	// — Record that we’re now at `current` —
 	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
