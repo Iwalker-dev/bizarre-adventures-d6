@@ -141,8 +141,9 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Added world migration to convert older special entries (`name`/`points`) to the new schema.
 - Retuned actor migrator functionality outside of per-version migrations.
 - Set flashback to be always useable
-- Allow privatizing of roll formula (game setting since easier)
-- Allow privitizing of actor names (game setting since easier)
+- Allow privatizing of roll formula through game settings
+- Allow privitizing of actor names through game settings
+- Override through actor owner
 
 
 # What's left?
@@ -151,6 +152,8 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Add custom images for user and stand type actors
 - Implement Learning automation
 - Rerender messages when locking them
+- Resolve gated by permissions
+- Actor gate by permissions
 
 
 
