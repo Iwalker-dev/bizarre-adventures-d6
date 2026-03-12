@@ -1,10 +1,25 @@
-/**
- * Luck Moves System - Handles all Luck move checks, costs, and applications
- */
+import { resetQuadrant, createActionMessage, createContestMessage, recalculateQuadrantFormula } from "./apps/bad6-roller.js";
+import { getRollerSocket } from "./sockets.js";
 
-/**
- * Luck move definitions with their base costs and properties
- */
+async function executeRollerAsGM(handler, ...args) {
+	const socket = getRollerSocket();
+	if (!socket) {
+		ui.notifications.error("Socket is not ready. Cannot execute GM action.");
+		return null;
+	}
+	return await socket.executeAsGM(handler, ...args);
+}
+
+function canUseMove(move, actor) {
+	const luckStat = actor.system.attributes.stats.luck;
+	const pool = move.costType === "perm" ? (luckStat.perm ?? 0) : (luckStat.temp ?? 0);
+	if (pool < move.cost) {
+		ui.notifications.warn("Not enough luck to spend!");
+		return false;
+	}
+	return true;
+}
+
 export const LUCK_MOVES = {
 	feint: {
 		name: "Feint",
@@ -27,7 +42,7 @@ export const LUCK_MOVES = {
 		description: "Retcon a detail you choose",
 		costType: "temp",
 		cost: 3,
-		timing: "post-roll",
+		timing: "anytime",
 		effect: "narrative"
 	},
 	mulligan: {
@@ -56,472 +71,263 @@ export const LUCK_MOVES = {
 	}
 };
 
-function resolveLinkedActorSync(linked) {
-	if (!linked) return null;
-	const uuid = linked.uuid;
-	if (!uuid || typeof uuid !== "string") return null;
-	if (uuid.startsWith("Actor.")) {
-		const parts = uuid.split(".");
-		const actorId = parts[1];
-		return game.actors?.get(actorId) || null;
+export function chooseLuckSpenders(rollableActors) {
+	let values = [];
+	let spenders = [];
+	for (const source of rollableActors) {
+		let actor;
+		if (source.sourceUuid) {
+			const doc = fromUuidSync(source.sourceUuid);
+			if (doc?.documentName === "Actor") actor = doc;
+			else if (doc?.actor) actor = doc.actor;
+		}
+		if (!actor && source.actorId) {
+			actor = game.actors.get(source.actorId);
+		}
+		if (!actor) continue; // Could not resolve actor, skip
+
+		// Extract the burn type stats of the actor, specifically the luck stat if it has one, and its value
+        const statsArray = Object.entries(actor.system.attributes.stats)
+            .filter(([, stat]) => String(stat?.dtype || "").toLowerCase() === "burn")
+            .map(([key, stat]) => ({
+                key,
+                name: stat.label || key
+                ,value: stat.value ?? 0
+				,temp: stat.temp ?? 0
+				,perm: stat.perm ?? 0
+        }));
+		const luckStat = statsArray.find(stat => stat.name.toLowerCase() === "luck");
+		if (!luckStat) continue; // Actor has no luck stat, skip
+		// Check if this actor has the highest of any luck value so far
+				if (!values[0] || luckStat.temp > values[0]) {
+					values[0] = luckStat.temp;
+					spenders[0] = source.actorId;
+				}
+				if (!values[1] || luckStat.perm > values[1]) {
+					values[1] = luckStat.perm;
+					spenders[1] = source.actorId;
+				}
+				if (!values[2] || luckStat.value > values[2]) {
+					values[2] = luckStat.value;
+					spenders[2] = source.actorId;
+				}
 	}
-	return null;
+
+	return spenders;
 }
 
-export function resolveLuckActorSync(actor) {
-	if (!actor) return null;
-
-	// Prefer a user-type actor (self or linked) for spending luck
-	if (actor.type === "user") return actor;
-
-	const linkedActors = actor.system?.bio?.linkedActors?.value || [];
-	for (const linked of linkedActors) {
-		const linkedActor = resolveLinkedActorSync(linked);
-		if (!linkedActor) continue;
-		if (linkedActor.type === "user") return linkedActor;
+export async function trySpendLuck(actorId, action, refund = false) {
+	const actor = game.actors.get(actorId);
+	if (!actor) {
+		console.error(`BAD6 | trySpendLuck: could not find actor with id "${actorId}"`);
+		ui.notifications.warn("Could not find a valid Luck-spending actor.");
+		return false;
 	}
-
-	return actor;
-}
-
-async function resolveLuckActor(actor) {
-	if (!actor) return null;
-
-	// Prefer a user-type actor (self or linked) for spending luck
-	if (actor.type === "user") return actor;
-
-	const linkedActors = actor.system?.bio?.linkedActors?.value || [];
-	for (const linked of linkedActors) {
-		let linkedActor = null;
-		if (linked.uuid) {
-			try {
-				linkedActor = await fromUuid(linked.uuid);
-			} catch (e) {
-				linkedActor = null;
+	const luckStat = actor.system.attributes.stats.luck;
+	for (const move of Object.values(LUCK_MOVES)) {
+		if (move.name === action) {
+			const pool = move.costType === "perm" ? (luckStat.perm ?? 0) : (luckStat.temp ?? 0);
+			if (!refund && !canUseMove(move, actor)) {
+				return false;
+			}
+			switch (move.costType) {
+				case "temp":
+					actor.update({ "system.attributes.stats.luck.temp": luckStat.temp - (refund ? -move.cost : move.cost) });
+					return true;
+				case "perm":
+					await actor.update({ "system.attributes.stats.luck.perm": luckStat.perm - (refund ? -move.cost : move.cost) });
+					return true;
+				case "value":
+					await actor.update({ "system.attributes.stats.luck.value": luckStat.value - (refund ? -move.cost : move.cost) });
+					return true;
+				default:
+					ui.notifications.warn("Invalid cost type for move: " + move.name);
+					return false;
 			}
 		}
-		if (!linkedActor) continue;
-		if (linkedActor.type === "user") return linkedActor;
 	}
 
-	return actor;
 }
 
-/**
- * Check if an actor has enough luck to use a move
- * @param {Actor} actor - The actor to check
- * @param {string} moveKey - The luck move key (e.g., "fudge", "mulligan")
- * @param {boolean} hasGambit - Whether the actor is using a Gambit (reduces cost to 0)
- * @returns {Object} { canUse: boolean, needed: number, current: number, reason: string }
- */
-export function canUseLuckMove(actor, moveKey, hasGambit = false, luckActorOverride = null) {
-	const move = LUCK_MOVES[moveKey];
-	if (!move) return { canUse: false, reason: "Invalid luck move" };
-
-	const luckActor = luckActorOverride || resolveLuckActorSync(actor);
-	const luck = luckActor?.system?.attributes?.stats?.luck;
-	if (!luck) return { canUse: false, reason: "Actor has no Luck stat" };
-
-	const effectiveCost = hasGambit && moveKey !== "gambit" ? 0 : move.cost;
-	const costType = move.costType;
-
-	if (costType === "temp") {
-		const current = luck.temp || 0;
-		return {
-			canUse: current >= effectiveCost,
-			needed: effectiveCost,
-			current,
-			costType: "temp",
-			reason: current < effectiveCost ? "(Not enough temp luck!)" : ""
-		};
-	} else if (costType === "perm") {
-		const current = luck.perm || 0;
-		return {
-			canUse: current >= effectiveCost,
-			needed: effectiveCost,
-			current,
-			costType: "perm",
-			reason: current < effectiveCost ? "(Not enough perm luck!)" : ""
-		};
+export async function executeLuckMove(messageId, spenders, quadrantNum, move, isGambit = false) {
+	let message = game.messages.get(messageId);
+	if (!message) return;
+	if (!LUCK_MOVES[move]) {
+		ui.notifications.warn("Unknown move: " + move);
+		return;
 	}
 
-	return { canUse: false, reason: "Unknown cost type" };
-}
-
-/**
- * Spend luck for a move, with feint count multiplication if applicable
- * @param {Actor} actor - The actor spending luck
- * @param {string} moveKey - The luck move key
- * @param {boolean} hasGambit - Whether a Gambit is being used
- * @param {number} feintCount - Number of feints used (for feint move only)
- * @returns {Promise<{success: boolean, error: string|null}>} Success status and error message
- */
-export async function spendLuckMove(actor, moveKey, hasGambit = false, feintCount = 0, luckActorOverride = null) {
-	const move = LUCK_MOVES[moveKey];
-	if (!move) return { success: false, error: "Invalid luck move" };
-
-	const check = canUseLuckMove(actor, moveKey, hasGambit, luckActorOverride);
-	if (!check.canUse) return { success: false, error: check.reason };
-
-	const luckActor = luckActorOverride || await resolveLuckActor(actor);
-	if (!luckActor) return { success: false, error: "No actor with Luck found" };
-	const luck = luckActor.system.attributes.stats.luck;
-	
-	// Calculate effective cost
-	let effectiveCost = hasGambit && moveKey !== "gambit" ? 0 : move.cost;
-	
-	// For feint, multiply cost by feint count
-	if (moveKey === "feint" && feintCount > 0) {
-		effectiveCost = move.cost * feintCount;
+	const existing = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
+	/*
+	const countType = isGambit ? "gambitCounts" : "luckCounts";
+	 Spare logic for gating luck moves which shouldnt be able to be spammed
+	const currentCount = existing[countType]?.[move] || 0;
+	// If this is not a gambit and the move has already been used, exit. Gambits can be used multiple times for free.
+	if (move !== "feint" && currentCount > 0) {
+		return;
 	}
-
-	// If Gambit is used, no actual cost is deducted
-	if (hasGambit && moveKey !== "gambit") {
-		console.log(`BAD6 | ${actor.name} used ${move.name} with Gambit - no cost!`);
-		return { success: true, error: null };
-	}
-
-	if (move.costType === "temp") {
-		const newTemp = luck.temp - effectiveCost;
-		if (newTemp < 0) {
-			// Error but set to 0
-			await luckActor.update({
-				"system.attributes.stats.luck.temp": 0
-			});
-			return { 
-				success: false, 
-				error: `ERROR: Would reduce temp luck below 0! Set to 0. Tried to spend ${effectiveCost} but only had ${luck.temp}.`
-			};
-		}
-		await luckActor.update({
-			"system.attributes.stats.luck.temp": newTemp
-		});
-	} else if (move.costType === "perm") {
-		const newPerm = luck.perm - effectiveCost;
-		if (newPerm < 0) {
-			// Error but set to 0
-			await luckActor.update({
-				"system.attributes.stats.luck.perm": 0
-			});
-			return { 
-				success: false, 
-				error: `ERROR: Would reduce perm luck below 0! Set to 0. Tried to spend ${effectiveCost} but only had ${luck.perm}.`
-			};
-		}
-		await luckActor.update({
-			"system.attributes.stats.luck.perm": newPerm
-		});
-	}
-
-	console.log(`BAD6 | ${actor.name} spent ${effectiveCost} ${move.costType} luck on ${move.name}`);
-	return { success: true, error: null };
-}
-
-/**
- * Refund luck for a luck move with optional cap enforcement.
- * When refunding to temp luck, if the result would exceed 5 and the actor
- * didn't already exceed 5 before refunding, cap at 5 and show a warning.
- * @param {Actor} actor - The actor getting luck refunded
- * @param {string} moveKey - The luck move key
- * @param {boolean} hasGambit - Whether Gambit was used (refunds 0 if true)
- * @param {number} feintCount - Number of feints used (for feint move only)
- * @param {Actor|null} luckActorOverride - Override luck actor to use
- * @returns {Promise<{success: boolean, error: string|null, capped: boolean}>}
- */
-export async function refundLuckMove(actor, moveKey, hasGambit = false, feintCount = 0, luckActorOverride = null) {
-	const move = LUCK_MOVES[moveKey];
-	if (!move) return { success: false, error: "Invalid luck move", capped: false };
-
-	const luckActor = luckActorOverride || await resolveLuckActor(actor);
-	if (!luckActor) return { success: false, error: "No actor with Luck found", capped: false };
-	const luck = luckActor.system.attributes.stats.luck;
-
-	// If Gambit was used, nothing to refund
-	if (hasGambit && moveKey !== "gambit") {
-		console.log(`BAD6 | ${actor.name} refunding ${move.name} - was Gambit, no cost to refund`);
-		return { success: true, error: null, capped: false };
-	}
-
-	// Calculate effective cost
-	let effectiveCost = move.cost;
-	
-	// For feint, multiply cost by feint count
-	if (moveKey === "feint" && feintCount > 0) {
-		effectiveCost = move.cost * feintCount;
-	}
-
-	if (move.costType === "temp") {
-		const currentTemp = luck.temp || 0;
-		const newTemp = currentTemp + effectiveCost;
-		const maxTemp = 5;
-		let finalTemp = newTemp;
-		let capped = false;
-
-		// If refunding would exceed 5 and we weren't already over 5, cap at 5 and warn
-		if (newTemp > maxTemp && currentTemp <= maxTemp) {
-			finalTemp = maxTemp;
-			capped = true;
-			console.log(`BAD6 | ${actor.name} refunded ${effectiveCost} temp luck for ${move.name}, capped at 5 (was ${currentTemp})`);
-		} else {
-			console.log(`BAD6 | ${actor.name} refunded ${effectiveCost} temp luck for ${move.name} (${currentTemp} → ${finalTemp})`);
-		}
-
-		await luckActor.update({
-			"system.attributes.stats.luck.temp": finalTemp
-		});
-
-		return { success: true, error: null, capped };
-	} else if (move.costType === "perm") {
-		const currentPerm = luck.perm || 0;
-		const newPerm = currentPerm + effectiveCost;
-		const maxPerm = 5;
-		let finalPerm = newPerm;
-		let capped = false;
-
-		// If refunding would exceed 5 and we weren't already over 5, cap at 5 and warn
-		if (newPerm > maxPerm && currentPerm <= maxPerm) {
-			finalPerm = maxPerm;
-			capped = true;
-			console.log(`BAD6 | ${actor.name} refunded ${effectiveCost} perm luck for ${move.name}, capped at 5 (was ${currentPerm})`);
-		} else {
-			console.log(`BAD6 | ${actor.name} refunded ${effectiveCost} perm luck for ${move.name} (${currentPerm} → ${finalPerm})`);
-		}
-
-		await luckActor.update({
-			"system.attributes.stats.luck.perm": finalPerm
-		});
-
-		return { success: true, error: null, capped };
-	}
-
-	return { success: false, error: "Unknown cost type", capped: false };
-}
-
-/**
- * Check if Fudge can be used, accounting for advantage cap
- * @param {Actor} actor - The actor
- * @param {number} currentAdvantage - Current advantage level
- * @param {boolean} hasGambit - Whether Gambit is being used
- * @returns {Object} { canUse: boolean, reason: string, currentLuck: number }
- */
-export function canUseFudge(actor, currentAdvantage = 0, hasGambit = false, luckActorOverride = null) {
-	const luckActor = luckActorOverride || resolveLuckActorSync(actor);
-	const luck = luckActor?.system?.attributes?.stats?.luck;
-	if (!luck) return { canUse: false, reason: "Actor has no Luck stat", currentLuck: 0 };
-
-	const effectiveCost = hasGambit ? 0 : 2;
-	const tempLuck = luck.temp || 0;
-
-	// Check advantage cap first (prioritize showing this error)
-	if (currentAdvantage >= 3) {
-		return {
-			canUse: false,
-			reason: "(Would break Advantage cap!)",
-			currentLuck: tempLuck
-		};
-	}
-
-	// Check temp luck
-	if (tempLuck < effectiveCost) {
-		return {
-			canUse: false,
-			reason: "(Not enough temp luck!)",
-			currentLuck: tempLuck
-		};
-	}
-
-	return {
-		canUse: true,
-		reason: "",
-		currentLuck: tempLuck
-	};
-}
-
-/**
- * Get available luck moves filtered by timing
- * @param {Actor} actor - The actor to check
- * @param {string} timing - "pre-roll", "post-roll", or "anytime"
- * @param {boolean} hasGambit - Whether Gambit is being used
- * @returns {Array} Array of move availability objects
- */
-export function getAvailableLuckMoves(actor, timing = "anytime", hasGambit = false) {
-	const moves = [];
-
-	for (const [key, move] of Object.entries(LUCK_MOVES)) {
-		// Filter by timing
-		if (timing !== "anytime" && move.timing !== timing && move.timing !== "anytime") {
-			continue;
-		}
-
-		const check = canUseLuckMove(actor, key, hasGambit);
-		moves.push({
-			key,
-			move,
-			canUse: check.canUse,
-			reason: check.reason,
-			costType: check.costType,
-			needed: check.needed,
-			current: check.current
-		});
-	}
-
-	return moves;
-}
-
-/**
- * Create a feint counter UI for the stat selection dialog
- * Returns an object with HTML and functions to manage feint state
- * @param {Actor} actor - The actor using feints
- * @param {boolean} hasGambit - Whether Gambit is being used
- * @returns {Object} { html: string, feintCount: 0, messageId: null, addFeint, clearFeints, getCount }
- */
-/**
- * Show a dialog to select a luck move for a given timing
- * @param {Actor} actor - The actor to check
- * @param {string} timing - "pre-roll" or "post-roll"
- * @param {boolean} hasGambit - Whether Gambit is being used
- * @returns {Promise<string|null>} Selected move key or null
- */
-export function showLuckMoveDialog(actor, timing = "post-roll", hasGambit = false) {
-	return new Promise(resolve => {
-		const moves = getAvailableLuckMoves(actor, timing, hasGambit);
-
-		if (moves.length === 0) {
-			resolve(null);
+	*/
+	let spender;
+	// Determine the spender based on move cost type
+	switch (LUCK_MOVES[move].costType) {
+		case "gambit":
+			break;
+		case "temp":
+			spender = spenders[0]; // temp luck spender
+			break;
+		case "perm":
+			spender = spenders[1]; // perm luck spender
+			break;
+		case "value":
+			spender = spenders[2]; // value luck spender
+			break;
+		default:
+			ui.notifications.warn("Invalid cost type for move: " + LUCK_MOVES[move].name);
 			return;
-		}
+	}
+	if (!isGambit && !canUseMove(LUCK_MOVES[move], game.actors.get(spender))) {
+		return;
+	}
 
-		// Build HTML for move options
-		let html = '<div style="max-height: 300px; overflow-y: auto;">';
-		const buttons = { skip: { label: "Skip", callback: () => resolve(null) } };
+	let executed = false;
+	// Attempt the luck move
+	switch (LUCK_MOVES[move].name.toLowerCase()) {
+		case "feint":
+			executed = await executeFeint(messageId, quadrantNum);
+			break;
+		case "fudge":
+			executed = await executeFudge(messageId, quadrantNum);
+			break;
+		case "flashback":
+			executed = await executeFlashback(messageId, quadrantNum);
+			break;
+		case "mulligan":
+			executed = await executeMulligan(messageId, quadrantNum);
+			break;
+		case "persist":
+			executed = await executePersist(messageId, quadrantNum);
+			break;
+		default:
+			ui.notifications.warn("Unknown move: " + move);
+			return;
+	}
 
-		for (const moveData of moves) {
-			const { key, move, canUse, reason } = moveData;
-			const cost = hasGambit && key !== "gambit" ? 0 : move.cost;
-			const disabled = !canUse ? " disabled" : "";
-			const reasonText = reason ? ` <span style="color: #ff6b6b; font-size: 0.9em;">${reason}</span>` : "";
+		// Save execution data in flags
+		if (executed) {
+			await trySpendLuck(spender, LUCK_MOVES[move].name);
+			message = game.messages.get(messageId); // Refetch message to ensure we have the latest flags after move execution
+			// Prepare existing data
+			const countType = isGambit ? "gambitCounts" : "luckCounts";
+			const latest = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
+			const lastSpenders = latest.luckSpenders || existing.luckSpenders || {};
+			const lastMoveSpenders = lastSpenders[move] || {};
 
-			html += `
-				<div style="margin-bottom: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
-					<strong>${move.name}</strong> (Cost: ${cost} ${move.costType === "perm" ? "Perm" : "Temp"})
-					${reasonText}
-					<br><span style="font-size: 0.85em;">${move.description}</span>
-				</div>
-			`;
-
-			buttons[key] = {
-				label: move.name,
-				callback: () => resolve(key),
-				disabled: !canUse
+			// Create the update data
+			const updateData = {
+				...latest,
+				luckCounts: { ...(latest.luckCounts || existing.luckCounts || {}) },
+				gambitCounts: { ...(latest.gambitCounts || existing.gambitCounts || {}) }
 			};
+			updateData[countType][move] = (updateData[countType][move] || 0) + 1;
+			if (!isGambit && spender) {
+				updateData.luckSpenders = {
+					...lastSpenders,
+					[move]: {
+						...lastMoveSpenders,
+						[spender]: (lastMoveSpenders[spender] || 0) + 1
+					}
+				};
+			}
+
+
+
+			// Update the message flags with the new data
+			await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, updateData);
+			if (move === "fudge" || move === "mulligan") {
+				await recalculateQuadrantFormula(messageId, quadrantNum);
+			}
 		}
+}
 
-		html += '</div>';
+function getQuadrantAdvantage(message, quadrantNum) {
+	const quadrantNumber = Number(quadrantNum);
+	const pairMap = { 1: 2, 2: 1, 3: 4, 4: 3 };
+	const own = Number(message?.getFlag("bizarre-adventures-d6", `quadrant${quadrantNumber}`)?.advantage);
+	if (Number.isFinite(own)) return own;
 
+	const pairQuadrant = pairMap[quadrantNumber];
+	const pair = Number(message?.getFlag("bizarre-adventures-d6", `quadrant${pairQuadrant}`)?.advantage);
+	if (Number.isFinite(pair)) return pair;
+
+	return 0;
+}
+
+async function executeFeint(messageId, quadrantNum) {
+	// Reset quadrant except for luck. Feint count is incremented by 1.
+	await resetQuadrant(messageId, quadrantNum, false);
+	return true;
+}
+
+async function executeFudge(messageId, quadrantNum) {
+	// Fudge adds a counted advantage bonus; formula recomputation applies it before custom modifiers.
+	let message = game.messages.get(messageId);
+	let existing = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
+	let baseAdvantage = getQuadrantAdvantage(message, quadrantNum);
+	const existingFudge = Number(existing?.luckCounts?.fudge || 0) + Number(existing?.gambitCounts?.fudge || 0);
+	const effectiveAdvantage = Math.max(0, Math.min(3, baseAdvantage + Math.max(0, existingFudge)));
+	let executed = false;
+	if (effectiveAdvantage < 3) {
+		executed = true;
+	} else {
+		ui.notifications.info("Advantage would exceed 3, Fudge not spent.");
+	}
+	return executed;
+}
+
+async function executeFlashback(messageId, quadrantNum) {
+	const flashbackText = await new Promise((resolve) => {
 		new Dialog({
-			title: `Select a Luck Move (${timing})`,
-			content: html,
-			buttons,
-			default: "skip"
+			title: "Flashback",
+			content: `<p>Describe the retcon you want to make:</p><textarea id="flashback-input" rows="4" style="width: 100%;"></textarea>`,
+			buttons: {
+				ok: { label: "Send to GM", callback: (html) => resolve(html.find("#flashback-input").val().trim()) },
+				cancel: { label: "Cancel", callback: () => resolve(null) }
+			},
+			close: () => resolve(null)
 		}).render(true);
 	});
+	if (!flashbackText) return false;
+	return await executeRollerAsGM("rollerFlashbackRequest", game.user.name, flashbackText);
 }
 
-/**
- * Create checkboxes for luck moves during rolling
- * @param {Actor} actor - The actor making the selection
- * @param {boolean} hasGambit - Whether Gambit is available
- * @returns {Object} { html: string, getSelected: function }
- */
-export function createLuckMoveCheckboxes(actor, hasGambit = false) {
-	const preRollMoves = getAvailableLuckMoves(actor, "pre-roll", hasGambit);
-	const postRollMoves = getAvailableLuckMoves(actor, "post-roll", hasGambit);
-
-	let html = '<div style="border-top: 1px solid #ccc; margin-top: 10px; padding-top: 10px;">';
-	html += '<p style="margin: 5px 0;"><strong>Luck Moves</strong></p>';
-
-	// Pre-roll moves
-	if (preRollMoves.length > 0) {
-		html += '<p style="margin: 5px 0; font-size: 0.9em; color: #666;">Pre-Roll:</p>';
-		for (const moveData of preRollMoves) {
-			const { key, move, canUse, reason } = moveData;
-			const cost = hasGambit && key !== "gambit" ? 0 : move.cost;
-			const disabled = !canUse ? "disabled" : "";
-			const reasonText = reason ? ` ${reason}` : "";
-
-			html += `
-				<label style="display: block; margin: 4px 0; ${!canUse ? "opacity: 0.6;" : ""}">
-					<input type="checkbox" name="luck_move_${key}" value="${key}" ${disabled}>
-					${move.name} (-${cost} ${move.costType === "perm" ? "Perm" : "Temp"})${reasonText}
-				</label>
-			`;
-		}
+async function executeMulligan(messageId, quadrantNum) {
+	// Add 1 advantage to last roll, even if it was a tie or success. If the last roll had 2 or more advantage, refund the cost instead.
+	let message = game.messages.get(messageId);
+	let existing = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
+	let advantage = getQuadrantAdvantage(message, quadrantNum);
+	let executed = false;
+	if (advantage < 2) {
+		await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, { 
+			...existing,
+			advantage: advantage + 1
+		});
+		executed = true;
 	}
-
-	// Post-roll moves (as info only)
-	if (postRollMoves.length > 0) {
-		html += '<p style="margin: 5px 0; font-size: 0.9em; color: #666;">Post-Roll (available after):</p>';
-		for (const moveData of postRollMoves) {
-			const { move, canUse, reason } = moveData;
-			const reasonText = reason ? ` ${reason}` : "";
-
-			html += `
-				<label style="display: block; margin: 4px 0; opacity: 0.7;">
-					<input type="checkbox" disabled>
-					${move.name}${reasonText}
-				</label>
-			`;
-		}
-	}
-
-	html += '</div>';
-
-	return {
-		html,
-		getSelected: (formElement) => {
-			const checkboxes = formElement.querySelectorAll('input[type="checkbox"]:checked:not(:disabled)');
-			return Array.from(checkboxes).map(cb => cb.value);
-		}
-	};
+	return executed;
 }
 
-/**
- * Apply a luck move's effect to a roll result
- * @param {string} moveKey - The luck move key
- * @param {number} currentAdvantage - Current advantage level
- * @returns {Object} { advantage: number, message: string }
- */
-export function applyLuckMoveEffect(moveKey, currentAdvantage = 0) {
-	const move = LUCK_MOVES[moveKey];
-	if (!move) return { advantage: currentAdvantage, message: "" };
-
-	switch (move.effect) {
-		case "advantage":
-			const newAdvantage = Math.min(currentAdvantage + 1, 3);
-			return {
-				advantage: newAdvantage,
-				message: `Advantage increased to ${newAdvantage}`
-			};
-
-		case "narrative":
-			return {
-				advantage: currentAdvantage,
-				message: "Narrator retcons a detail of your choice"
-			};
-
-		case "reroll":
-			return {
-				advantage: currentAdvantage,
-				message: "You may attempt another Action/Reaction as if this action tied"
-			};
-
-		case "special":
-			return {
-				advantage: currentAdvantage,
-				message: "Gambit activated - no cost applied to this action"
-			};
-
-		default:
-			return { advantage: currentAdvantage, message: "" };
+async function executePersist(messageId, quadrantNum) {
+	// Execute a clash regardless of the last result, creating a new action/contest.
+	const message = game.messages.get(messageId);
+	const newMessage = await ChatMessage.create({
+		content: `<p><strong>Persist!</strong></p>`
+	});
+	await message.setFlag("bizarre-adventures-d6", "locked", true);
+	const type = message.getFlag("bizarre-adventures-d6", "type");
+	if (type === "action") {
+		createActionMessage();
+	} else if (type === "contest") {
+		createContestMessage();
 	}
+	return true;
 }

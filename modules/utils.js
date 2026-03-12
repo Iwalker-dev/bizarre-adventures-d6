@@ -119,6 +119,62 @@ export async function preloadHandlebarsTemplates() {
 
 // Rolling related helpers
 
+const BAD6_MODULE_ID = "bizarre-adventures-d6";
+export const HIDDEN_ACTOR_NAME = "Hidden Actor";
+
+export function getVisibilityRoleChoices() {
+	return {
+		[CONST.USER_ROLES.NONE]: "None",
+		[CONST.USER_ROLES.PLAYER]: "Player",
+		[CONST.USER_ROLES.TRUSTED]: "Trusted Player",
+		[CONST.USER_ROLES.ASSISTANT]: "Assistant GM",
+		[CONST.USER_ROLES.GAMEMASTER]: "Game Master"
+	};
+}
+
+function getWorldSetting(settingKey, fallbackValue) {
+	try {
+		return game.settings.get(BAD6_MODULE_ID, settingKey);
+	} catch (_error) {
+		return fallbackValue;
+	}
+}
+
+function userMeetsRoleThreshold(minimumRole = CONST.USER_ROLES.GAMEMASTER) {
+	return Number(game.user?.role ?? CONST.USER_ROLES.NONE) >= Number(minimumRole);
+}
+
+function isActorOwner(actor, sourceUuid) {
+	if (!game.user) return false;
+
+	if (sourceUuid) {
+		const sourceDoc = fromUuidSync(sourceUuid);
+		if (sourceDoc?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
+			return true;
+		}
+		if (sourceDoc?.actor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
+			return true;
+		}
+	}
+
+	if (!actor) return false;
+	return !!actor.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+}
+
+function canViewActorData(actor, context, { roleSettingKey, ownerOverrideSettingKey, defaultRole, defaultOwnerOverride }) {
+	if (game.user?.isGM) return true;
+
+	const minimumRole = Number(getWorldSetting(roleSettingKey, defaultRole));
+	const ownerOverride = !!getWorldSetting(ownerOverrideSettingKey, defaultOwnerOverride);
+	const sourceUuid = context?.sourceUuid;
+
+	if (ownerOverride && isActorOwner(actor, sourceUuid)) {
+		return true;
+	}
+
+	return userMeetsRoleThreshold(minimumRole);
+}
+
 
 
 /**
@@ -126,8 +182,25 @@ export async function preloadHandlebarsTemplates() {
  * @param {Actor|null} actor
  * @returns {boolean}
  */
-export function canViewActorFormula(actor) {
-	if (game.user.isGM) return true;
-	if (!actor) return false;
-	return !!actor.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+export function canViewActorFormula(actor, context = {}) {
+	return canViewActorData(actor, context, {
+		roleSettingKey: "formulaVisibilityRole",
+		ownerOverrideSettingKey: "formulaVisibilityOwnerOverride",
+		defaultRole: CONST.USER_ROLES.GAMEMASTER,
+		defaultOwnerOverride: true
+	});
+}
+
+/**
+ * Check whether the current user can see actor names for an actor.
+ * @param {Actor|null} actor
+ * @returns {boolean}
+ */
+export function canViewActorName(actor, context = {}) {
+	return canViewActorData(actor, context, {
+		roleSettingKey: "actorNameVisibilityRole",
+		ownerOverrideSettingKey: "actorNameVisibilityOwnerOverride",
+		defaultRole: CONST.USER_ROLES.PLAYER,
+		defaultOwnerOverride: true
+	});
 }

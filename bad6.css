@@ -632,57 +632,6 @@ body {
   gap: 0.5em;
   /* optional spacing between rows */
 }
-.bad6-contest .bad6-luck-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
-}
-.bad6-contest .bad6-luck-chip {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.72rem;
-  line-height: 1;
-  padding: 2px 6px;
-  border-radius: 999px;
-  border: 1px solid #a8a8a8;
-  background: rgba(0, 0, 0, 0.06);
-  color: #222;
-  font-weight: 600;
-}
-.bad6-contest .bad6-luck-chip.bad6-luck-chip--gambit {
-  border-color: #d4af37;
-  box-shadow: none;
-}
-.bad6-contest .bad6-luck-chip.bad6-luck-chip--gambit > i {
-  color: #e0b84a;
-  filter: drop-shadow(0 0 2px rgba(224, 184, 74, 0.9)) drop-shadow(0 0 5px rgba(224, 184, 74, 0.5));
-}
-.action-class {
-  border: 1px solid #777;
-  background: #f8f8f8;
-  padding: 6px;
-  margin: 0.5rem 0;
-  border-radius: 4px;
-}
-.action-header {
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-.action-class button {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 4px 8px;
-  border-radius: 0;
-  text-indent: 0;
-  transform: none;
-}
-.action-class .quadrant-divider {
-  border-top: 1px solid #555;
-  margin: 6px 0;
-}
 .stat-selection-dialog .stat-options {
   display: flex;
   flex-wrap: nowrap;
@@ -750,46 +699,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.contest-class {
-  border: 1px solid #777;
-  background: #f8f8f8;
-  padding: 6px;
-  margin: 0.5rem 0;
-  border-radius: 4px;
-}
-.contest-resolve {
-  margin-top: 6px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.contest-resolve button {
-  display: inline-flex;
-  width: auto;
-  box-sizing: border-box;
-  margin: 0;
-  min-width: 9rem;
-  justify-content: center;
-}
-.contest-resolve .select-stat.is-disabled {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 9rem;
-  padding: 0.35rem 0.9rem;
-  border: 1px solid var(--accent-color);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.08);
-  color: inherit;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-}
-.luck-chip--custom {
-  border-color: var(--accent-color);
-  background: rgba(0, 0, 0, 0.08);
-}
 @keyframes bad6-invalid-shake {
   0% {
     transform: translateX(0);
@@ -831,7 +740,138 @@ body {
 .stat-selection-dialog .stat-option:active {
   transform: translateY(1px);
 }
-/* Chat Message CSS */
+/* Formula rows: show columns inline */
+.formula-body {
+  margin-top: 0.75rem;
+}
+.formula-rows .formula-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  box-sizing: border-box;
+  flex-wrap: nowrap;
+}
+/* Header styling */
+.formula-row.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+/* Ensure columns behave as flex children and center controls */
+.formula-row .col {
+  display: flex;
+  align-items: center;
+  padding: 0 0.25rem;
+}
+/* Use flex-basis so columns line up on one row */
+.formula-row .col.optional {
+  flex: 0 0 6%;
+  justify-content: center;
+}
+/* Make form controls fill their column */
+.formula-row .col input[type="number"],
+.formula-row .col select,
+.formula-row .col input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Empty state */
+.formula-row.empty {
+  font-style: italic;
+  color: #666;
+}
+.bad6-contest .bad6-luck-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.bad6-contest .bad6-luck-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid #a8a8a8;
+  background: rgba(0, 0, 0, 0.06);
+  color: #222;
+  font-weight: 600;
+}
+.bad6-contest .bad6-luck-chip.bad6-luck-chip--gambit {
+  border-color: #d4af37;
+  box-shadow: none;
+}
+.bad6-contest .bad6-luck-chip.bad6-luck-chip--gambit > i {
+  color: #e0b84a;
+  filter: drop-shadow(0 0 2px rgba(224, 184, 74, 0.9)) drop-shadow(0 0 5px rgba(224, 184, 74, 0.5));
+}
+.action-class {
+  border: 1px solid #777;
+  background: #f8f8f8;
+  padding: 6px;
+  margin: 0.5rem 0;
+  border-radius: 4px;
+}
+.action-header {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.action-class button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 0;
+  text-indent: 0;
+  transform: none;
+}
+.action-class .quadrant-divider {
+  border-top: 1px solid #555;
+  margin: 6px 0;
+}
+.contest-class {
+  border: 1px solid #777;
+  background: #f8f8f8;
+  padding: 6px;
+  margin: 0.5rem 0;
+  border-radius: 4px;
+}
+.contest-resolve {
+  margin-top: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.contest-resolve button {
+  display: inline-flex;
+  width: auto;
+  box-sizing: border-box;
+  margin: 0;
+  min-width: 9rem;
+  justify-content: center;
+}
+.contest-resolve .select-stat.is-disabled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 9rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--accent-color);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
 .quadrant-context {
   border: 1px solid #777;
   border-radius: 4px;
@@ -905,60 +945,25 @@ body {
 .quadrant-buttons {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 0.5rem;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.25rem;
   margin-top: 0.15rem;
 }
 .quadrant-buttons .select-stat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 2px 4px;
+  text-align: center;
   white-space: nowrap;
   word-break: keep-all;
   overflow-wrap: normal;
-  font-size: 0.9em;
-}
-/* Formula rows: show columns inline */
-.formula-body {
-  margin-top: 0.75rem;
-}
-.formula-rows .formula-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0;
-  box-sizing: border-box;
-  flex-wrap: nowrap;
-}
-/* Header styling */
-.formula-row.header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  padding-bottom: 0.35rem;
-  margin-bottom: 0.35rem;
-}
-/* Ensure columns behave as flex children and center controls */
-.formula-row .col {
-  display: flex;
-  align-items: center;
-  padding: 0 0.25rem;
-}
-/* Use flex-basis so columns line up on one row */
-.formula-row .col.optional {
-  flex: 0 0 6%;
-  justify-content: center;
-}
-/* Make form controls fill their column */
-.formula-row .col input[type="number"],
-.formula-row .col select,
-.formula-row .col input[type="text"] {
-  width: 100%;
-  box-sizing: border-box;
-}
-/* Empty state */
-.formula-row.empty {
-  font-style: italic;
-  color: #666;
+  overflow: clip;
+  text-overflow: clip;
+  font-size: clamp(0.64em, 1.2vw, 0.8em);
+  line-height: 1;
+  letter-spacing: 0;
 }
 .luck-chips {
   display: flex;
@@ -1018,4 +1023,8 @@ body {
 .luck-chip--gambit > i {
   color: #e0b84a;
   filter: drop-shadow(0 0 2px rgba(224, 184, 74, 0.9)) drop-shadow(0 0 5px rgba(224, 184, 74, 0.5));
+}
+.luck-chip--custom {
+  border-color: var(--accent-color);
+  background: rgba(0, 0, 0, 0.08);
 }

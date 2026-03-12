@@ -1,9 +1,10 @@
-import { actionLabels, LUCK_MOVE_HINTS, HitDC, HitDCFlavor, DC, DCDifficulty, DCFlavor } from "./constants.js";
-import { renderDialog } from "./dialog.js";
-import { chooseLuckSpenders, executeLuckMove, trySpendLuck, LUCK_MOVES} from "./luck-moves.js";
-import { isDebugEnabled } from "../../config.js";
-import { createFormula, executeRoll, applyFormulaLines } from "../../dice.js";
-import { getRollerSocket } from "./sockets.js";
+import { actionLabels, LUCK_MOVE_HINTS, HitDC, HitDCFlavor, DC, DCDifficulty, DCFlavor } from "../constants.js";
+import { renderDialog } from "../dialog.js";
+import { chooseLuckSpenders, executeLuckMove, trySpendLuck, LUCK_MOVES} from "../luck-moves.js";
+import { isDebugEnabled } from "../config.js";
+import { createFormula, executeRoll, applyFormulaLines } from "../dice.js";
+import { getRollerSocket } from "../sockets.js";
+import { canViewActorFormula, canViewActorName, HIDDEN_ACTOR_NAME } from "../utils.js";
 
 async function renderAction(data = {}) {
 
@@ -153,6 +154,7 @@ export async function registerChatListeners() {
 
         Hooks.on("renderChatMessage", (message, html) => {
             applyClientActorLabels(html);
+            applyClientRollVisibility(message, html);
             applyChatButtonPermissions(message, html);
         });
 
@@ -307,8 +309,18 @@ function setButtonDisabledState(buttonEl, disabled, tooltip) {
 
 function resolveActorDisplayName({ sourceUuid, actorId, fallbackText }) {
     const actor = resolveActorFromSource({ sourceUuid, actorId });
+    const canViewName = canViewActorName(actor, { sourceUuid });
+    if (isDebugEnabled()) {
+        logVisibilityDecision("name", { sourceUuid, actorId, actor, allowed: canViewName });
+    }
+    if (!canViewName) return HIDDEN_ACTOR_NAME;
     if (actor?.name) return actor.name;
-    return fallbackText || "Unknown";
+    return fallbackText || HIDDEN_ACTOR_NAME;
+}
+
+function createRedactedRollHtml(flagData = {}) {
+    const total = flagData.rollTotal ?? flagData.rollData?.total ?? "?";
+    return `<div class="dice-roll bad6-redacted-roll"><div class="dice-result"><div class="dice-formula">Hidden Formula</div><h4 class="dice-total">${total}</h4></div></div>`;
 }
 
 function applyClientActorLabels(html) {
@@ -320,6 +332,68 @@ function applyClientActorLabels(html) {
         const actorId = node.dataset.actorId;
         const fallbackText = node.dataset.fallback || node.textContent || "Unknown";
         node.textContent = resolveActorDisplayName({ sourceUuid, actorId, fallbackText });
+    });
+}
+
+function applyClientRollVisibility(message, html) {
+    const root = html?.[0] || html;
+    if (!message || !root) return;
+
+    root.querySelectorAll(".bad6-roll-display[data-quadrant]").forEach((node) => {
+        const quadrantNumber = Number(node.dataset.quadrant);
+        if (!Number.isInteger(quadrantNumber)) return;
+
+        const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNumber}`) || {};
+        const actor = resolveActorFromSource(flagData);
+        const canViewFormula = canViewActorFormula(actor, { sourceUuid: flagData.sourceUuid });
+        if (isDebugEnabled()) {
+            logVisibilityDecision("formula", {
+                sourceUuid: flagData.sourceUuid,
+                actorId: flagData.actorId,
+                actor,
+                quadrant: quadrantNumber,
+                allowed: canViewFormula
+            });
+        }
+        node.innerHTML = canViewFormula
+            ? (flagData.rollHtml || createRedactedRollHtml(flagData))
+            : createRedactedRollHtml(flagData);
+    });
+}
+
+function logVisibilityDecision(type, { sourceUuid, actorId, actor, quadrant = null, allowed }) {
+    const sourceDoc = sourceUuid ? fromUuidSync(sourceUuid) : null;
+    const sourceOwner = !!sourceDoc?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+    const sourceActorOwner = !!sourceDoc?.actor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+    const actorOwner = !!actor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+
+    const roleKey = type === "formula" ? "formulaVisibilityRole" : "actorNameVisibilityRole";
+    const ownerKey = type === "formula" ? "formulaVisibilityOwnerOverride" : "actorNameVisibilityOwnerOverride";
+    const minimumRole = Number(game.settings.get("bizarre-adventures-d6", roleKey));
+    const ownerOverride = !!game.settings.get("bizarre-adventures-d6", ownerKey);
+
+    console.log("[BAD6][Visibility]", {
+        type,
+        quadrant,
+        user: {
+            id: game.user?.id,
+            name: game.user?.name,
+            role: Number(game.user?.role ?? CONST.USER_ROLES.NONE),
+            isGM: !!game.user?.isGM
+        },
+        sourceUuid: sourceUuid || null,
+        actorId: actorId || actor?.id || null,
+        actorName: actor?.name || null,
+        settings: {
+            minimumRole,
+            ownerOverride
+        },
+        ownership: {
+            sourceOwner,
+            sourceActorOwner,
+            actorOwner
+        },
+        allowed
     });
 }
 
@@ -801,7 +875,7 @@ export async function rerenderMessage(message) {
                 prepared: true,
                 sourceUuid: flagData.sourceUuid || null,
                 actorId: flagData.actorId || null,
-                actorName: actor?.name || "Unknown",
+                actorName: HIDDEN_ACTOR_NAME,
                 statLabel: flagData.stat || "",
                 statValue: flagData.statValue || 0,
                 advantage: Math.min(3, (toAdvantage(flagData.advantage) ?? 0) + getFudgeBonus(flagData)),
@@ -827,7 +901,7 @@ export async function rerenderMessage(message) {
                 },
                 rolled: !!flagData.rolled,
                 rollTotal: flagData.rollTotal ?? null,
-                rollHtml: flagData.rollHtml ?? null,
+                rollHtml: createRedactedRollHtml(flagData),
                 canUnready: game.user.isGM || !!actor?.isOwner,
                 lock: false
             };

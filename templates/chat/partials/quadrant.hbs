@@ -99,7 +99,7 @@
     {{#if rolled}}
       <div class="quadrant-rolled">
         <div class="rolled-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}</div>
-        {{{rollHtml}}}
+        <div class="bad6-roll-display" data-quadrant="{{quadrantNum}}">{{{rollHtml}}}</div>
         <div class="quadrant-actor-divider"></div>
         <div class="quadrant-buttons">
           <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-mulligan" data-tooltip="Right-Click to Gambit">Mulligan</button>
@@ -128,12 +128,16 @@
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-feint" data-tooltip="Right-Click to Gambit">Feint</button>
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-fudge" data-tooltip="Right-Click to Gambit">Fudge</button>
           {{/if}}
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
         </div>
       </div>
     {{else}}
+    <div class="quadrant-buttons">
       <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="prepare" {{#if lock}}disabled{{/if}}>
         {{#if lock}}Locked...{{else}}Select Stat{{/if}}
       </button>
+      <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+    </div>
     {{/if}}
   </div>
 

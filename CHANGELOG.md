@@ -135,11 +135,14 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 ### Features
 - Reworked roller for optimization, readability and simplicity
 - Reworked dialogs for simplicity
-- Added all luck moves (Flashback is considered post-roll for the moment but will be made into a button on character sheets instead soon)
+- Added all luck moves
 ### Fixes
 - Standardized special stats to `key`, `label`, and `value`.
 - Added world migration to convert older special entries (`name`/`points`) to the new schema.
-- Retuned actor migrator functionality outside of version changes.
+- Retuned actor migrator functionality outside of per-version migrations.
+- Set flashback to be always useable
+- Allow privatizing of roll formula (game setting since easier)
+- Allow privitizing of actor names (game setting since easier)
 
 
 # What's left?
@@ -147,9 +150,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Make more User-Friendly
 - Add custom images for user and stand type actors
 - Implement Learning automation
-- Allow privatizing of roll formula (game setting since easier)
-- Allow privitizing of actor names (game setting since easier)
-- Set flashback to be always useable
+- Rerender messages when locking them
 
 
 
