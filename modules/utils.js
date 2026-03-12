@@ -75,6 +75,11 @@ export function registerHandlebarsHelpers() {
 		return foundry.utils.getProperty(obj, path);
 	});
 	Handlebars.registerHelper("getActor", (id) => game.actors.get(id));
+
+	Handlebars.registerHelper("displayCount", function(value) {
+    const count = Number(value ?? 0);
+    return count > 1 ? count : "";
+});
 }
 
 export async function preloadHandlebarsTemplates() {

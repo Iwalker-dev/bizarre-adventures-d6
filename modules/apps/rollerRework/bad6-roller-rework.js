@@ -1,130 +1,8 @@
-/*
-    Import Luck logic from luckMoves.js
-    Import actionTemplate, contestTemplate from rollTemplates
-    Import formulaRequest from dialog.js
-
-
-    hook on sidebar
-        create roller button
-            execute createAction on click
-
-    const chatMessageID
-
-    createAction() {
-        template = actionTemplate
-        if(doubleclick){
-            template = contestTemplate
-        }
-        post template as actor
-    }
-
-    prepareQuadrant() {
-
-        if you are a gm with highlighted actors:
-            rollableActors = array of highlighted actors and linked actors
-        else warn and return
-
-        if you are a player with owned actors
-            rollableActors = array of owned and linked actors
-        else warn and return
-
-        lockButton(quadrent, button, "Preparing...")
-
-        sort rollabelActors
-            user types
-            stand types
-            power types
-
-        formula = await renderPreparePrompt(rollableActors)
-        await update(chatmessageid, new message) // Consider only moving the updated quadrant for optimization
-    }
-
-    update(messageID, newMessage) {
-        await lock untrue for chatmessageid
-        lock chat message
-        replace chat message with newMessage
-        unlock chat message
-    }
-
-    lockButton(quadrant, buttonID, lockLabel) {
-        await lock untrue for chatMessageID
-        broadcast lock(chatMessageID)
-        parse template of chatMessageID
-            parse quadrant info
-                buttonID = unclickable and labeled lockLabel
-
-        copy and recreate message
-        broadcast unlock(chatMessageID)
-    }
-
-    lock(messageID) {
-        set attribute locked to true //consider instead adding locks, so if there are multiple locks a conflict is obvious and resolvable
-    }
-
-    unlock(messageID) {
-        set attribute locked to false
-    }
-
-    renderPreparePrompt(rollableActors) {
-        render formulaRequest
-        luckActors = chooseLuckSpender(rollableActors)
-            set[quadrant, buttonid, value] on chatID per button
-        on full completion
-            subtract luck from relevant actor in luckActors
-
-        combine for original formula
-            modify with custom modifiers in order for prepared formula
-        return preparedFormula
-    }
-
-    chooseLuckSpender(rollableActors) {
-        actorArray
-        for each user type actor:
-            if they have the highest temp luck, [0] = id
-            if they have the highest permanent luck so far, [1] = id
-            if they have the highest original luck so far, [2] = id
-        return actorArray
-    }
-
-    resetQuadrant(quadrant) {
-        set all attributes set by the quadrant to their defaults
-    }
-
-    resolve() {
-    //Runs when clicking Resolve
-    rolls Reactions, then Actions
-        Incase of persist, only rolls if they arent rolled already
-    Difference (or 0 if it's bigger) becomes result
-        Display DC if action
-        Display HitDC and example if contest
-        //There will be a table for each to reference
-        //Currently HTML should render luck buttons based on attributes
-    }
-
-    performMulligan(chatid, quadrant) {
-        reevaluate roll results with +1 advantage. Do nothing if advantage would exceed 3.
-    }
-
-    performPersist(chatid, quadrant) {
-        create new contest with opposing rolls filled in and rolled.
-    }
-    performFudge(chatid, quadrant) {
-        increases advantage by 1
-    }
-    performFeint(chatid, quadrant) {
-        resets quadrant, ignores advantage lock
-    }
-
-    addGambit(luckMove) {
-        overrides instance of luck cost
-    }
-
-*/
-// import "./templates/chat/action.hbs";
-import { actionLabels } from "./constants.js";
+import { actionLabels, LUCK_MOVE_HINTS } from "./constants.js";
 import { renderDialog } from "./dialog.js";
-import { LUCK_MOVES } from "./luck-moves.js";
+import { chooseLuckSpenders, executeLuckMove, trySpendLuck, LUCK_MOVES} from "./luck-moves.js";
 import { isDebugEnabled } from "../../config.js";
+import { createFormula, executeRoll } from "../../dice.js";
 
 async function renderAction(data = {}) {
 
@@ -207,6 +85,7 @@ export function rollerControl() {
 						rollerClickTimer = null;
 						lastActionMessageId = null;
 						lastActionMessageAt = 0;
+                        ui.notifications.info(LUCK_MOVE_HINTS.GAMBIT_HINT);
 					}, DOUBLE_CLICK_WINDOW_MS);
 					const msg = await createActionMessage();
 					lastActionMessageId = msg?.id || null;
@@ -215,11 +94,19 @@ export function rollerControl() {
 	});
 }
 
-async function createActionMessage() { 
+export async function createActionMessage() { 
     const message = await ChatMessage.create({
         content: await renderAction()
     });
     await message.setFlag("bizarre-adventures-d6", "type", "action");
+    return message;
+}
+
+export async function createContestMessage() {
+    const message = await ChatMessage.create({
+        content: await renderContest()
+    });
+    await message.setFlag("bizarre-adventures-d6", "type", "contest");
     return message;
 }
 
@@ -239,31 +126,111 @@ async function updateToContest(messageId) {
 
     const msg = await ChatMessage.create({ content: await renderContest() });
     await msg.setFlag("bizarre-adventures-d6", "type", "contest");
+    ui.notifications.info(LUCK_MOVE_HINTS.GAMBIT_HINT);
     return msg;
 }
 
 // Prepare Phase ----------------------------------------------------------------------------------------------
 
-export function registerChatListeners() {
+export async function registerChatListeners() {
         $(document).on("click", ".chat-message .select-stat", async (event) => {
             event.preventDefault();
             const button = event.currentTarget;
             const quadrantNum = button.dataset.quadrant;
             const messageId = $(button).closest(".chat-message").data("messageId");
-            
-            const prepare = await renderStatSelectionDialog(quadrantNum);
-            if (!prepare) return;
-
-            await updateQuadrant( messageId, quadrantNum, prepare);
-
-
-
-
+            const [actionType, actionArg] = button.dataset.action.split("-", 2);
+            const actorSources = getRollableActorSources();
+            const luckActors = chooseLuckSpenders(actorSources);
+            switch (actionType) {
+                case "prepare":
+                    await prepareQuadrant(messageId, quadrantNum, actorSources);
+                    break;
+                case "unready":
+                    await resetQuadrant(messageId, quadrantNum);
+                    break;
+                case "luck":
+                    await executeLuckMove(messageId, luckActors, quadrantNum, actionArg);
+                    await rerenderMessage(game.messages.get(messageId));
+                    break;
+                case "resolve":
+                    await rollAll(messageId);
+                    break;
+                default:
+                    notifications.info.warn("Unknown action for button: " + button.dataset.action);
+            }
+        });
+        $(document).on("contextmenu", ".chat-message .select-stat", async (event) => {
+            $(document).on("mousedown", ".chat-message .select-stat", (event) => {
+                if (event.button !== 2) return;
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                return false;
+            });
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            const button = event.currentTarget;
+            const quadrantNum = button.dataset.quadrant;
+            const messageId = $(button).closest(".chat-message").data("messageId");
+            const [actionType, actionArg] = button.dataset.action.split("-", 2);
+            const actorSources = getRollableActorSources();
+            const luckActors = chooseLuckSpenders(actorSources);
+            switch (actionType) {
+                case "luck":
+                    await executeLuckMove(messageId, luckActors, quadrantNum, actionArg, true);
+                    await rerenderMessage(game.messages.get(messageId));
+                    break;
+                default:
+                    notifications.info.warn("Unknown action for button: " + button.dataset.action);
+            }
+            return false;
         });
 }
 
-async function renderStatSelectionDialog(quadrantNum) {
-    const actorSources = getRollableActorSources();
+async function prepareQuadrant(messageId, quadrantNum, actorSources) {
+    const prepare = await renderStatSelectionDialog(quadrantNum, actorSources);
+    if (!prepare) return;
+    const formula = createFormula(prepare.statValue, 6, prepare.advantage, 0);
+    await updateQuadrant( messageId, quadrantNum, { ...prepare, formula });
+}
+export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
+    let message = game.messages.get(messageId);
+    const locked = !await waitForUnlock(message)
+    if (locked) {
+        ui.notifications.error("Message is locked. Cannot update.");
+        return;
+    }
+    await message.setFlag("bizarre-adventures-d6", "Locked", true);
+    message = game.messages.get(messageId); // refetch to ensure we have the latest state after locking
+    if (message) {
+        // Per luck action, refund each actor based on the amount of times stored whihc they spent for a move.
+        if (refundLuck) {
+            const spentLuck = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`)?.luckSpenders || {};
+            for (const move in spentLuck) {
+                const moveData = LUCK_MOVES[move];
+                if (!moveData) continue;
+                if (moveData.costType === "gambit") continue;
+
+                const moveSpenders = spentLuck[move] || {};
+                for (const spender in moveSpenders) {
+                    const count = moveSpenders[spender] || 0;
+                    for (let i = 0; i < count; i++) {
+                        await trySpendLuck(spender, moveData.name, true);
+                    }
+                }
+            }
+        }       
+        await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
+        rerenderMessage(message);
+        await message.setFlag("bizarre-adventures-d6", "Locked", false);   
+    } else {
+        ui.notifications.error("Could not find message to update.");
+         return;
+     }
+}
+
+async function renderStatSelectionDialog(quadrantNum, actorSources) {
     if (!actorSources.length) return;
     // Create map of sources
     const actors = actorSources.map(source => {
@@ -445,7 +412,10 @@ function getRollableActorSources(user = game.user) {
     }
 }
 
-async function updateQuadrant(messageId, quadrantNum, { sourceUuid, actorId, stat, advantage, statValue }) {
+async function updateQuadrant(messageId
+    , quadrantNum
+    , { sourceUuid, actorId, stat, advantage, statValue, formula, selectedSpecial }) 
+    {
 
     let message = game.messages.get(messageId);
 
@@ -454,26 +424,27 @@ async function updateQuadrant(messageId, quadrantNum, { sourceUuid, actorId, sta
         return;
     }
 
-    if (message.getFlag("bizarre-adventures-d6", `Locked`)) {
-        ui.notifications.warn("Previous update for message still processing. Please wait...");
-        const unlocked = await waitForUnlock(message)
-        if (!unlocked) {
-            ui.notifications.error("Message is still locked. Cannot update.");
-            return;
-        }
-        message = game.messages.get(messageId); // refetch to ensure we have the latest state after unlocking
+    const locked = !await waitForUnlock(message)
+    if (locked) {
+        ui.notifications.error("Message is still locked. Cannot update.");
+        return;
     }
 
     if (!message) return;
 
     await message.setFlag("bizarre-adventures-d6", `Locked`, true);
     message = game.messages.get(messageId); // refetch to ensure we have the latest state after locking
+        const existingQuadrant = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
     await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, {
         sourceUuid,
         actorId,
         stat,
         advantage,
-        statValue
+        statValue,
+        formula,
+        selectedSpecial: selectedSpecial ?? null,
+        luckCounts: existingQuadrant.luckCounts || {},
+        gambitCounts: existingQuadrant.gambitCounts || {}
     });
 
     await rerenderMessage(message);
@@ -525,22 +496,7 @@ async function rerenderMessage(message) {
     // Read all quadrant flags
     for (let i = 1; i <= count; i++) {
         const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${i}`);
-        if (flagData) {
-            const actor = resolveActorFromSource(flagData);
-            quadrants[i] = {
-                quadrantNum: i,
-                label: actionLabels[i - 1].label,
-                prepared: true,
-                actorName: actor?.name || "Unknown",
-                statLabel: flagData.stat || "",
-                statValue: flagData.statValue || 0,
-                advantage: flagData.advantage || 0,
-                specialLabel: null, // TODO: resolve from stat special key
-                rolled: false,
-                rollHtml: null,
-                lock: false
-            };
-        } else {
+        if (!flagData) {
             // Unprepared quadrant
             allPrepared = false;
             quadrants[i] = {
@@ -550,10 +506,67 @@ async function rerenderMessage(message) {
                 lock: false
             };
         }
+        else if (flagData.formula) { // Prepared quadrant
+            const actor = resolveActorFromSource(flagData);
+            quadrants[i] = {
+                quadrantNum: i,
+                label: actionLabels[i - 1].label,
+                prepared: true,
+                actorName: actor?.name || "Unknown",
+                statLabel: flagData.stat || "",
+                statValue: flagData.statValue || 0,
+                advantage: flagData.advantage || 0,
+                specialLabel: flagData.selectedSpecial?.label
+                    || flagData.selectedSpecial?.name
+                    || flagData.selectedSpecial?.key
+                    || null,
+                luckCounts: {
+                    feint: flagData.luckCounts?.feint || 0,
+                    fudge: flagData.luckCounts?.fudge || 0,
+                    flashback: flagData.luckCounts?.flashback || 0,
+                    mulligan: flagData.luckCounts?.mulligan || 0,
+                    persist: flagData.luckCounts?.persist || 0,
+                },
+                gambitCounts: {
+                    feint: flagData.gambitCounts?.feint || 0,
+                    fudge: flagData.gambitCounts?.fudge || 0,
+                    flashback: flagData.gambitCounts?.flashback || 0,
+                    mulligan: flagData.gambitCounts?.mulligan || 0,
+                    persist: flagData.gambitCounts?.persist || 0
+                },
+                rolled: !!flagData.rolled,
+                rollTotal: flagData.rollTotal ?? null,
+                rollHtml: flagData.rollHtml ?? null,
+                canUnready: game.user.isGM || !!actor?.isOwner,
+                lock: false
+            };
+        }
+        else if (flagData.luckCounts || flagData.gambitCounts) {
+            // Feinted quadrant
+            allPrepared = false;
+            quadrants[i] = {
+                quadrantNum: i,
+                label: actionLabels[i - 1].label,
+                prepared: false,
+                lock: false,
+                luckCounts: {
+                    feint: flagData.luckCounts?.feint || 0,
+                    fudge: flagData.luckCounts?.fudge || 0,
+                    flashback: flagData.luckCounts?.flashback || 0,
+                    mulligan: flagData.luckCounts?.mulligan || 0,
+                    persist: flagData.luckCounts?.persist || 0
+                }
+            };
+        } else {
+            // Error if unknown flag state
+            ui.notifications.error(`Quadrant ${i} has unknown flag state. Did not update`);
+            continue;
+        }
     }
-    
-    // Add allPrepared flag to each quadrant
-    Object.values(quadrants).forEach(q => q.allPrepared = allPrepared);
+
+    Object.values(quadrants).forEach(q => {
+        q.allPrepared = allPrepared;
+    });
     
     if (type == "action") {
         await message.update({ content: await renderAction({ quadrants }) });
@@ -561,3 +574,66 @@ async function rerenderMessage(message) {
         await message.update({ content: await renderContest({ quadrants }) });
     }
 }
+
+// Execution Phase ----------------------------------------------------------------------------------------------
+
+async function rollAll(messageId) {
+    let message = game.messages.get(messageId);
+    if (!message) return;
+    const locked = !await waitForUnlock(message);
+    if (locked) {
+        ui.notifications.error("Message is still locked. Cannot roll.");
+        return;
+    }
+    await message.setFlag("bizarre-adventures-d6", `Locked`, true);
+    message = game.messages.get(messageId);
+    const type = message.getFlag("bizarre-adventures-d6", "type");
+    const order = type === "action" ? [1, 2] : [3, 4, 1, 2];
+    const results = {};
+    for (let i = 0; i < order.length; i++) {
+        const quadrant = message.getFlag("bizarre-adventures-d6", `quadrant${order[i]}`);
+        if (quadrant.rolled) continue;
+        const roll = await executeRoll(quadrant.formula);
+        await message.setFlag("bizarre-adventures-d6", `quadrant${order[i]}`, { 
+            ...quadrant
+            , rolled: true
+            , rollTotal: roll.total
+            , rollHtml: await roll.render() 
+            , rollData: roll.toJSON()
+        });
+    }
+    // seperate loop incase of desync issues
+    for (let i = 1; i <= (type === "action" ? 2 : 4); i++) {
+        results[i] = message.getFlag("bizarre-adventures-d6", `quadrant${i}`)?.rollTotal || 0;
+    }
+    
+    if (type === "contest") {
+        const actionTotal = results[1] + results[2] || 0;
+        const reactionTotal = results[3] + results[4] || 0;
+        const difference = Math.max(actionTotal - reactionTotal, 0);
+        await message.setFlag("bizarre-adventures-d6", `result`, {
+            actionTotal,
+            reactionTotal,
+            difference
+        });
+        if (difference == 0) {
+            await ChatMessage.create({
+                content: `<p><strong>Clash!</strong></p>`
+            });
+            await createContestMessage();
+        }
+    } else {
+        const action1Total = results[1] || 0;
+        const action2Total = results[2] || 0;
+        await message.setFlag("bizarre-adventures-d6", `result`, {
+            action1Total,
+            action2Total
+        });
+    }
+
+    await message.setFlag("bizarre-adventures-d6", `Locked`, false);
+}
+
+
+    
+    

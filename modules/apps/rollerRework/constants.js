@@ -4,3 +4,7 @@ export const actionLabels = [
     , {side:"reaction", quadrant: 3, label: "Reaction Setup"}
     , {side:"reaction", quadrant: 4, label: "Reaction"}
 ]
+
+export const LUCK_MOVE_HINTS = {
+    GAMBIT_HINT: "In order to gambit, right click a luck action."
+}

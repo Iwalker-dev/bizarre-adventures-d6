@@ -1,4 +1,12 @@
  // {{!-- example formula: (@stat)d(@sides)cs>=(@advantage) + (@modifier) --}}
+
+/* Exports:
+createFormula(stat, sides, advantage, modifier) - creates a formula string based on the provided parameters
+modifyFormula(formula, stat = null, sides = null, advantage = null, modifier = null, operands = []) - modifies an existing formula based on the provided parameters and operands
+createRoll(formula) - creates a new Roll object based on the provided formula
+parseFormula(component, formula) - parses a specific component (stat, sides, advantage, modifier) from the provided formula
+*/
+
 export function createFormula(stat, sides, advantage, modifier) {
   return `${stat}d${sides}cs>=${advantage} + ${modifier}`;
 }
@@ -62,11 +70,13 @@ export function modifyFormula(formula, stat = null, sides = null, advantage = nu
     .replace(/@modifier/g, newValues[3]);
 }
 
-export function createRoll(formula) {
-  return new Roll(formula);
+export function executeRoll(formula) {
+    const roll = new Roll(formula);
+    roll.evaluate({ async: true });
+    return roll;
 }
 
-function parseFormula(component, formula) {
+export function parseFormula(component, formula) {
     const map = {
         stat: /^(\d+)d/,      // first number before 'd'
         sides: /d(\d+)cs/,    // number between 'd' and 'cs'
