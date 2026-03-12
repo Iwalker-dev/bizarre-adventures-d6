@@ -3,6 +3,7 @@ import { BAD6, isDebugEnabled } from "./modules/config.js";
 import { setupStats } from "./modules/listenerFunctions.js";
 import { registerHandlebarsHelpers, preloadHandlebarsTemplates } from "./modules/utils.js"; 
 import { rollerControl, registerChatListeners } from './modules/apps/rollerRework/bad6-roller-rework.js';
+import { registerSockets } from './modules/apps/rollerRework/sockets.js';
 import { HueShiftControl } from "./modules/apps/hue-shift.js";
 import { outroControl } from './modules/apps/stylizedOutro.js';
 import { migrateWorld } from "./modules/migration.js";
@@ -95,15 +96,19 @@ Hooks.once("init", async () => {
 	});
 });
 
+Hooks.once("socketlib.ready", () => {
+	registerSockets();
+});
+
 Hooks.once("ready", async () => {
 	// Mark initilization complete 
 	CONFIG.INIT = false;
+	registerChatListeners();
 	// Check for optional modules and provide relavant warnings
 	if (!game.user.isGM) return;
 	
 	// Run migrations
 	await migrateWorld();
-	registerChatListeners();
 	
 	const lancerModule = game.modules.get("lancer-initiative");
 	const libWrapperModule = game.modules.get("lib-wrapper");

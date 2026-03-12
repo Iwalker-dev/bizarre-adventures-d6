@@ -178,6 +178,15 @@ export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = [
 export async function executeRoll(formula) {
     const roll = new Roll(formula);
     await roll.evaluate({ async: true });
+
+    if (game.dice3d?.showForRoll) {
+        try {
+            await game.dice3d.showForRoll(roll, game.user, true);
+        } catch (error) {
+            console.warn("BAD6 | Dice So Nice roll display failed", error);
+        }
+    }
+
     return roll;
 }
 

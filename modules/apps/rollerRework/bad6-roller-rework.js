@@ -3,6 +3,7 @@ import { renderDialog } from "./dialog.js";
 import { chooseLuckSpenders, executeLuckMove, trySpendLuck, LUCK_MOVES} from "./luck-moves.js";
 import { isDebugEnabled } from "../../config.js";
 import { createFormula, executeRoll, applyFormulaLines } from "../../dice.js";
+import { getRollerSocket } from "./sockets.js";
 
 async function renderAction(data = {}) {
 
@@ -45,8 +46,19 @@ async function renderContest(data = {}) {
 let rollerClickTimer = null;
 let lastActionMessageId = null;
 let lastActionMessageAt = 0;
+let chatListenersRegistered = false;
 const DOUBLE_CLICK_WINDOW_MS = 250;
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
+
+async function executeRollerAsGM(handler, ...args) {
+    const socket = getRollerSocket();
+    if (!socket) {
+        ui.notifications.error("Socket is not ready. Cannot execute GM action.");
+        return null;
+    }
+    return await socket.executeAsGM(handler, ...args);
+}
+
 /**
  * Register the scene control button for the D6 Roller.
  * @returns {void}
@@ -75,10 +87,10 @@ export function rollerControl() {
 						if (isDouble && priorId) {
 							const prior = game.messages.get(priorId);
 							if (prior) {
-                                updateToContest(priorId);
+                                await dispatchUpdateToContest(priorId);
 								return;
 							} else {
-                                updateToContest(null);
+                                await dispatchUpdateToContest(null);
                             }
 						}
 						return;
@@ -113,7 +125,7 @@ export async function createContestMessage() {
     return message;
 }
 
-async function updateToContest(messageId) {
+export async function updateToContest(messageId) {
     let message = game.messages.get(messageId);
 
     if (message?.isOwner) {
@@ -136,27 +148,46 @@ async function updateToContest(messageId) {
 // Prepare Phase ----------------------------------------------------------------------------------------------
 
 export async function registerChatListeners() {
+        if (chatListenersRegistered) return;
+        chatListenersRegistered = true;
+
+        Hooks.on("renderChatMessage", (message, html) => {
+            applyClientActorLabels(html);
+            applyChatButtonPermissions(message, html);
+        });
+
         $(document).on("click", ".chat-message .select-stat", async (event) => {
             event.preventDefault();
             const button = event.currentTarget;
             const quadrantNum = button.dataset.quadrant;
             const messageId = $(button).closest(".chat-message").data("messageId");
             const [actionType, actionArg] = button.dataset.action.split("-", 2);
-            const actorSources = getRollableActorSources();
-            const luckActors = chooseLuckSpenders(actorSources);
+            const isAllowed = canUserExecuteAction(messageId, actionType, quadrantNum);
+            if (!isAllowed) {
+                ui.notifications.warn("You do not own the required actor(s) for this action.");
+                return;
+            }
             switch (actionType) {
                 case "prepare":
+                    {
+                    const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
+                    if (!actorSources) return;
                     await prepareQuadrant(messageId, quadrantNum, actorSources);
+                    }
                     break;
                 case "unready":
-                    await resetQuadrant(messageId, quadrantNum);
+                    await dispatchResetQuadrant(messageId, quadrantNum);
                     break;
                 case "luck":
-                    await executeLuckMove(messageId, luckActors, quadrantNum, actionArg);
-                    await rerenderMessage(game.messages.get(messageId));
+                    {
+                    const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
+                    if (!actorSources) return;
+                    const luckActors = chooseLuckSpenders(actorSources);
+                    await dispatchLuckMove(messageId, luckActors, quadrantNum, actionArg, false);
+                    }
                     break;
                 case "resolve":
-                    await rollAll(messageId);
+                    await dispatchRollAll(messageId);
                     break;
                 default:
                     notifications.info.warn("Unknown action for button: " + button.dataset.action);
@@ -177,12 +208,19 @@ export async function registerChatListeners() {
             const quadrantNum = button.dataset.quadrant;
             const messageId = $(button).closest(".chat-message").data("messageId");
             const [actionType, actionArg] = button.dataset.action.split("-", 2);
-            const actorSources = getRollableActorSources();
-            const luckActors = chooseLuckSpenders(actorSources);
+            const isAllowed = canUserExecuteAction(messageId, actionType, quadrantNum);
+            if (!isAllowed) {
+                ui.notifications.warn("You do not own the required actor(s) for this action.");
+                return false;
+            }
             switch (actionType) {
                 case "luck":
-                    await executeLuckMove(messageId, luckActors, quadrantNum, actionArg, true);
-                    await rerenderMessage(game.messages.get(messageId));
+                    {
+                    const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
+                    if (!actorSources) return false;
+                    const luckActors = chooseLuckSpenders(actorSources);
+                    await dispatchLuckMove(messageId, luckActors, quadrantNum, actionArg, true);
+                    }
                     break;
                 default:
                     notifications.info.warn("Unknown action for button: " + button.dataset.action);
@@ -191,8 +229,128 @@ export async function registerChatListeners() {
         });
 }
 
+async function dispatchUpdateToContest(messageId) {
+    if (game.user.isGM) return await updateToContest(messageId);
+    return await executeRollerAsGM("rollerUpdateToContest", messageId);
+}
+
+async function dispatchResetQuadrant(messageId, quadrantNum, refundLuck = true) {
+    if (game.user.isGM) return await resetQuadrant(messageId, quadrantNum, refundLuck);
+    return await executeRollerAsGM("rollerResetQuadrant", messageId, quadrantNum, refundLuck);
+}
+
+async function dispatchLuckMove(messageId, spenders, quadrantNum, move, isGambit = false) {
+    if (game.user.isGM) {
+        await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit);
+        const updatedMessage = game.messages.get(messageId);
+        if (updatedMessage) await rerenderMessage(updatedMessage);
+        return;
+    }
+    return await executeRollerAsGM("rollerExecuteLuckMove", messageId, spenders, quadrantNum, move, isGambit);
+}
+
+async function dispatchRollAll(messageId) {
+    if (game.user.isGM) return await rollAll(messageId);
+    return await executeRollerAsGM("rollerRollAll", messageId);
+}
+
+function getQuadrantOwnerState(message, quadrantNum) {
+    const flagData = message?.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
+    const actor = flagData ? resolveActorFromSource(flagData) : null;
+    const isOwner = game.user.isGM || !actor || !!actor?.isOwner;
+    return { actor, isOwner, flagData };
+}
+
+function canUserResolveMessage(message) {
+    if (!message) return false;
+    if (game.user.isGM) return true;
+
+    const type = message.getFlag("bizarre-adventures-d6", "type") || "action";
+    const required = type === "action" ? [1, 2] : [1, 2, 3, 4];
+    return required.every((quadrantNum) => {
+        const { actor } = getQuadrantOwnerState(message, quadrantNum);
+        return !actor || !!actor?.isOwner;
+    });
+}
+
+function canUserExecuteAction(messageId, actionType, quadrantNum) {
+    const message = game.messages.get(messageId);
+    if (!message) return false;
+
+    if (actionType === "resolve") {
+        return canUserResolveMessage(message);
+    }
+
+    if (actionType === "prepare") {
+        return true;
+    }
+
+    if (actionType === "unready" || actionType === "luck") {
+        const quadrantNumber = Number(quadrantNum);
+        if (!Number.isInteger(quadrantNumber)) return false;
+        return getQuadrantOwnerState(message, quadrantNumber).isOwner;
+    }
+
+    return true;
+}
+
+function setButtonDisabledState(buttonEl, disabled, tooltip) {
+    const button = buttonEl instanceof HTMLElement ? buttonEl : buttonEl?.[0];
+    if (!button) return;
+    button.disabled = !!disabled;
+    button.setAttribute("aria-disabled", disabled ? "true" : "false");
+    button.classList.toggle("is-disabled", !!disabled);
+    if (tooltip && disabled) {
+        button.dataset.tooltip = tooltip;
+    }
+}
+
+function resolveActorDisplayName({ sourceUuid, actorId, fallbackText }) {
+    const actor = resolveActorFromSource({ sourceUuid, actorId });
+    if (actor?.name) return actor.name;
+    return fallbackText || "Unknown";
+}
+
+function applyClientActorLabels(html) {
+    const root = html?.[0] || html;
+    if (!root) return;
+
+    root.querySelectorAll(".bad6-actor-name").forEach((node) => {
+        const sourceUuid = node.dataset.sourceUuid;
+        const actorId = node.dataset.actorId;
+        const fallbackText = node.dataset.fallback || node.textContent || "Unknown";
+        node.textContent = resolveActorDisplayName({ sourceUuid, actorId, fallbackText });
+    });
+}
+
+function applyChatButtonPermissions(message, html) {
+    const root = html?.[0] || html;
+    if (!message || !root) return;
+
+    const noOwnershipTip = "You do not own the actor required for this action.";
+    const noResolveTip = "You must own all actors in this roll to resolve.";
+
+    root.querySelectorAll('.select-stat[data-action="prepare"]').forEach((button) => {
+        setButtonDisabledState(button, false, noOwnershipTip);
+    });
+
+    root.querySelectorAll('.select-stat[data-quadrant]').forEach((button) => {
+        const action = String(button.dataset.action || "");
+        if (!(action === "unready" || action.startsWith("luck-"))) return;
+        const quadrantNumber = Number(button.dataset.quadrant);
+        const isOwned = Number.isInteger(quadrantNumber)
+            ? getQuadrantOwnerState(message, quadrantNumber).isOwner
+            : false;
+        setButtonDisabledState(button, !isOwned, noOwnershipTip);
+    });
+
+    root.querySelectorAll('.select-stat[data-action="resolve"]').forEach((button) => {
+        setButtonDisabledState(button, !canUserResolveMessage(message), noResolveTip);
+    });
+}
+
 async function prepareQuadrant(messageId, quadrantNum, actorSources) {
-    const prepare = await renderStatSelectionDialog(quadrantNum, actorSources);
+    const prepare = await renderStatSelectionDialog(messageId, quadrantNum, actorSources);
     if (!prepare) return;
     const actor = resolveActorFromSource({ sourceUuid: prepare.sourceUuid, actorId: prepare.actorId });
     const customLines = actor ? collectActorFormulaLines(actor) : [];
@@ -212,14 +370,22 @@ async function prepareQuadrant(messageId, quadrantNum, actorSources) {
     );
 
     const formula = evaluated?.formula || baseFormula;
-    await updateQuadrant(messageId, quadrantNum, {
+    const preparedData = {
         ...prepare,
         formula,
         baseFormula,
         customApplied: !!evaluated?.customApplied,
         customTooltip: evaluated?.customTooltip || "",
-        customLinesApplied: evaluated?.appliedLines || []
-    });
+        customLinesApplied: evaluated?.appliedLines || [],
+        selectedModifierIds: prepare.selectedModifierIds || []
+    };
+
+    if (game.user.isGM) {
+        await updateQuadrant(messageId, quadrantNum, preparedData);
+        return;
+    }
+
+    await executeRollerAsGM("rollerApplyPreparedQuadrant", messageId, quadrantNum, preparedData);
 }
 export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
     let message = game.messages.get(messageId);
@@ -257,8 +423,22 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
      }
 }
 
-async function renderStatSelectionDialog(quadrantNum, actorSources) {
+async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
     if (!actorSources.length) return;
+    const quadrantNumber = Number(quadrantNum);
+    const pairMap = { 1: 2, 2: 1, 3: 4, 4: 3 };
+    const pairQuadrant = pairMap[quadrantNumber];
+    const message = game.messages.get(messageId);
+    const ownAdvantage = message?.getFlag("bizarre-adventures-d6", `quadrant${quadrantNumber}`)?.advantage;
+    const pairAdvantage = pairQuadrant
+        ? message?.getFlag("bizarre-adventures-d6", `quadrant${pairQuadrant}`)?.advantage
+        : undefined;
+    const ownNumeric = Number(ownAdvantage);
+    const pairNumeric = Number(pairAdvantage);
+    const currentAdvantage = Number.isFinite(ownNumeric)
+        ? ownNumeric
+        : (Number.isFinite(pairNumeric) ? pairNumeric : undefined);
+
     // Create map of sources
     const actors = actorSources.map(source => {
         // Resolve actor from sourceUuid or actorId
@@ -284,7 +464,7 @@ async function renderStatSelectionDialog(quadrantNum, actorSources) {
     }).filter(a => a);
 
     // Create dialog
-    const statDialogResult = await renderDialog('statAndAdvantage', { actors, quadrantNum });
+    const statDialogResult = await renderDialog('statAndAdvantage', { actors, quadrantNum, currentAdvantage });
     if (!statDialogResult) return;
 
     const { stat, advantage, sourceUuid, actorId, selectedModifierIds = [] } = statDialogResult;
@@ -333,7 +513,7 @@ async function renderStatSelectionDialog(quadrantNum, actorSources) {
 };
 
 
-function getRollableActorSources(user = game.user) {
+function getRollableActorSources({ user = game.user, warnOnFail = false, hardStopOnFail = false } = {}) {
     // TODO: Add setting to manipulate the roles which can highlight tokens.
     // Also, look into the extend of flatMaps and if they can be optimized
     if (user.isGM) {
@@ -351,7 +531,8 @@ function getRollableActorSources(user = game.user) {
             .filter(s => s);
 
         if (!highlighted.length) {
-            ui.notifications.warn("No tokens highlighted. Please highlight tokens to prepare rolls.");
+            if (warnOnFail) ui.notifications.warn("No tokens highlighted. Please highlight tokens to prepare rolls.");
+            if (hardStopOnFail) return null;
             return [];
         }
         const linked = highlighted.flatMap((source) => {
@@ -399,7 +580,8 @@ function getRollableActorSources(user = game.user) {
             name: a.name
         }));
         if (!owned.length) {
-            ui.notifications.warn("No owned actors. Please ask your GM to assign you ownership of an actor to prepare rolls.");
+            if (warnOnFail) ui.notifications.warn("No owned actors. Please ask your GM to assign you ownership of an actor to prepare rolls.");
+            if (hardStopOnFail) return null;
             return [];
         }
         const linked = owned.flatMap((source) => {
@@ -442,9 +624,9 @@ function getRollableActorSources(user = game.user) {
     }
 }
 
-async function updateQuadrant(messageId
+export async function updateQuadrant(messageId
     , quadrantNum
-    , { sourceUuid, actorId, stat, advantage, statValue, formula, baseFormula, selectedSpecial, customApplied, customTooltip, customLinesApplied }) 
+    , { sourceUuid, actorId, stat, advantage, statValue, formula, baseFormula, selectedSpecial, customApplied, customTooltip, customLinesApplied, selectedModifierIds }) 
     {
 
     let message = game.messages.get(messageId);
@@ -477,13 +659,35 @@ async function updateQuadrant(messageId
         customApplied: !!customApplied,
         customTooltip: customTooltip || "",
         customLinesApplied: Array.isArray(customLinesApplied) ? customLinesApplied : [],
+        selectedModifierIds: Array.isArray(selectedModifierIds) ? selectedModifierIds.map(String) : [],
         luckCounts: existingQuadrant.luckCounts || {},
         gambitCounts: existingQuadrant.gambitCounts || {}
     });
 
+    const pairedQuadrantNum = getPairedQuadrantNum(quadrantNum);
+    const pairedQuadrant = pairedQuadrantNum
+        ? message.getFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`)
+        : null;
+
+    if (pairedQuadrant && advantage !== undefined && advantage !== null) {
+        await message.setFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`, {
+            ...pairedQuadrant,
+            advantage
+        });
+        if (pairedQuadrant.formula) {
+            await recalculateQuadrantFormula(messageId, pairedQuadrantNum);
+        }
+    }
+
     await rerenderMessage(message);
 
     await message.setFlag("bizarre-adventures-d6", `Locked`, false);
+}
+
+function getPairedQuadrantNum(quadrantNum) {
+    const quadrantNumber = Number(quadrantNum);
+    const pairMap = { 1: 2, 2: 1, 3: 4, 4: 3 };
+    return pairMap[quadrantNumber] ?? null;
 }
 
 /**
@@ -551,7 +755,7 @@ async function waitForUnlock(message, maxWaitMs = 5000) {
     return true;
 }
 
-async function rerenderMessage(message) {
+export async function rerenderMessage(message) {
     const type = message.getFlag("bizarre-adventures-d6", "type") || "action";
     const quadrants = {};
     let count = 4; // default for contests
@@ -566,6 +770,16 @@ async function rerenderMessage(message) {
         count = 2;
     }
     
+    const toAdvantage = (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : undefined;
+    };
+    const getFudgeBonus = (flagData = {}) => {
+        const luckFudge = Number(flagData?.luckCounts?.fudge || 0);
+        const gambitFudge = Number(flagData?.gambitCounts?.fudge || 0);
+        return Math.max(0, luckFudge + gambitFudge);
+    };
+
     // Read all quadrant flags
     for (let i = 1; i <= count; i++) {
         const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${i}`);
@@ -585,10 +799,12 @@ async function rerenderMessage(message) {
                 quadrantNum: i,
                 label: actionLabels[i - 1].label,
                 prepared: true,
+                sourceUuid: flagData.sourceUuid || null,
+                actorId: flagData.actorId || null,
                 actorName: actor?.name || "Unknown",
                 statLabel: flagData.stat || "",
                 statValue: flagData.statValue || 0,
-                advantage: flagData.advantage || 0,
+                advantage: Math.min(3, (toAdvantage(flagData.advantage) ?? 0) + getFudgeBonus(flagData)),
                 specialLabel: flagData.selectedSpecial?.label
                     || flagData.selectedSpecial?.name
                     || flagData.selectedSpecial?.key
@@ -639,6 +855,19 @@ async function rerenderMessage(message) {
         }
     }
 
+    const pairings = [[1, 2], [3, 4]];
+    for (const [first, second] of pairings) {
+        const firstAdvantage = toAdvantage(quadrants[first]?.advantage);
+        const secondAdvantage = toAdvantage(quadrants[second]?.advantage);
+
+        if (quadrants[first]) {
+            quadrants[first].advantage = firstAdvantage ?? secondAdvantage ?? 0;
+        }
+        if (quadrants[second]) {
+            quadrants[second].advantage = secondAdvantage ?? firstAdvantage ?? 0;
+        }
+    }
+
     Object.values(quadrants).forEach(q => {
         q.allPrepared = allPrepared;
     });
@@ -648,11 +877,90 @@ async function rerenderMessage(message) {
     } else { //its a contest
         await message.update({ content: await renderContest({ quadrants, isResolved, resolveLabel, resolveTooltip }) });
     }
+
+    if (isDebugEnabled()) {
+        const updatedMessage = game.messages.get(message.id) || message;
+        const messageData = updatedMessage.toObject();
+        const flagScope = messageData.flags?.["bizarre-adventures-d6"] || {};
+        const quadrantFlags = {
+            quadrant1: flagScope.quadrant1 ?? null,
+            quadrant2: flagScope.quadrant2 ?? null,
+            quadrant3: flagScope.quadrant3 ?? null,
+            quadrant4: flagScope.quadrant4 ?? null
+        };
+
+        console.log("[Rework][rerenderMessage] Updated message data", {
+            messageId: updatedMessage.id,
+            type,
+            isResolved,
+            allPrepared,
+            quadrants,
+            quadrantFlags,
+            fullMessageData: messageData
+        });
+    }
+}
+
+export async function recalculateQuadrantFormula(messageId, quadrantNum) {
+    const message = game.messages.get(messageId);
+    if (!message) return;
+
+    const current = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
+    if (!current?.formula) return;
+
+    const baseAdvantage = Number(current.advantage);
+    const safeBaseAdvantage = Number.isFinite(baseAdvantage) ? baseAdvantage : 0;
+    const luckFudge = Number(current?.luckCounts?.fudge || 0);
+    const gambitFudge = Number(current?.gambitCounts?.fudge || 0);
+    const effectiveAdvantage = Math.max(0, Math.min(3, safeBaseAdvantage + Math.max(0, luckFudge + gambitFudge)));
+
+    const actor = resolveActorFromSource(current);
+    const customLines = actor ? collectActorFormulaLines(actor) : [];
+    const selectedModifierIds = Array.isArray(current.selectedModifierIds)
+        ? current.selectedModifierIds.map(String)
+        : [];
+
+    const statValue = Number(current.statValue ?? 0);
+    const baseFormula = createFormula(statValue, 6, effectiveAdvantage, 0);
+    const evaluated = applyFormulaLines(
+        {
+            stat: statValue,
+            sides: 6,
+            advantage: effectiveAdvantage,
+            modifier: 0,
+            statKey: current.stat,
+            statLabel: current.selectedSpecial?.label || current.stat
+        },
+        customLines,
+        selectedModifierIds
+    );
+
+    const formula = evaluated?.formula || baseFormula;
+    await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, {
+        ...current,
+        formula,
+        baseFormula,
+        customApplied: !!evaluated?.customApplied,
+        customTooltip: evaluated?.customTooltip || "",
+        customLinesApplied: evaluated?.appliedLines || []
+    });
+
+    const pairedQuadrantNum = getPairedQuadrantNum(quadrantNum);
+    const pairedQuadrant = pairedQuadrantNum
+        ? message.getFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`)
+        : null;
+
+    if (pairedQuadrant && Number(pairedQuadrant.advantage) !== safeBaseAdvantage) {
+        await message.setFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`, {
+            ...pairedQuadrant,
+            advantage: safeBaseAdvantage
+        });
+    }
 }
 
 // Execution Phase ----------------------------------------------------------------------------------------------
 
-async function rollAll(messageId) {
+export async function rollAll(messageId) {
     let message = game.messages.get(messageId);
     if (!message) return;
     const locked = !await waitForUnlock(message);

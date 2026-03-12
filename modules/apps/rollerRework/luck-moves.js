@@ -1,4 +1,14 @@
-import { resetQuadrant, createActionMessage, createContestMessage } from "./bad6-roller-rework.js";
+import { resetQuadrant, createActionMessage, createContestMessage, recalculateQuadrantFormula } from "./bad6-roller-rework.js";
+import { getRollerSocket } from "./sockets.js";
+
+async function executeRollerAsGM(handler, ...args) {
+	const socket = getRollerSocket();
+	if (!socket) {
+		ui.notifications.error("Socket is not ready. Cannot execute GM action.");
+		return null;
+	}
+	return await socket.executeAsGM(handler, ...args);
+}
 
 function canUseMove(move, actor) {
 	const luckStat = actor.system.attributes.stats.luck;
@@ -233,7 +243,23 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 
 			// Update the message flags with the new data
 			await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, updateData);
+			if (move === "fudge" || move === "mulligan") {
+				await recalculateQuadrantFormula(messageId, quadrantNum);
+			}
 		}
+}
+
+function getQuadrantAdvantage(message, quadrantNum) {
+	const quadrantNumber = Number(quadrantNum);
+	const pairMap = { 1: 2, 2: 1, 3: 4, 4: 3 };
+	const own = Number(message?.getFlag("bizarre-adventures-d6", `quadrant${quadrantNumber}`)?.advantage);
+	if (Number.isFinite(own)) return own;
+
+	const pairQuadrant = pairMap[quadrantNumber];
+	const pair = Number(message?.getFlag("bizarre-adventures-d6", `quadrant${pairQuadrant}`)?.advantage);
+	if (Number.isFinite(pair)) return pair;
+
+	return 0;
 }
 
 async function executeFeint(messageId, quadrantNum) {
@@ -243,61 +269,42 @@ async function executeFeint(messageId, quadrantNum) {
 }
 
 async function executeFudge(messageId, quadrantNum) {
-	// If advantage is above 2, refund cost. Otherwise, add 1 advantage.
+	// Fudge adds a counted advantage bonus; formula recomputation applies it before custom modifiers.
 	let message = game.messages.get(messageId);
 	let existing = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
-	let advantage = parseInt(existing.advantage) || 0;
+	let baseAdvantage = getQuadrantAdvantage(message, quadrantNum);
+	const existingFudge = Number(existing?.luckCounts?.fudge || 0) + Number(existing?.gambitCounts?.fudge || 0);
+	const effectiveAdvantage = Math.max(0, Math.min(3, baseAdvantage + Math.max(0, existingFudge)));
 	let executed = false;
-	if (advantage < 2) {
-		await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, { 
-			...existing,
-			advantage: advantage + 1,
-		});
+	if (effectiveAdvantage < 3) {
 		executed = true;
 	} else {
-		ui.notifications.info("Advantage would exceed 2, Fudge not spent.");
+		ui.notifications.info("Advantage would exceed 3, Fudge not spent.");
 	}
 	return executed;
 }
 
 async function executeFlashback(messageId, quadrantNum) {
-	// TODO: Create socket listener for GM to execute flashback on approval, which will update the original message with the flashback text and any mechanical effects. For now, just open the dialog and send the request to the GM.
-	// Open a dialog for the player to input the narrative change they want to make
-	// Request GM to approve the change. If approved, that gamemaster will create a new message describing the flashback and its effects, and link it to the original message.
-	return await new Promise((resolve) => {
+	const flashbackText = await new Promise((resolve) => {
 		new Dialog({
 			title: "Flashback",
 			content: `<p>Describe the retcon you want to make:</p><textarea id="flashback-input" rows="4" style="width: 100%;"></textarea>`,
 			buttons: {
-				ok: {
-					label: "OK",
-					callback: (html) => {
-						const flashbackText = html.find("#flashback-input").val();
-						// Send a request to the GM to approve the flashback
-						game.socket.emit("module.bizarre-adventures-d6", {
-							type: "flashbackRequest",
-							messageId,
-							quadrantNum,
-							flashbackText
-						});
-						resolve(true);
-					}
-				},
-				cancel: {
-					label: "Cancel",
-					callback: () => resolve(false)
-				},
+				ok: { label: "Send to GM", callback: (html) => resolve(html.find("#flashback-input").val().trim()) },
+				cancel: { label: "Cancel", callback: () => resolve(null) }
 			},
-			close: () => resolve(false)
+			close: () => resolve(null)
 		}).render(true);
 	});
+	if (!flashbackText) return false;
+	return await executeRollerAsGM("rollerFlashbackRequest", game.user.name, flashbackText);
 }
 
 async function executeMulligan(messageId, quadrantNum) {
 	// Add 1 advantage to last roll, even if it was a tie or success. If the last roll had 2 or more advantage, refund the cost instead.
 	let message = game.messages.get(messageId);
 	let existing = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
-	let advantage = parseInt(existing.advantage) || 0;
+	let advantage = getQuadrantAdvantage(message, quadrantNum);
 	let executed = false;
 	if (advantage < 2) {
 		await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, { 

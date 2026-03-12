@@ -5,7 +5,7 @@ export class DefaultItemSheet extends foundry.appv1.sheets.ItemSheet {
 	static get defaultOptions() {
 		return foundry.utils.mergeObject(super.defaultOptions, {
 			classes: ["bizarre-adventures-d6", "sheet", "item", "default"]
-			, template: "systems/bizarre-adventures-d6/templates/sheets/item/default-item-sheet.hbs"
+			, template: "systems/bizarre-adventures-d6/templates/item/default-item-sheet.hbs"
 			, width: 400
 			, height: 300
 		, });

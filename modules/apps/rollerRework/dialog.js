@@ -11,7 +11,7 @@ export async function renderDialog(dialog, dialogData = {}) {
         // Render template
         const content = await renderTemplateV1(
             "systems/bizarre-adventures-d6/templates/dialog/statAndAdvantage.hbs"
-            , { actors: dialogData.actors, quadrantNum: dialogData.quadrantNum }
+            , { actors: dialogData.actors, quadrantNum: dialogData.quadrantNum, currentAdvantage: dialogData.currentAdvantage }
         );
         return await new Promise((resolve) => {
             new Dialog({
@@ -168,6 +168,11 @@ export async function renderDialog(dialog, dialogData = {}) {
                         renderCustomModifierChoices();
                         updateConfirmState();
                     });
+
+                const currentAdvantage = Number(dialogData.currentAdvantage);
+                if (Number.isInteger(currentAdvantage) && currentAdvantage >= 0 && currentAdvantage <= 3) {
+                    html.find(`input[name="advantage"][value="${currentAdvantage}"]`).prop("checked", true);
+                }
 
                 html.find('input[name="advantage"]').on("change", updateConfirmState);
                 renderCustomModifierChoices();

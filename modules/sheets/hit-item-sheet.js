@@ -4,7 +4,7 @@ export class HitItemSheet extends DefaultItemSheet {
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             classes: ["bizarre-adventures-d6", "sheet", "item", "hit"],
-            template: "systems/bizarre-adventures-d6/templates/sheets/item/hit-item-sheet.hbs"
+            template: "systems/bizarre-adventures-d6/templates/item/hit-item-sheet.hbs"
         });
     }
 }

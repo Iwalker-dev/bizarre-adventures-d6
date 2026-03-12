@@ -36,16 +36,7 @@ function normalizeSpecialArray(rawSpecials = []) {
 }
 
 export async function migrateWorld() {
-	const current = game.system.version;
-	if (!current) {
-		console.error("BAD6 Migration | Could not read system version:", game.system);
-		return;
-	}
 
-	const previous = game.settings.get("bizarre-adventures-d6", "systemMigrationVersion") || "0.0.0";
-	if (!foundry.utils.isNewerVersion(current, previous)) return;
-
-	const isNewer = foundry.utils.isNewerVersion;
 	for (const actor of game.actors.filter(a => a.type === "character")) {
 		// For old user actors, relocate their attributes to the new stats structure
 		if (actor.type === "character" && actor.system.attributes.ustats) {
@@ -67,6 +58,17 @@ export async function migrateWorld() {
 			ui.notifications.info(`BAD6 Migration | Actor ${actor.name} (${actor.id}) migrated to type "${actorData.type}".`);
 		}
 	}
+
+	const current = game.system.version;
+	if (!current) {
+		console.error("BAD6 Migration | Could not read system version:", game.system);
+		return;
+	}
+
+	const previous = game.settings.get("bizarre-adventures-d6", "systemMigrationVersion") || "0.0.0";
+	if (!foundry.utils.isNewerVersion(current, previous)) return;
+
+	const isNewer = foundry.utils.isNewerVersion;
 
 	// — First ever world load —
 	const shouldWelcome = game.settings.get("bizarre-adventures-d6", "welcomed");

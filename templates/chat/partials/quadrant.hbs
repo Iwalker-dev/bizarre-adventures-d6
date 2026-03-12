@@ -98,7 +98,7 @@
 
     {{#if rolled}}
       <div class="quadrant-rolled">
-        <div class= "rolled-actor">{{actorName}}</div>
+        <div class="rolled-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}</div>
         {{{rollHtml}}}
         <div class="quadrant-actor-divider"></div>
         <div class="quadrant-buttons">
@@ -110,7 +110,7 @@
     {{else if prepared}}
       <div class="quadrant-prepared">
         <div class="prepared-label">
-          <div class="prepared-label-actor">{{actorName}}</div>
+          <div class="prepared-label-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}</div>
           <div class="quadrant-actor-divider"></div>
           <div>Has Readied:</div>
           <div class="prepared-label-stat">
@@ -123,9 +123,7 @@
         </div>
 
         <div class="quadrant-buttons">
-          {{#if canUnready}}
-            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="unready">Unready</button>
-          {{/if}}
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="unready">Unready</button>
           {{#if allPrepared}}
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-feint" data-tooltip="Right-Click to Gambit">Feint</button>
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-fudge" data-tooltip="Right-Click to Gambit">Fudge</button>
