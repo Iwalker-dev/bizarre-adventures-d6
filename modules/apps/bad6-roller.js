@@ -48,7 +48,7 @@ let rollerClickTimer = null;
 let lastActionMessageId = null;
 let lastActionMessageAt = 0;
 let chatListenersRegistered = false;
-const DOUBLE_CLICK_WINDOW_MS = 250;
+const DOUBLE_CLICK_WINDOW_MS = 500;
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
 async function executeRollerAsGM(handler, ...args) {

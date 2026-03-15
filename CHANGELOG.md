@@ -147,7 +147,13 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 ## [0.9.9.1] - 2026-3-12
 - updated user-facing instructions
 - updated me-facing instructions
-
+## [0.9.9.2] - 2026-3-12
+### Fixes
+- Gave "Unready" a clarifying tooltip
+## [0.9.9.3] - 2026-3-14
+### Features
+- Added Property fields to stand types
+- Increased double click intercept time
 
 # What's left?
 - Create different backgrounds for all user types
