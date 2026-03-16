@@ -207,6 +207,7 @@ export async function migrateWorld() {
         <p> This system is unfinished! Certain features are not yet implemented such as...</p>
         <ul>
           <li> Learning Automation.</li>
+		  <li> (View the changelog for longer list) </li>
         </ul>
         <p> Please report any problems, ideas, or comments to itpart on Discord as I try to handle them quickly. I would love to make this the perfect system with your help! </p>`
 			, whisper: game.users.filter(u => u.isGM).map(u => u.id)
