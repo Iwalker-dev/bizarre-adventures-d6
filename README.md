@@ -8,6 +8,8 @@ Actors:
 
 -Outro, Hue Shift, and Rolling functionality
 
+-Full Luck Automation
+
 -Customized Sheet
 
 -Simple, Stylized Stat viewing and editing
@@ -24,7 +26,7 @@ Actors:
 
 **Known limitations**
 
--Changes to the sheet can be resource intensive for lower end devices
+-Sheet itself can take high resources
 
 **Some Future Additions:**
 
@@ -32,13 +34,7 @@ Cleaner Sheet Look
 
 Optimization option for lower-end devices
 
-Customized Combat
-    Combat based on Lancer Initiative
-        Alternate options for freedom of choice
-
 Random Character Generator (Would require a resource)
-
-Enter the system into FoundryVTT
 
 **Use Info**
 

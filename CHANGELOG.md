@@ -165,6 +165,8 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Mulligan/Fudge functionality revaluates roll
 - Advantage syncs for entire pair
 - Linked actors are considered when showing custom modifiers
+## [0.9.10.1] - 2026-3-16
+- Readded infinite stat logic (lost during overhaul)
 
 
 # What's left?
