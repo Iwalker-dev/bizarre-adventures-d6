@@ -1,0 +1,16 @@
+{{#each headerBlocks as |block|}}
+  {{#ifEquals block.type "inline-input"}}
+    <span class="{{block.className}}">{{block.label}}
+      <input
+        type="text"
+        name="{{block.name}}"
+        value="{{block.value}}"
+        maxlength="{{block.maxlength}}"
+        size="{{block.size}}"
+        pattern="{{block.pattern}}"
+        title="{{block.title}}"
+        style="width:{{block.inputWidth}}; padding:0 0.1ch; margin-left:0.5ch; text-align:center; font-size:inherit;"
+      />
+    </span>
+  {{/ifEquals}}
+{{/each}}

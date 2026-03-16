@@ -90,6 +90,10 @@ export function registerHandlebarsHelpers() {
 export async function preloadHandlebarsTemplates() {
 	const templatePaths = [
     "systems/bizarre-adventures-d6/templates/actor/partials/actor-shell.hbs"
+
+		, "systems/bizarre-adventures-d6/templates/actor/partials/actor-effects.hbs"
+
+		, "systems/bizarre-adventures-d6/templates/actor/partials/actor-header-blocks.hbs"
     
 		, "systems/bizarre-adventures-d6/templates/actor/partials/actor-nav.hbs"
     
@@ -105,10 +109,12 @@ export async function preloadHandlebarsTemplates() {
   
 	, ];
 
-	const [shellTpl, navTpl, classTpl, statsTp1, formulaTpl, quadrantTpl, actionTpl] = await foundry.applications.handlebars.loadTemplates(templatePaths);
+	const [shellTpl, effectsTpl, headerBlocksTpl, navTpl, classTpl, statsTp1, formulaTpl, quadrantTpl, actionTpl] = await foundry.applications.handlebars.loadTemplates(templatePaths);
 
 	// Register based on hbs naming convention
 	Handlebars.registerPartial("actor-shell", shellTpl);
+	Handlebars.registerPartial("actor-effects", effectsTpl);
+	Handlebars.registerPartial("actor-header-blocks", headerBlocksTpl);
 	Handlebars.registerPartial("actor-nav", navTpl);
 	Handlebars.registerPartial("actor-class", classTpl);
 	Handlebars.registerPartial("actor-stats", statsTp1);

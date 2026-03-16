@@ -1,50 +1,6 @@
 {{!-- systems/bizarre-adventures-d6/templates/partials/actor-nav.hbs --}}
-{{#ifEquals actor.type "stand"}}
+{{#each sheetTabs as |tab|}}
   <div class="button-container">
-    <a class="item" data-tab="stats" data-group="primary">Stats</a>
+    <a class="item" data-tab="{{tab.id}}" data-group="primary" title="{{tab.label}}" aria-label="{{tab.label}}"><i class="{{tab.icon}}"></i></a>
   </div>
-  <div class="button-container">
-    <a class="item" data-tab="info" data-group="primary">Stand Info</a>
-  </div>
-{{/ifEquals}}
-{{#ifEquals actor.type "user"}}
-  <div class="button-container">
-    <a class="item" data-tab="stats" data-group="primary">Stats</a>
-  </div>
-  <div class="button-container">
-    <a class="item" data-tab="info" data-group="primary">Biography</a>
-  </div>
-{{/ifEquals}}
-{{#ifEquals actor.type "power"}}
-  <div class="button-container">
-    <a class="item" data-tab="stats" data-group="primary">Stats</a>
-  </div>
-  <div class="button-container">
-    <a class="item" data-tab="info" data-group="primary">Power Info</a>
-  </div>
-{{/ifEquals}}
-
-{{#if system.bio.type}}
-  {{!-- And only if the type isn’t the literal string "None" --}}
-  {{#ifEquals system.bio.type "None"}}
-    {{!-- nothing --}}
-  {{else}}
-    <div class="button-container">
-      <a class="item"
-         data-tab="{{system.bio.type}}"
-         data-group="primary">
-        {{#if extraConfig.label}}{{extraConfig.label}}{{else}}{{system.bio.type}}{{/if}}
-      </a>
-    </div>
-  {{/ifEquals}}
-{{/if}}
-
-{{!-- If the actor is a user, finish also showing their hits and items --}}
-{{#ifEquals actor.type "user"}}
-  <div class="button-container">
-    <a class="item" data-tab="hit" data-group="primary">Hits</a>
-  </div>
-  <div class="button-container">
-    <a class="item" data-tab="item" data-group="primary">Items</a>
-  </div>
-{{/ifEquals}}
+{{/each}}

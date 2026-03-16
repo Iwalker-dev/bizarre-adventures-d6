@@ -111,8 +111,49 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		data.stats = stats;
 
 		this.applyExtraConfig(data);
+		data.sheetTabs = this.getSheetTabs(data);
+		data.headerBlocks = this.getHeaderBlocks(data);
 
 		return data;
+	}
+
+	getSheetTabs(data) {
+		const actorType = data?.actor?.type;
+		const infoMap = {
+			user: { label: "Biography", icon: "fas fa-user" },
+			stand: { label: "Stand Info", icon: "fas fa-scroll" },
+			power: { label: "Power Info", icon: "fas fa-bolt" }
+		};
+
+		const tabs = [
+			{ id: "stats", label: "Stats", icon: "fas fa-chart-line" }
+		];
+
+		if (infoMap[actorType]) {
+			tabs.push({ id: "info", ...infoMap[actorType] });
+		}
+
+		const bioType = data?.system?.bio?.type;
+		if (bioType && bioType !== "None") {
+			tabs.push({
+				id: bioType,
+				label: data?.extraConfig?.label || bioType,
+				icon: "fas fa-star"
+			});
+		}
+
+		if (actorType === "user") {
+			tabs.push(
+				{ id: "hit", label: "Hits", icon: "fas fa-burst" },
+				{ id: "item", label: "Items", icon: "fas fa-box" }
+			);
+		}
+
+		return tabs;
+	}
+
+	getHeaderBlocks(_data) {
+		return [];
 	}
 
 	/**
@@ -124,6 +165,32 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		if (!data?.extraConfig) return;
 		data.defaultCost = data.extraConfig.cost || "";
 		data.showCost = data.defaultCost && data.defaultCost !== "None";
+
+		const configuredFields = Array.isArray(data.extraConfig.fields)
+			? data.extraConfig.fields
+			: [];
+		const bio = data.system?.bio || {};
+		const abilityFieldName = data.extraConfig.abilityField || "";
+		const firstFilledField = configuredFields.find(field => {
+			if (field?.name === abilityFieldName) return false;
+			const value = bio[field?.name];
+			if (typeof value === "string") return value.trim().length > 0;
+			return value !== null && value !== undefined && value !== "";
+		});
+
+		const configuredAbilityValue = abilityFieldName ? bio[abilityFieldName] : "";
+		const fallbackAbilityValue = bio.ability || "";
+		const normalizedConfiguredAbility = typeof configuredAbilityValue === "string"
+			? configuredAbilityValue.trim()
+			: configuredAbilityValue;
+
+		data.bioTypeLabel = data.extraConfig.label || bio.type || "";
+		data.bioCostValue = bio.cost || data.defaultCost || "";
+		data.bioPropertyLabel = firstFilledField?.label || "";
+		data.bioPropertyValue = firstFilledField ? bio[firstFilledField.name] : "";
+		data.hasBioProperty = Boolean(firstFilledField);
+		data.typeDescriptionHtml = data.extraConfig.description || "";
+		data.bioAbilityDescription = normalizedConfiguredAbility || data.typeDescriptionHtml || fallbackAbilityValue;
 	}
 
 	/**
@@ -248,7 +315,9 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			return;
 		}
 
-		console.warn(`Applying background for type-${type}`);
+		if (isDebugEnabled()) {
+			console.warn(`Applying background for type-${type}`);
+		}
 
 		$sheet.removeClass((i, cls) => (cls.match(/\btype-\S+/g) || []).join(' '));
 		$sheet.addClass(`type-${type}`);

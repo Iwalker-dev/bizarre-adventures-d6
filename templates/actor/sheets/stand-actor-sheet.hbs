@@ -1,49 +1,51 @@
-<form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
+<form class="sheet actor-sheet book-tabs-layout {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
   <div class="jojo-sheet">
-    <header class="sheet-header">
-      <div class="character-image-box">
-        <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
-      </div>
-      <h1 class="sheet-header">
-        <span class="name-display">{{actor.name}}</span>
-        <input class="name-edit" value="{{actor.name}}" style="display:none;" />
-        {{#ifEquals actor.system.bio.type "Act"}}
-          <!-- single-digit input bound to system.info.actNumber -->
-          <span class="act-label">Act:
-            <input 
-              type="text" 
-              name="system.bio.actNumber" 
-              value="{{actor.system.bio.actNumber}}" 
-              maxlength="1" 
-              size="1" 
-              pattern="\d" 
-              title="Enter a single digit (1–9)"
-              style="width:1ch; padding:0 0.1ch; margin-left:0.5ch; text-align:center; font-size:inherit;"
-            />
-          </span>
-        {{/ifEquals}}
-      </h1>
-    </header>
-
-    <nav class="sheet-tabs tabs" data-group="primary">
-      {{> actor-nav}}
-    </nav>
+    {{> actor-effects}}
 
     <section class="sheet-body">
       <!-- ─ Stats Tab ─ -->
       <div class="tab" data-tab="stats" data-group="primary">
-        <div class="stats-and-chart">
-          <div class="stat-list">
+        <div class="actor-main-array actor-main-array--split">
+          <section class="user-panel actor-panel actor-panel--basic-info">
+            <div class="basic-actor-name">
+              <span class="name-display">{{actor.name}}</span>
+              <input class="name-edit" value="{{actor.name}}" style="display:none;" />
+            </div>
+            <div class="basic-image-wrap">
+              <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
+            </div>
+            <canvas class="actor-stat-chart actor-stat-chart--inline" data-stat-chart width="260" height="260"></canvas>
+          </section>
+
+          <section class="user-panel actor-panel actor-panel--stats-values">
+            <h3>Stats</h3>
             {{> actor-stats}}
-          </div>
-          <div class="stand-chart-container">
-            <canvas id="stand-stat-chart" width="300" height="300"></canvas>
-          </div>
+          </section>
+
+          <section class="user-panel actor-panel actor-panel--bio">
+            <div class="bio-summary core-info-container">
+              <div class="bio-description-grid {{#unless hasBioProperty}}bio-description-grid--single{{/unless}}">
+                {{#if hasBioProperty}}
+                  <div class="bio-description-card bio-description-card--property">
+                    <h4>{{bioPropertyLabel}}</h4>
+                    <div class="bio-description-value">{{bioPropertyValue}}</div>
+                  </div>
+                {{/if}}
+
+                <div class="bio-description-card bio-description-card--ability {{#unless hasBioProperty}}bio-description-card--full{{/unless}}">
+                  <h4>Ability Description</h4>
+                  <div class="bio-description-value">{{system.bio.ability}}</div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
       <!-- ─ Stand Info Tab ─ -->
       <div class="tab" data-tab="info" data-group="primary">
+        <div class="actor-tab-panel">
+          <section class="user-panel actor-panel actor-panel--info">
         <div class="info-container">
           <div class="info-row">
             <label>Stand:</label>
@@ -90,13 +92,23 @@
                       placeholder="Enter ability">{{system.bio.ability}}</textarea>
           </div>
         </div>
+          </section>
+        </div>
       </div>
       <!--  ─ Ability Description Tab ─ -->
       <div class="tab" data-tab="{{actor.system.bio.type}}" data-group="primary">
-        <div class="ability-description">
-          {{{system.bio.description}}}
+        <div class="actor-tab-panel">
+          <section class="user-panel actor-panel actor-panel--ability">
+            <div class="ability-description">
+              {{{system.bio.description}}}
+            </div>
+          </section>
         </div>
       </div>
     </section>
   </div>
+
+  <nav class="sheet-tabs tabs" data-group="primary">
+    {{> actor-nav}}
+  </nav>
 </form>

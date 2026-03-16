@@ -376,7 +376,7 @@ export const typeConfigs = {
       , image: "systems/bizarre-adventures-d6/assets/icons/powers/energy-breath.svg"
       , fields: [
         {
-          name: "overdrive",
+          name: "ability-description",
           label: "Overdrive",
           type: "textarea",
           placeholder: "e.g. Ripple Strike"
@@ -443,7 +443,7 @@ export const typeConfigs = {
       , image: "systems/bizarre-adventures-d6/assets/icons/powers/cracked-mask.svg"
       , fields: [
         {
-          name: "function",
+          name: "ability-description",
           label: "Function",
           type: "textarea",
           placeholder: "e.g. Vapor Freezing Technique"
@@ -520,7 +520,7 @@ export const typeConfigs = {
           placeholder: ""
         },
         {
-          name: "effect",
+          name: "ability-description",
           label: "Effect",  
           type: "textarea",
           placeholder: "e.g. Sinistral Ataxia"
@@ -645,7 +645,7 @@ export const typeConfigs = {
       , image: "systems/bizarre-adventures-d6/assets/icons/powers/cyborg-face.svg"
         , fields: [
           {
-            name: "Upgrades",
+            name: "ability-description",
             label: "Upgrade Description",
             type: "textarea"
           }

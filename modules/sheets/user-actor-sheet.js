@@ -63,6 +63,37 @@ import { typeConfigs, isDebugEnabled }    from "../config.js";
   			return s?.[s.selected] ?? 0;
   		};
 
+		const statLabelMap = Object.fromEntries((data.stats || []).map(stat => [String(stat.key || "").toLowerCase(), stat.label || stat.key]));
+		const activeFormulaModifiers = [];
+		for (const item of this.actor.items || []) {
+			if (item.type !== "item") continue;
+			const rawLines = item.system?.formula?.lines;
+			let lines = [];
+			if (Array.isArray(rawLines)) lines = rawLines;
+			else if (rawLines && typeof rawLines === "object") lines = Object.values(rawLines);
+
+			for (const rawLine of lines) {
+				const line = rawLine || {};
+				if (line.optional) continue;
+				const variable = String(line.variable || "modifier").trim();
+				const operand = String(line.operand || "+").trim();
+				const value = Number(line.value ?? 0);
+				if (!Number.isFinite(value)) continue;
+
+				const statKey = String(line.stat || "").trim().toLowerCase();
+				const statLabel = statKey ? (statLabelMap[statKey] || line.stat) : "All Stats";
+
+				activeFormulaModifiers.push({
+					itemName: item.name,
+					statLabel,
+					variable,
+					operand,
+					value
+				});
+			}
+		}
+		data.activeFormulaModifiers = activeFormulaModifiers;
+
   		// Recalculate health normally when Dark Determination is inactive
   		if (!data.darkDetermination) {
   			const totalDamage = this.actor.items

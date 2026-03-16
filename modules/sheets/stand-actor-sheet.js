@@ -41,6 +41,22 @@ export class StandSheet extends BaseActorSheet {
 		return data;
 	}
 
+	getHeaderBlocks(data) {
+		if (data?.actor?.system?.bio?.type !== "Act") return [];
+		return [{
+			type: "inline-input",
+			className: "act-label",
+			label: "Act:",
+			name: "system.bio.actNumber",
+			value: data?.actor?.system?.bio?.actNumber ?? "",
+			maxlength: "1",
+			size: "1",
+			pattern: "\\d",
+			title: "Enter a single digit (1–9)",
+			inputWidth: "1ch"
+		}];
+	}
+
 	activateListeners(html) {
 		// Let Foundry wire up the tabs for you
 		super.activateListeners(html);
