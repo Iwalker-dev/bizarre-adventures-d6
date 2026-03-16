@@ -8,6 +8,7 @@ parseFormula(component, formula) - parses a specific component (stat, sides, adv
 */
 
 export function createFormula(stat, sides, advantage, modifier) {
+    stat = (stat === 6) ? 10 : stat; // 6 is the placeholder for infinite stat
   return `${stat}d${sides}cs>=${5-advantage} + ${modifier}`;
 }
 
