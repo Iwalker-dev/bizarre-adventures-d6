@@ -176,8 +176,8 @@ export async function migrateWorld() {
 	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
 
 		if (isNewer(current, previous) &&
-		isNewer("0.9.9.2", previous) &&
-		!isNewer("0.9.9.2", current)
+		isNewer("0.9.10", previous) &&
+		!isNewer("0.9.10", current)
 	) {
 		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
@@ -208,7 +208,7 @@ export async function migrateWorld() {
         <ul>
           <li> Learning Automation.</li>
         </ul>
-        <p> Please report any problems, ideas, or comments to itpart on Discord. I would love to make this the perfect system with your help! </p>`
+        <p> Please report any problems, ideas, or comments to itpart on Discord as I try to handle them quickly. I would love to make this the perfect system with your help! </p>`
 			, whisper: game.users.filter(u => u.isGM).map(u => u.id)
 		});
 		await game.settings.set("bizarre-adventures-d6", "welcomed", true);
