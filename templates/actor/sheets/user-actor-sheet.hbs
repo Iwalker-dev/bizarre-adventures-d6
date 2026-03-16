@@ -1,42 +1,80 @@
 {{!-- systems/bizarre-adventures-d6/templates/sheets/user-actor-sheet.hbs --}}
-<form class="sheet actor-sheet {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
+<form class="sheet actor-sheet book-tabs-layout {{cssClass}}" autocomplete="off" data-actor-id="{{actor.id}}">
   <div class="jojo-sheet">
-    <header class="sheet-header dd-header">
-      <div class="character-image-box">
-        <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
-      </div>
-      <h1 class="sheet-header">
-        <span class="name-display">{{actor.name}}</span>
-        <input class="name-edit" value="{{actor.name}}" style="display:none;" />
-      </h1>
-      <div style="float:right; font-size:1.2em; color:#ccc;">
-        Health: {{system.health.value}} / {{system.health.max}}
-      </div>
-
-      {{#if (lte system.health.value 0)}}
-        <button type="button"
-                class="dark-determination-toggle dd-in-header"
-                aria-pressed="{{#if darkDetermination}}true{{else}}false{{/if}}"
-                title="Toggle Dark Determination">
-          <i class="fas fa-fire {{#if darkDetermination}}pulse-dd-icon{{else}}static-dd-icon{{/if}}"></i>
-          <span class="sr-only">
-            {{#if darkDetermination}}Dark Determination active{{else}}Dark Determination inactive{{/if}}
-          </span>
-        </button>
-      {{/if}}
-    </header>
-
-
-    <nav class="sheet-tabs tabs" data-group="primary">
-      {{> actor-nav}}
-    </nav>
-
+    {{> actor-effects}}
     <section class="sheet-body">
       <!-- ─ Stats Tab ─ -->
       <div class="tab"
         data-tab="stats"
         data-group="primary">
-          {{> actor-stats}}
+        <div class="user-main-array {{#unless activeFormulaModifiers.length}}no-mods{{/unless}}">
+          <section class="user-panel user-panel--basic-info">
+            <div class="basic-actor-name">
+              <span class="name-display">{{actor.name}}</span>
+              <input class="name-edit" value="{{actor.name}}" style="display:none;" />
+            </div>
+            <div class="basic-image-wrap">
+              <img src="{{actor.img}}" title="{{actor.name}}" />
+              <div class="basic-health-chip">
+                HP {{system.health.value}} / {{system.health.max}}
+              </div>
+              {{#if (lte system.health.value 0)}}
+                <button type="button"
+                        class="dark-determination-toggle basic-dd-toggle"
+                        aria-pressed="{{#if darkDetermination}}true{{else}}false{{/if}}"
+                        title="Toggle Dark Determination">
+                  <i class="fas fa-fire {{#if darkDetermination}}pulse-dd-icon{{else}}static-dd-icon{{/if}}"></i>
+                </button>
+              {{/if}}
+            </div>
+            <canvas class="actor-stat-chart actor-stat-chart--inline" data-stat-chart width="260" height="260"></canvas>
+          </section>
+
+          {{#if activeFormulaModifiers.length}}
+          <section class="user-panel user-panel--modifiers">
+            <h3>Formula Modifiers</h3>
+            <div class="modifier-list">
+              {{#each activeFormulaModifiers as |modifier|}}
+                <div class="modifier-row">
+                  <span class="modifier-item">{{modifier.itemName}}</span>
+                  <span class="modifier-detail">{{modifier.statLabel}} • {{modifier.variable}} {{modifier.operand}} {{modifier.value}}{{#if modifier.optional}} • Optional{{/if}}</span>
+                </div>
+              {{/each}}
+            </div>
+          </section>
+          {{/if}}
+
+          <section class="user-panel user-panel--stats">
+            <h3>Stats</h3>
+            {{> actor-stats}}
+          </section>
+
+          <section class="user-panel user-panel--inventory">
+            <h3>Hits & Items</h3>
+            <div class="overview-columns">
+              <div>
+                <h4>Hits</h4>
+                <ul>
+                  {{#each actor.items}}
+                    {{#if (eq this.type "hit")}}
+                      <li>{{this.name}} ({{this.system.quantity}})</li>
+                    {{/if}}
+                  {{/each}}
+                </ul>
+              </div>
+              <div>
+                <h4>Items</h4>
+                <ul>
+                  {{#each actor.items}}
+                    {{#if (eq this.type "item")}}
+                      <li>{{this.name}}</li>
+                    {{/if}}
+                  {{/each}}
+                </ul>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
 
       <!-- ─ Biography Tab ─ -->
@@ -175,4 +213,8 @@
       </div>
     </section>
   </div>
+
+  <nav class="sheet-tabs tabs" data-group="primary">
+    {{> actor-nav}}
+  </nav>
 </form>

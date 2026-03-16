@@ -111,8 +111,49 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		data.stats = stats;
 
 		this.applyExtraConfig(data);
+		data.sheetTabs = this.getSheetTabs(data);
+		data.headerBlocks = this.getHeaderBlocks(data);
 
 		return data;
+	}
+
+	getSheetTabs(data) {
+		const actorType = data?.actor?.type;
+		const infoMap = {
+			user: { label: "Biography", icon: "fas fa-user" },
+			stand: { label: "Stand Info", icon: "fas fa-scroll" },
+			power: { label: "Power Info", icon: "fas fa-bolt" }
+		};
+
+		const tabs = [
+			{ id: "stats", label: "Stats", icon: "fas fa-chart-line" }
+		];
+
+		if (infoMap[actorType]) {
+			tabs.push({ id: "info", ...infoMap[actorType] });
+		}
+
+		const bioType = data?.system?.bio?.type;
+		if (bioType && bioType !== "None") {
+			tabs.push({
+				id: bioType,
+				label: data?.extraConfig?.label || bioType,
+				icon: "fas fa-star"
+			});
+		}
+
+		if (actorType === "user") {
+			tabs.push(
+				{ id: "hit", label: "Hits", icon: "fas fa-burst" },
+				{ id: "item", label: "Items", icon: "fas fa-box" }
+			);
+		}
+
+		return tabs;
+	}
+
+	getHeaderBlocks(_data) {
+		return [];
 	}
 
 	/**
@@ -124,6 +165,32 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		if (!data?.extraConfig) return;
 		data.defaultCost = data.extraConfig.cost || "";
 		data.showCost = data.defaultCost && data.defaultCost !== "None";
+
+		const configuredFields = Array.isArray(data.extraConfig.fields)
+			? data.extraConfig.fields
+			: [];
+		const bio = data.system?.bio || {};
+		const abilityFieldName = data.extraConfig.abilityField || "";
+		const firstFilledField = configuredFields.find(field => {
+			if (field?.name === abilityFieldName) return false;
+			const value = bio[field?.name];
+			if (typeof value === "string") return value.trim().length > 0;
+			return value !== null && value !== undefined && value !== "";
+		});
+
+		const configuredAbilityValue = abilityFieldName ? bio[abilityFieldName] : "";
+		const fallbackAbilityValue = bio.ability || "";
+		const normalizedConfiguredAbility = typeof configuredAbilityValue === "string"
+			? configuredAbilityValue.trim()
+			: configuredAbilityValue;
+
+		data.bioTypeLabel = data.extraConfig.label || bio.type || "";
+		data.bioCostValue = bio.cost || data.defaultCost || "";
+		data.bioPropertyLabel = firstFilledField?.label || "";
+		data.bioPropertyValue = firstFilledField ? bio[firstFilledField.name] : "";
+		data.hasBioProperty = Boolean(firstFilledField);
+		data.typeDescriptionHtml = data.extraConfig.description || "";
+		data.bioAbilityDescription = normalizedConfiguredAbility || data.typeDescriptionHtml || fallbackAbilityValue;
 	}
 
 	/**
@@ -248,7 +315,9 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			return;
 		}
 
-		console.warn(`Applying background for type-${type}`);
+		if (isDebugEnabled()) {
+			console.warn(`Applying background for type-${type}`);
+		}
 
 		$sheet.removeClass((i, cls) => (cls.match(/\btype-\S+/g) || []).join(' '));
 		$sheet.addClass(`type-${type}`);
@@ -375,8 +444,9 @@ async _onDropActor(event) {
 	} else if (data?.type === "Actor" && data?.id) {
 		actor = game.actors.get(data.id) || null;
 	}
+	const droppedActor = game.actors.get(actor?.id) || actor;
 	// Only accept Actor drops (resolve by UUID or id)
-	if (!actor || actor.documentName !== "Actor") {
+	if (!droppedActor || droppedActor.documentName !== "Actor") {
 		ui.notifications.warn("You can only drop Actors here!");
 		return;
 	}
@@ -385,16 +455,16 @@ async _onDropActor(event) {
     const linkedActors = this.actor.system.bio.linkedActors?.value || [];
     
     // Check if already linked
-	if (linkedActors.some(linked => linked.uuid === actor.uuid)) {
-        ui.notifications.warn(`${actor.name} is already linked!`);
+	if (linkedActors.some(linked => linked.uuid === droppedActor.uuid)) {
+		ui.notifications.warn(`${droppedActor.name} is already linked!`);
         return;
     }
     
     // Add new linked actor
 	linkedActors.push({
-		uuid: actor.uuid,
-        name: actor.name,
-        type: actor.type
+		uuid: droppedActor.uuid,
+	        name: droppedActor.name,
+	        type: droppedActor.type
     });
     
     // Update the actor
@@ -403,20 +473,21 @@ async _onDropActor(event) {
     });
 
 	// Also add reciprocal link on the dropped actor
-	const otherLinked = actor.system.bio.linkedActors?.value || [];
-	const selfUuid = this.actor.uuid;
+	const selfActor = game.actors.get(this.actor.id) || this.actor;
+	const otherLinked = droppedActor.system.bio.linkedActors?.value || [];
+	const selfUuid = selfActor.uuid;
 	if (!otherLinked.some(linked => linked.uuid === selfUuid)) {
 		otherLinked.push({
 			uuid: selfUuid,
-			name: this.actor.name,
-			type: this.actor.type
+			name: selfActor.name,
+			type: selfActor.type
 		});
-		await actor.update({
+		await droppedActor.update({
 			"system.bio.linkedActors.value": otherLinked
 		});
 	}
     
-    ui.notifications.info(`Linked ${actor.name} as an ability!`);
+	ui.notifications.info(`Linked ${droppedActor.name} as an ability!`);
 }
 
 /**

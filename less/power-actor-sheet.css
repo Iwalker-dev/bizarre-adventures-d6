@@ -1,43 +1,46 @@
-/* ─── Sunset half-circle pattern for Hamon users ─── */
-.jojo-sheet.type-Hamon::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  /* 1) One radial‐gradient, bottom‐center half-circle */
-  background-image: radial-gradient(circle at 50% 100%, var(--accent-light) 25%, transparent 26%);
-  background-size: 60px 60px;
-  background-repeat: repeat;
-  animation: hamonRise 3s linear infinite;
-  opacity: 0.2;
+/* Hamon: rising sunset half-circles */
+.jojo-sheet.type-Hamon {
+  --base-bg-opacity: 0;
+  --type-pattern-opacity: 0.22;
+  --type-pattern: radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--accent-light) 85%, white) 24%, transparent 26%);
+  --type-pattern-size: 60px 60px;
+  --type-pattern-repeat: repeat;
+  --type-pattern-position: 0 0;
+  --type-pattern-animation: hamonRise 3s linear infinite;
 }
+/* Vampire: top-down drip half-circles */
+.jojo-sheet.type-Vampire {
+  --base-bg-opacity: 0;
+  --type-pattern-opacity: 0.22;
+  --type-pattern: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent-dark) 85%, black) 24%, transparent 26%);
+  --type-pattern-size: 60px 60px;
+  --type-pattern-repeat: repeat;
+  --type-pattern-position: 0 -60px;
+  --type-pattern-animation: vampireDrip 12s linear infinite;
+}
+/*
+	Add more type motifs here (works for any actor sheet with matching `system.bio.type`):
+	.jojo-sheet.type-<TypeName> {
+		--type-pattern: <gradient or image>;
+		--type-pattern-size: <w h>;
+		--type-pattern-repeat: repeat|no-repeat;
+		--type-pattern-position: <x y>;
+		--type-pattern-animation: <keyframes> <duration> linear infinite;
+	}
+*/
 @keyframes hamonRise {
   from {
-    /* start with the grid at its normal position */
-    background-position: 0px 0px;
+    background-position: 0 0;
   }
   to {
-    /* slide up by one full tile over the duration */
-    background-position: 0px -60px;
+    background-position: 0 -60px;
   }
-}
-.jojo-sheet.type-Vampire::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  /* Upside-down half-circles, top-centered */
-  background-image: radial-gradient(circle at 50% 0%, var(--accent-dark) 25%, transparent 26%);
-  background-size: 60px 60px;
-  background-repeat: repeat;
-  animation: vampireDrip 12s linear infinite;
-  opacity: 0.2;
 }
 @keyframes vampireDrip {
   from {
-    background-position: 0px -60px;
+    background-position: 0 -60px;
   }
   to {
-    background-position: 0px 0px;
+    background-position: 0 0;
   }
 }

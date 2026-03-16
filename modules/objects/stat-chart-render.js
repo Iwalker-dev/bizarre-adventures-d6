@@ -35,20 +35,30 @@ export function colorToRGBA(input, alpha = 1) {
 
 export function renderStatChart(app, html, data) {
 	const styles = getComputedStyle(document.documentElement);
-	const canvas = html.find("#stand-stat-chart")[0];
+	const canvas = html.find("[data-stat-chart]")[0] ?? html.find("#stand-stat-chart")[0];
 	if (!canvas) return;
 
-	const stats = data.actor.system.attributes.stats;
-	const statLabels = ["Power", "Speed", "Precision", "Range", "Durability", "Learning"];
+	const statsObj = data.actor?.system?.attributes?.stats ?? {};
+	const dataStats = Array.isArray(data.stats) ? data.stats : Object.entries(statsObj).map(([key, stat]) => ({ key, ...stat }));
+	if (!dataStats.length) return;
 
-	const statValues = [
-    stats.power?.value ?? 0
-    , stats.speed?.value ?? 0
-    , stats.precision?.value ?? 0
-    , stats.range?.value ?? 0
-    , stats.durability?.value ?? 0
-    , stats.learning?.orig ?? 0 // default to temp view for chart
-  ];
+	const statLabels = dataStats.map(stat => String(stat.label || stat.key || "").trim());
+	const statValues = dataStats.map(stat => {
+		if (stat.dtype === "Burn") {
+			const burnOriginal = Number(stat.original ?? stat.orig ?? stat.value ?? 0);
+			return Number.isFinite(burnOriginal) ? burnOriginal : 0;
+		}
+		const numeric = Number(stat.value ?? 0);
+		return Number.isFinite(numeric) ? numeric : 0;
+	});
+	const actorType = data.actor?.type;
+	const chartLabel = actorType === "user"
+		? "User Stats"
+		: actorType === "power"
+			? "Power Stats"
+			: "Stand Stats";
+	const computedMax = Math.max(6, ...statValues, 1);
+	const chartMax = Math.ceil(computedMax);
 	const renderChart = () => {
 		const accentLight = getComputedStyle(document.documentElement)
 			.getPropertyValue('--accent-light')
@@ -66,7 +76,7 @@ export function renderStatChart(app, html, data) {
 			, data: {
 				labels: statLabels
 				, datasets: [{
-					label: "Stand Stats"
+					label: chartLabel
 					, data: statValues
 					, backgroundColor: colorToRGBA(accentDark, 0.4)
 					, borderColor: accentDark
@@ -103,7 +113,7 @@ export function renderStatChart(app, html, data) {
 							display: false
 						}
 						, min: 0
-						, max: 6
+						, max: chartMax
 						, stepSize: 1
 					}
 				}

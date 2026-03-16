@@ -11,6 +11,9 @@ export function createFormula(stat, sides, advantage, modifier) {
   return `${stat}d${sides}cs>=${5-advantage} + ${modifier}`;
 }
 
+const VALID_FORMULA_VARIABLES = new Set(["stat", "sides", "advantage", "modifier"]);
+const LEGACY_STAT_KEYS = new Set(["power", "precision", "speed", "range", "durability", "learning", "body", "luck", "menacing", "pluck", "reason", "wit"]);
+
 export function modifyFormula(formula, stat = null, sides = null, advantage = null, modifier = null, operands = []) {
     // Collect the base values from the formula
     const baseStat = parseFormula("stat", formula);
@@ -93,6 +96,110 @@ function formatTrace(label, tokens, unclampedValue, clampedValue) {
         return `${expression} = ${unclampedValue} (${clampedValue})`;
     }
     return `${expression} = ${clampedValue}`;
+}
+
+export function normalizeFormulaLines(rawLines = []) {
+    const normalizedInput = Array.isArray(rawLines)
+        ? rawLines
+        : (rawLines && typeof rawLines === "object" ? Object.values(rawLines) : []);
+
+    return normalizedInput.map((rawLine) => {
+        const line = rawLine || {};
+        let stat = String(line.stat || "").trim().toLowerCase();
+        let variable = String(line.variable || "modifier").trim().toLowerCase();
+
+        if (!stat && LEGACY_STAT_KEYS.has(variable)) {
+            stat = variable;
+            variable = "stat";
+        }
+
+        return {
+            ...line,
+            optional: !!line.optional,
+            operand: String(line.operand || "+").trim() || "+",
+            stat,
+            variable,
+            value: Number(line.value ?? 0)
+        };
+    });
+}
+
+function safeFromUuidSync(uuid) {
+    if (typeof uuid !== "string" || !uuid) return null;
+
+    try {
+        return fromUuidSync(uuid);
+    } catch (_error) {
+        const tokenUuid = uuid.replace(/\.Actor\.[^.]+$/u, "");
+        if (tokenUuid === uuid) return null;
+
+        try {
+            return fromUuidSync(tokenUuid);
+        } catch (_nestedError) {
+            return null;
+        }
+    }
+}
+
+function getPreferredLinkedActor(linkedUuid) {
+    const linkedDoc = safeFromUuidSync(linkedUuid);
+    const resolvedActor = linkedDoc?.actor || (linkedDoc?.documentName === "Actor" ? linkedDoc : null);
+    if (!resolvedActor) return null;
+
+    const activeTokenActor = canvas?.tokens?.placeables
+        ?.map(token => token?.actor)
+        ?.find(actor => actor?.id === resolvedActor.id);
+
+    return activeTokenActor || resolvedActor;
+}
+
+export function collectActorFormulaLines(actor, { inheritLinkedActorModifiers = false } = {}) {
+    if (!actor) return [];
+
+    const lines = [];
+    const seenActorIds = new Set();
+
+    const appendActorLines = (sourceActor, sourceLabelPrefix = "") => {
+        if (!sourceActor?.id || seenActorIds.has(sourceActor.id)) return;
+        seenActorIds.add(sourceActor.id);
+
+        for (const item of sourceActor.items || []) {
+            const normalizedLines = normalizeFormulaLines(item?.system?.formula?.lines);
+            normalizedLines.forEach((line, index) => {
+                if (!VALID_FORMULA_VARIABLES.has(line.variable)) return;
+                if (!Number.isFinite(line.value)) return;
+
+                lines.push({
+                    id: `${sourceActor.id}:${item.id}:${index}`,
+                    sourceActorId: sourceActor.id,
+                    sourceActorName: sourceActor.name || "",
+                    sourceName: sourceLabelPrefix ? `${sourceLabelPrefix} • ${item.name || "Custom"}` : (item.name || "Custom"),
+                    optional: !!line.optional,
+                    stat: String(line.stat || "").trim().toLowerCase(),
+                    variable: line.variable,
+                    operand: String(line.operand || "+").trim(),
+                    value: Number(line.value ?? 0)
+                });
+            });
+        }
+    };
+
+    appendActorLines(actor);
+
+    if (inheritLinkedActorModifiers) {
+        const linkedActors = actor.system?.bio?.linkedActors?.value || [];
+        for (const entry of linkedActors) {
+            const linkedUuid = entry?.uuid;
+            if (typeof linkedUuid !== "string" || !linkedUuid) continue;
+
+            const linkedActor = getPreferredLinkedActor(linkedUuid);
+            if (!linkedActor || linkedActor.id === actor.id) continue;
+
+            appendActorLines(linkedActor, linkedActor.name || entry?.name || "Linked Actor");
+        }
+    }
+
+    return lines;
 }
 
 export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = []) {

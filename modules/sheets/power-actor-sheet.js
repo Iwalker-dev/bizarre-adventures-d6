@@ -35,10 +35,10 @@ export class PowerSheet extends BaseActorSheet {
 		}
 
 		data.extraConfig = data.typeConfigs[data.system.bio.type] || {};
+		if (!data.extraConfig.abilityField) {
+			data.extraConfig.abilityField = "ability-description";
+		}
 		this.applyExtraConfig(data);
-
-		// Set description
-		data.system.bio.description = data.extraConfig.description || "";
 
 
 		const keys = ['power', 'precision', 'speed', 'range', 'durability', 'learning'];

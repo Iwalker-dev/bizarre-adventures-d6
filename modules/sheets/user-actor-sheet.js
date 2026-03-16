@@ -1,6 +1,7 @@
   // systems/bizarre-adventures-d6/scripts/sheets/user-actor-sheet.js
   import { BaseActorSheet } from "./base-actor-sheet.js";
 import { typeConfigs, isDebugEnabled }    from "../config.js";
+import { collectActorFormulaLines } from "../dice.js";
 
   /**
    * The UserSheet class manages the actor sheet for 'user' type actors.
@@ -62,6 +63,21 @@ import { typeConfigs, isDebugEnabled }    from "../config.js";
   			const s = this.actor.system.attributes.stats[stat];
   			return s?.[s.selected] ?? 0;
   		};
+
+		const statLabelMap = Object.fromEntries((data.stats || []).map(stat => [String(stat.key || "").toLowerCase(), stat.label || stat.key]));
+		const activeFormulaModifiers = collectActorFormulaLines(this.actor).map((line) => {
+			const statKey = String(line.stat || "").trim().toLowerCase();
+			const statLabel = statKey ? (statLabelMap[statKey] || line.stat) : "All Stats";
+			return {
+				itemName: line.sourceName,
+				statLabel,
+				variable: line.variable,
+				operand: line.operand,
+				value: line.value,
+				optional: !!line.optional
+			};
+		});
+		data.activeFormulaModifiers = activeFormulaModifiers;
 
   		// Recalculate health normally when Dark Determination is inactive
   		if (!data.darkDetermination) {

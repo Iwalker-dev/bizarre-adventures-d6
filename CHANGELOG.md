@@ -147,6 +147,24 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 ## [0.9.9.1] - 2026-3-12
 - updated user-facing instructions
 - updated me-facing instructions
+## [0.9.9.2] - 2026-3-12
+### Fixes
+- Gave "Unready" a clarifying tooltip
+### Features
+- Added Property fields to stand types
+- Increased double click intercept time
+## [0.9.10] - 2026-3-15
+### Features
+#### Sheet Overhaul
+- More informative first page
+- Better use of space
+- Gave chart to all actors
+- Normalized field names for modularity
+### Fixes
+- Mulligan properly applies at <=2 rather than < 2
+- Mulligan/Fudge functionality revaluates roll
+- Advantage syncs for entire pair
+- Linked actors are considered when showing custom modifiers
 
 
 # What's left?

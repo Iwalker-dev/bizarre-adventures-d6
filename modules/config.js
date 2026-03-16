@@ -128,7 +128,7 @@ export const typeConfigs = {
 
 	stand: {
 		None: {
-			label: ""
+			label: "" 
 		, }
 		, Natural: {
 			label: "Natural Stand"
@@ -138,6 +138,13 @@ export const typeConfigs = {
         <p>A standard Stand type, with a majorly human or animal physiology with limbs.</p>
         <p>Examples: Star Platinum, Hierophant Green, Grateful Dead, Clash.</p>
       `
+        , fields: [
+          {
+            name: "Properties",
+            label: "Property Descriptions",
+            type: "textarea"
+          }
+        ]
 		}
 		, Artificial: {
 			label: "Artificial Stand"
@@ -147,6 +154,13 @@ export const typeConfigs = {
       <p>As opposed to <em>Natural</em>, these Stands have a more abstract or mechanical body.</p>
       <p>Examples: Hermit Purple, Ratt, Aerosmith, Manhattan Transfer.</p>
     `
+    , fields: [
+          {
+            name: "Properties",
+            label: "Property Descriptions",
+            type: "textarea"
+          }
+        ]
 		}
 		, Object: {
 			label: "Object Stand"
@@ -157,6 +171,13 @@ export const typeConfigs = {
         <p>These Stands are known to <em>survive past</em> even the User's death.</p>
         <p><em>Examples: Emperor, Thoth, Cream Starter, Beach Boy.</em></p>
       `
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 		, Bound: {
 			label: "Bound Stand"
@@ -167,6 +188,13 @@ export const typeConfigs = {
         The enhanced substance is generally manipulable, & cannot be withdrawn.
         Examples: The Fool, Super Fly, Strength, Les Feuilles.
       `
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 		, Wearable: {
 			label: "Wearable Stand"
@@ -177,6 +205,13 @@ export const typeConfigs = {
         Others can wear the Stand, though Range restricts distance from the User.
         Examples: Oasis, White Album, Catch The Rainbow, Mandom.
       `
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 		, Swarm: {
 			label: "Swarm Stand"
@@ -188,6 +223,13 @@ export const typeConfigs = {
         <p>Single-unit death does not harm the User, only substantial amounts of lost units do.</p>
         <p><em>Examples: Harvest, Bad Company, Pearl Jam, Metallica, Sex Pistols.</em></p>
       `
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 		, Integrated: {
 			label: "Integrated Stand"
@@ -199,6 +241,13 @@ export const typeConfigs = {
         <p><strong>Durability</strong> & <strong>Range</strong> are often of lesser use without a Stand body.</p>
         <p><em>Examples: Khnum, Stray Cat, Mr. President, Tatoo You!, Oh! Lonesome Me.</em></p>
       `
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 		, Automatic: {
 			label: "Automatic Stand"
@@ -211,6 +260,13 @@ export const typeConfigs = {
         <p><u>Precision</u> is often of lesser use, as Automatics choose targets based on a condition.</p>
         <p><em>Examples: Black Sabbath, Marilyn Manson, Born This Way.</em></p>
       `
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 		, Detached: {
 			label: "Detached Stand"
@@ -224,6 +280,13 @@ export const typeConfigs = {
         <p>While a Stand is Broken, its manifestation and ability are unusable.</p>
         <p><em>Examples: Highway Star, Sheer Heart Attack, Baby Face.</em></p>
       `
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 		, Indepdendent: {
 			label: "Independent Stand"
@@ -237,6 +300,14 @@ export const typeConfigs = {
         <p><em>Examples: Cheap Trick, Paisley Park, Anubis, Wonder Of U.</em></p>
       `
 			, stats: ["wit", "reason", "menacing", "pluck"]
+
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 		, Act: {
 			label: "Act Stand"
@@ -270,6 +341,13 @@ export const typeConfigs = {
 
         <p><em>Examples: Echoes, Tusk.</em></p>
       `
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 		, Other: {
 			label: "Other Stand"
@@ -279,6 +357,13 @@ export const typeConfigs = {
         <p>Niche Types that often only apply to one or two Stands, or no prior precedent.</p>
         <p><em>Examples: Range-Irrelevant, Sub-Stands, Combined, Harmful, Shared, Posthumous, Room, Wounds, Beyonds, Requiem, Mass Hysterias, Homebrewed Types.</em></p>
       `
+      , fields: [
+        {
+          name: "Properties",
+          label: "Property Descriptions",
+          type: "textarea"
+        }
+      ]
 		}
 	},
 
@@ -291,7 +376,7 @@ export const typeConfigs = {
       , image: "systems/bizarre-adventures-d6/assets/icons/powers/energy-breath.svg"
       , fields: [
         {
-          name: "overdrive",
+          name: "ability-description",
           label: "Overdrive",
           type: "textarea",
           placeholder: "e.g. Ripple Strike"
@@ -358,7 +443,7 @@ export const typeConfigs = {
       , image: "systems/bizarre-adventures-d6/assets/icons/powers/cracked-mask.svg"
       , fields: [
         {
-          name: "function",
+          name: "ability-description",
           label: "Function",
           type: "textarea",
           placeholder: "e.g. Vapor Freezing Technique"
@@ -435,7 +520,7 @@ export const typeConfigs = {
           placeholder: ""
         },
         {
-          name: "effect",
+          name: "ability-description",
           label: "Effect",  
           type: "textarea",
           placeholder: "e.g. Sinistral Ataxia"
@@ -560,7 +645,7 @@ export const typeConfigs = {
       , image: "systems/bizarre-adventures-d6/assets/icons/powers/cyborg-face.svg"
         , fields: [
           {
-            name: "Upgrades",
+            name: "ability-description",
             label: "Upgrade Description",
             type: "textarea"
           }

@@ -177,10 +177,10 @@ export async function renderDialog(dialog, dialogData = {}) {
                 html.find('input[name="advantage"]').on("change", updateConfirmState);
                 renderCustomModifierChoices();
                 updateConfirmState(); // IMPORTANT: start disabled
-            },
+            }, 
             close: () => resolve(null),
-            default: "confirm"
-        }).render(true);
+            default: "confirm",
+        }, { width: 560, height: "auto", resizable: true }).render(true);
     });
     }
     else if (dialog == "special") {
