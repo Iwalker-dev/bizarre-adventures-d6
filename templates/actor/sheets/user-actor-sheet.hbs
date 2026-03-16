@@ -37,7 +37,7 @@
               {{#each activeFormulaModifiers as |modifier|}}
                 <div class="modifier-row">
                   <span class="modifier-item">{{modifier.itemName}}</span>
-                  <span class="modifier-detail">{{modifier.statLabel}} • {{modifier.variable}} {{modifier.operand}} {{modifier.value}}</span>
+                  <span class="modifier-detail">{{modifier.statLabel}} • {{modifier.variable}} {{modifier.operand}} {{modifier.value}}{{#if modifier.optional}} • Optional{{/if}}</span>
                 </div>
               {{/each}}
             </div>

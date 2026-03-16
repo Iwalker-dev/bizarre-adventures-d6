@@ -2,7 +2,7 @@ import { actionLabels, LUCK_MOVE_HINTS, HitDC, HitDCFlavor, DC, DCDifficulty, DC
 import { renderDialog } from "../dialog.js";
 import { chooseLuckSpenders, executeLuckMove, trySpendLuck, LUCK_MOVES} from "../luck-moves.js";
 import { isDebugEnabled } from "../config.js";
-import { createFormula, executeRoll, applyFormulaLines } from "../dice.js";
+import { createFormula, executeRoll, applyFormulaLines, collectActorFormulaLines } from "../dice.js";
 import { getRollerSocket } from "../sockets.js";
 import { canViewActorFormula, canViewActorName, HIDDEN_ACTOR_NAME } from "../utils.js";
 
@@ -20,6 +20,52 @@ async function renderAction(data = {}) {
     { quadrants, showResolve: true, isResolved: !!data.isResolved, resolveLabel: data.resolveLabel ?? "Resolve", resolveTooltip: data.resolveTooltip ?? "" }
   );
 }
+
+function shouldInheritLinkedActorModifiers(actor) {
+    return ["power", "stand"].includes(String(actor?.type || "").toLowerCase());
+}
+
+function safeFromUuidSync(uuid) {
+    if (typeof uuid !== "string" || !uuid) return null;
+
+    try {
+        return fromUuidSync(uuid);
+    } catch (_error) {
+        const tokenUuid = uuid.replace(/\.Actor\.[^.]+$/u, "");
+        if (tokenUuid === uuid) return null;
+
+        try {
+            return fromUuidSync(tokenUuid);
+        } catch (_nestedError) {
+            return null;
+        }
+    }
+}
+
+function getSceneTokenSourceForActor(actor, fallbackName = "") {
+    if (!actor?.id) return null;
+    const token = canvas?.tokens?.placeables?.find(placeable => placeable?.actor?.id === actor.id);
+    if (!token?.document || !token.actor) return null;
+
+    return {
+        sourceUuid: token.document.uuid,
+        actorId: token.actor.id,
+        name: token.name || token.document.name || token.actor.name || fallbackName
+    };
+}
+
+function resolveLinkedActorSource(uuid, fallbackName = "") {
+    const doc = safeFromUuidSync(uuid);
+    const actor = doc?.actor || (doc?.documentName === "Actor" ? doc : null);
+    if (!actor) return null;
+
+    return getSceneTokenSourceForActor(actor, fallbackName) || {
+        sourceUuid: actor.uuid,
+        actorId: actor.id,
+        name: fallbackName || actor.name
+    };
+}
+
 async function renderContest(data = {}) {
     const quadrants = data.quadrants || {}; // object map by quadrant number
 
@@ -427,7 +473,9 @@ async function prepareQuadrant(messageId, quadrantNum, actorSources) {
     const prepare = await renderStatSelectionDialog(messageId, quadrantNum, actorSources);
     if (!prepare) return;
     const actor = resolveActorFromSource({ sourceUuid: prepare.sourceUuid, actorId: prepare.actorId });
-    const customLines = actor ? collectActorFormulaLines(actor) : [];
+    const customLines = actor
+        ? collectActorFormulaLines(actor, { inheritLinkedActorModifiers: shouldInheritLinkedActorModifiers(actor) })
+        : [];
 
     const baseFormula = createFormula(prepare.statValue, 6, prepare.advantage, 0);
     const evaluated = applyFormulaLines(
@@ -518,7 +566,9 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
         // Resolve actor from sourceUuid or actorId
         const actor = resolveActorFromSource(source);
         if (!actor) return null;
-        const customLines = collectActorFormulaLines(actor);
+        const customLines = collectActorFormulaLines(actor, {
+            inheritLinkedActorModifiers: shouldInheritLinkedActorModifiers(actor)
+        });
         const customModifiers = encodeURIComponent(JSON.stringify(customLines));
         // Extract the number type stats of the actor, specifically the key, actor name, and stat value
         const statsArray = Object.entries(actor.system.attributes.stats)
@@ -618,23 +668,7 @@ function getRollableActorSources({ user = game.user, warnOnFail = false, hardSto
                     const uuid = entry?.uuid;
                     if (typeof uuid !== "string") return null;
 
-                    const doc = fromUuidSync(uuid);
-                    if (!doc) return null;
-
-                    let actorId;
-                    if (doc.documentName === "Actor") {
-                        actorId = doc.id;
-                    } else if (doc.actor) {
-                        actorId = doc.actor.id;
-                    } else {
-                        return null;
-                    }
-
-                    return {
-                        sourceUuid: uuid,
-                        actorId,
-                        name: entry.name || doc.name
-                    };
+                    return resolveLinkedActorSource(uuid, entry.name);
                 })
                 .filter(s => s);
         });
@@ -667,23 +701,7 @@ function getRollableActorSources({ user = game.user, warnOnFail = false, hardSto
                     const uuid = entry?.uuid;
                     if (typeof uuid !== "string") return null;
 
-                    const doc = fromUuidSync(uuid);
-                    if (!doc) return null;
-
-                    let actorId;
-                    if (doc.documentName === "Actor") {
-                        actorId = doc.id;
-                    } else if (doc.actor) {
-                        actorId = doc.actor.id;
-                    } else {
-                        return null;
-                    }
-
-                    return {
-                        sourceUuid: uuid,
-                        actorId,
-                        name: entry.name || doc.name
-                    };
+                    return resolveLinkedActorSource(uuid, entry.name);
                 })
                 .filter(s => s);
         });
@@ -735,7 +753,8 @@ export async function updateQuadrant(messageId
         customLinesApplied: Array.isArray(customLinesApplied) ? customLinesApplied : [],
         selectedModifierIds: Array.isArray(selectedModifierIds) ? selectedModifierIds.map(String) : [],
         luckCounts: existingQuadrant.luckCounts || {},
-        gambitCounts: existingQuadrant.gambitCounts || {}
+        gambitCounts: existingQuadrant.gambitCounts || {},
+        luckSpenders: existingQuadrant.luckSpenders || {}
     });
 
     const pairedQuadrantNum = getPairedQuadrantNum(quadrantNum);
@@ -771,7 +790,7 @@ function getPairedQuadrantNum(quadrantNum) {
  */
 function resolveActorFromSource({ sourceUuid, actorId }) {
     if (sourceUuid) {
-        const doc = fromUuidSync(sourceUuid);
+        const doc = safeFromUuidSync(sourceUuid);
         if (doc) {
             if (doc.actor) return doc.actor;
             if (doc.documentName === "Actor") return doc;
@@ -782,41 +801,6 @@ function resolveActorFromSource({ sourceUuid, actorId }) {
     }
     return null;
 }
-
-function collectActorFormulaLines(actor) {
-    if (!actor) return [];
-    const lines = [];
-    const validVariables = new Set(["stat", "sides", "advantage", "modifier"]);
-
-    for (const item of actor.items || []) {
-        const rawLines = item?.system?.formula?.lines;
-        const normalized = Array.isArray(rawLines)
-            ? rawLines
-            : (rawLines && typeof rawLines === "object" ? Object.values(rawLines) : []);
-
-        normalized.forEach((line, index) => {
-            const variable = String(line?.variable || "").trim();
-            if (!validVariables.has(variable)) return;
-
-            const operand = String(line?.operand || "+").trim();
-            const value = Number(line?.value ?? 0);
-            if (!Number.isFinite(value)) return;
-
-            lines.push({
-                id: `${item.id}:${index}`,
-                sourceName: item.name || "Custom",
-                optional: !!line?.optional,
-                stat: String(line?.stat || "").trim().toLowerCase(),
-                variable,
-                operand,
-                value
-            });
-        });
-    }
-
-    return lines;
-}
-
 async function waitForUnlock(message, maxWaitMs = 5000) {
     const startTime = Date.now();
     while (message.getFlag("bizarre-adventures-d6", `Locked`)) {
@@ -989,7 +973,9 @@ export async function recalculateQuadrantFormula(messageId, quadrantNum) {
     const effectiveAdvantage = Math.max(0, Math.min(3, safeBaseAdvantage + Math.max(0, luckFudge + gambitFudge)));
 
     const actor = resolveActorFromSource(current);
-    const customLines = actor ? collectActorFormulaLines(actor) : [];
+    const customLines = actor
+        ? collectActorFormulaLines(actor, { inheritLinkedActorModifiers: shouldInheritLinkedActorModifiers(actor) })
+        : [];
     const selectedModifierIds = Array.isArray(current.selectedModifierIds)
         ? current.selectedModifierIds.map(String)
         : [];

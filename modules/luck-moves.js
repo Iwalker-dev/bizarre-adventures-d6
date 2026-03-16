@@ -77,7 +77,12 @@ export function chooseLuckSpenders(rollableActors) {
 	for (const source of rollableActors) {
 		let actor;
 		if (source.sourceUuid) {
-			const doc = fromUuidSync(source.sourceUuid);
+			let doc = null;
+			try {
+				doc = fromUuidSync(source.sourceUuid);
+			} catch (_err) {
+				// May throw for embedded token-actor UUIDs; fall through to actorId fallback
+			}
 			if (doc?.documentName === "Actor") actor = doc;
 			else if (doc?.actor) actor = doc.actor;
 		}
