@@ -1,4 +1,4 @@
-import { resetQuadrant, createActionMessage, createContestMessage, recalculateQuadrantFormula } from "./apps/bad6-roller.js";
+import { resetQuadrant, createActionMessage, createContestMessage, recalculateQuadrantFormula, reevaluatePairRollResults, rerenderMessage } from "./apps/bad6-roller.js";
 import { getRollerSocket } from "./sockets.js";
 
 async function executeRollerAsGM(handler, ...args) {
@@ -11,6 +11,10 @@ async function executeRollerAsGM(handler, ...args) {
 }
 
 function canUseMove(move, actor) {
+	if (!actor) {
+		ui.notifications.warn("No valid actor available to spend Luck.");
+		return false;
+	}
 	const luckStat = actor.system.attributes.stats.luck;
 	const pool = move.costType === "perm" ? (luckStat.perm ?? 0) : (luckStat.temp ?? 0);
 	if (pool < move.cost) {
@@ -190,6 +194,10 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 			ui.notifications.warn("Invalid cost type for move: " + LUCK_MOVES[move].name);
 			return;
 	}
+	if (!isGambit && !spender) {
+		ui.notifications.warn("No valid Luck-spending actor could be resolved for this move.");
+		return;
+	}
 	if (!isGambit && !canUseMove(LUCK_MOVES[move], game.actors.get(spender))) {
 		return;
 	}
@@ -219,7 +227,10 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 
 		// Save execution data in flags
 		if (executed) {
-			await trySpendLuck(spender, LUCK_MOVES[move].name);
+			if (!isGambit) {
+				const spent = await trySpendLuck(spender, LUCK_MOVES[move].name);
+				if (!spent) return;
+			}
 			message = game.messages.get(messageId); // Refetch message to ensure we have the latest flags after move execution
 			// Prepare existing data
 			const countType = isGambit ? "gambitCounts" : "luckCounts";
@@ -248,21 +259,49 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 
 			// Update the message flags with the new data
 			await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, updateData);
-			if (move === "fudge" || move === "mulligan") {
-				await recalculateQuadrantFormula(messageId, quadrantNum);
+			if (move === "fudge") {
+				const quadrantNumber = Number(quadrantNum);
+				const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
+				for (const pairQuadrant of pairQuadrants) {
+					await recalculateQuadrantFormula(messageId, pairQuadrant);
+				}
+			} else if (move === "mulligan") {
+				const quadrantNumber = Number(quadrantNum);
+				const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
+				for (const pairQuadrant of pairQuadrants) {
+					await recalculateQuadrantFormula(messageId, pairQuadrant, { includeMulligan: true });
+				}
+				await reevaluatePairRollResults(messageId, quadrantNum);
 			}
 		}
 }
 
+function getPairMulliganBonus(message, quadrantNum) {
+	const quadrantNumber = Number(quadrantNum);
+	const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
+
+	return pairQuadrants.reduce((total, index) => {
+		const data = message?.getFlag("bizarre-adventures-d6", `quadrant${index}`) || {};
+		const luck = Number(data?.luckCounts?.mulligan || 0);
+		const gambit = Number(data?.gambitCounts?.mulligan || 0);
+		return total + Math.max(0, luck + gambit);
+	}, 0);
+}
+
 function getQuadrantAdvantage(message, quadrantNum) {
 	const quadrantNumber = Number(quadrantNum);
-	const pairMap = { 1: 2, 2: 1, 3: 4, 4: 3 };
-	const own = Number(message?.getFlag("bizarre-adventures-d6", `quadrant${quadrantNumber}`)?.advantage);
-	if (Number.isFinite(own)) return own;
+	const pairKey = (quadrantNumber === 1 || quadrantNumber === 2)
+		? "action"
+		: ((quadrantNumber === 3 || quadrantNumber === 4) ? "reaction" : null);
 
-	const pairQuadrant = pairMap[quadrantNumber];
-	const pair = Number(message?.getFlag("bizarre-adventures-d6", `quadrant${pairQuadrant}`)?.advantage);
-	if (Number.isFinite(pair)) return pair;
+	if (pairKey) {
+		const pairAdvantage = message?.getFlag("bizarre-adventures-d6", "pairAdvantage") || {};
+		const shared = Number(pairAdvantage[pairKey]);
+		if (Number.isFinite(shared)) return Math.max(0, Math.min(3, shared));
+	}
+
+	const own = Number(message?.getFlag("bizarre-adventures-d6", `quadrant${quadrantNumber}`)?.advantage);
+	if (Number.isFinite(own)) return Math.max(0, Math.min(3, own));
 
 	return 0;
 }
@@ -273,6 +312,7 @@ async function executeFeint(messageId, quadrantNum) {
 	return true;
 }
 
+// Does not actually change the advantage directly, this is handled by recalculating the formula
 async function executeFudge(messageId, quadrantNum) {
 	// Fudge adds a counted advantage bonus; formula recomputation applies it before custom modifiers.
 	let message = game.messages.get(messageId);
@@ -308,15 +348,14 @@ async function executeFlashback(messageId, quadrantNum) {
 async function executeMulligan(messageId, quadrantNum) {
 	// Add 1 advantage to last roll, even if it was a tie or success. If the last roll had 2 or more advantage, refund the cost instead.
 	let message = game.messages.get(messageId);
-	let existing = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
-	let advantage = getQuadrantAdvantage(message, quadrantNum);
+	let baseAdvantage = getQuadrantAdvantage(message, quadrantNum);
+	const mulliganBonus = getPairMulliganBonus(message, quadrantNum);
+	const currentAdvantage = Math.max(0, Math.min(3, baseAdvantage + mulliganBonus));
 	let executed = false;
-	if (advantage < 2) {
-		await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, { 
-			...existing,
-			advantage: advantage + 1
-		});
+	if (currentAdvantage <= 2) {
 		executed = true;
+	} else {
+		ui.notifications.info("Mulligan would exceed 3 advantage, not spent.");
 	}
 	return executed;
 }
@@ -327,7 +366,8 @@ async function executePersist(messageId, quadrantNum) {
 	const newMessage = await ChatMessage.create({
 		content: `<p><strong>Persist!</strong></p>`
 	});
-	await message.setFlag("bizarre-adventures-d6", "locked", true);
+	await message.setFlag("bizarre-adventures-d6", "Locked", true); // keep locked, original message should not be editable after persist
+	await rerenderMessage(message);
 	const type = message.getFlag("bizarre-adventures-d6", "type");
 	if (type === "action") {
 		createActionMessage();

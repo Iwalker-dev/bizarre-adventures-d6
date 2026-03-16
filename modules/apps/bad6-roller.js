@@ -209,6 +209,8 @@ export async function registerChatListeners() {
             const button = event.currentTarget;
             const quadrantNum = button.dataset.quadrant;
             const messageId = $(button).closest(".chat-message").data("messageId");
+            const message = game.messages.get(messageId);
+            if (isMessageLocked(message)) return;
             const [actionType, actionArg] = button.dataset.action.split("-", 2);
             const isAllowed = canUserExecuteAction(messageId, actionType, quadrantNum);
             if (!isAllowed) {
@@ -255,6 +257,8 @@ export async function registerChatListeners() {
             const button = event.currentTarget;
             const quadrantNum = button.dataset.quadrant;
             const messageId = $(button).closest(".chat-message").data("messageId");
+            const message = game.messages.get(messageId);
+            if (isMessageLocked(message)) return false;
             const [actionType, actionArg] = button.dataset.action.split("-", 2);
             const isAllowed = canUserExecuteAction(messageId, actionType, quadrantNum);
             if (!isAllowed) {
@@ -324,6 +328,7 @@ function canUserResolveMessage(message) {
 function canUserExecuteAction(messageId, actionType, quadrantNum) {
     const message = game.messages.get(messageId);
     if (!message) return false;
+    if (isMessageLocked(message)) return false;
 
     if (actionType === "resolve") {
         return canUserResolveMessage(message);
@@ -342,6 +347,10 @@ function canUserExecuteAction(messageId, actionType, quadrantNum) {
     return true;
 }
 
+function isMessageLocked(message) {
+    return !!message?.getFlag("bizarre-adventures-d6", "Locked");
+}
+
 function setButtonDisabledState(buttonEl, disabled, tooltip) {
     const button = buttonEl instanceof HTMLElement ? buttonEl : buttonEl?.[0];
     if (!button) return;
@@ -350,6 +359,8 @@ function setButtonDisabledState(buttonEl, disabled, tooltip) {
     button.classList.toggle("is-disabled", !!disabled);
     if (tooltip && disabled) {
         button.dataset.tooltip = tooltip;
+    } else {
+        delete button.dataset.tooltip;
     }
 }
 
@@ -449,6 +460,14 @@ function applyChatButtonPermissions(message, html) {
 
     const noOwnershipTip = "You do not own the actor required for this action.";
     const noResolveTip = "You must own all actors in this roll to resolve.";
+    const lockedTip = "This roll is currently locked.";
+
+    if (isMessageLocked(message)) {
+        root.querySelectorAll(".select-stat").forEach((button) => {
+            setButtonDisabledState(button, true, lockedTip);
+        });
+        return;
+    }
 
     root.querySelectorAll('.select-stat[data-action="prepare"]').forEach((button) => {
         setButtonDisabledState(button, false, noOwnershipTip);
@@ -517,6 +536,8 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
         return;
     }
     await message.setFlag("bizarre-adventures-d6", "Locked", true);
+    message = game.messages.get(messageId);
+    if (message) await rerenderMessage(message);
     message = game.messages.get(messageId); // refetch to ensure we have the latest state after locking
     if (message) {
         // Per luck action, refund each actor based on the amount of times stored whihc they spent for a move.
@@ -537,8 +558,10 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
             }
         }       
         await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
-        rerenderMessage(message);
-        await message.setFlag("bizarre-adventures-d6", "Locked", false);   
+        await rerenderMessage(message);
+        await message.setFlag("bizarre-adventures-d6", "Locked", false);
+        message = game.messages.get(messageId);
+        if (message) await rerenderMessage(message);
     } else {
         ui.notifications.error("Could not find message to update.");
          return;
@@ -548,18 +571,8 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
 async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
     if (!actorSources.length) return;
     const quadrantNumber = Number(quadrantNum);
-    const pairMap = { 1: 2, 2: 1, 3: 4, 4: 3 };
-    const pairQuadrant = pairMap[quadrantNumber];
     const message = game.messages.get(messageId);
-    const ownAdvantage = message?.getFlag("bizarre-adventures-d6", `quadrant${quadrantNumber}`)?.advantage;
-    const pairAdvantage = pairQuadrant
-        ? message?.getFlag("bizarre-adventures-d6", `quadrant${pairQuadrant}`)?.advantage
-        : undefined;
-    const ownNumeric = Number(ownAdvantage);
-    const pairNumeric = Number(pairAdvantage);
-    const currentAdvantage = Number.isFinite(ownNumeric)
-        ? ownNumeric
-        : (Number.isFinite(pairNumeric) ? pairNumeric : undefined);
+    const currentAdvantage = getPairAdvantage(message, quadrantNumber);
 
     // Create map of sources
     const actors = actorSources.map(source => {
@@ -737,13 +750,23 @@ export async function updateQuadrant(messageId
     if (!message) return;
 
     await message.setFlag("bizarre-adventures-d6", `Locked`, true);
+    message = game.messages.get(messageId);
+    if (message) await rerenderMessage(message);
     message = game.messages.get(messageId); // refetch to ensure we have the latest state after locking
-        const existingQuadrant = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
+    const existingQuadrant = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
+    const parsedAdvantage = Number(advantage);
+    const sharedAdvantage = Number.isFinite(parsedAdvantage)
+        ? Math.max(0, Math.min(3, parsedAdvantage))
+        : (getPairAdvantage(message, quadrantNum) ?? 0);
+    const resolvedPairAdvantage = Math.max(0, Math.min(3, sharedAdvantage + getPairFudgeBonus(message, quadrantNum)));
+
+    await setPairAdvantage(message, quadrantNum, sharedAdvantage);
+
     await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, {
         sourceUuid,
         actorId,
         stat,
-        advantage,
+        advantage: resolvedPairAdvantage,
         statValue,
         formula,
         baseFormula: baseFormula || formula,
@@ -758,29 +781,228 @@ export async function updateQuadrant(messageId
     });
 
     const pairedQuadrantNum = getPairedQuadrantNum(quadrantNum);
+    const currentQuadrant = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
     const pairedQuadrant = pairedQuadrantNum
         ? message.getFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`)
         : null;
 
-    if (pairedQuadrant && advantage !== undefined && advantage !== null) {
-        await message.setFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`, {
-            ...pairedQuadrant,
-            advantage
-        });
-        if (pairedQuadrant.formula) {
-            await recalculateQuadrantFormula(messageId, pairedQuadrantNum);
-        }
+    if (currentQuadrant?.formula) {
+        await recalculateQuadrantFormula(messageId, quadrantNum);
+    }
+    if (pairedQuadrant?.formula) {
+        await recalculateQuadrantFormula(messageId, pairedQuadrantNum);
     }
 
     await rerenderMessage(message);
 
     await message.setFlag("bizarre-adventures-d6", `Locked`, false);
+    message = game.messages.get(messageId);
+    if (message) await rerenderMessage(message);
 }
 
 function getPairedQuadrantNum(quadrantNum) {
     const quadrantNumber = Number(quadrantNum);
     const pairMap = { 1: 2, 2: 1, 3: 4, 4: 3 };
     return pairMap[quadrantNumber] ?? null;
+}
+
+function getAdvantagePairKey(quadrantNum) {
+    const quadrantNumber = Number(quadrantNum);
+    if (quadrantNumber === 1 || quadrantNumber === 2) return "action";
+    if (quadrantNumber === 3 || quadrantNumber === 4) return "reaction";
+    return null;
+}
+
+function getLegacyQuadrantAdvantage(message, quadrantNum) {
+    const own = Number(message?.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`)?.advantage);
+    if (Number.isFinite(own)) return Math.max(0, Math.min(3, own));
+
+    const pairedQuadrantNum = getPairedQuadrantNum(quadrantNum);
+    const pair = Number(message?.getFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`)?.advantage);
+    if (Number.isFinite(pair)) return Math.max(0, Math.min(3, pair));
+
+    return undefined;
+}
+
+function getPairAdvantage(message, quadrantNum) {
+    const key = getAdvantagePairKey(quadrantNum);
+    if (!key) return undefined;
+
+    const pairAdvantage = message?.getFlag("bizarre-adventures-d6", "pairAdvantage") || {};
+    const shared = Number(pairAdvantage[key]);
+    if (Number.isFinite(shared)) return Math.max(0, Math.min(3, shared));
+
+    return getLegacyQuadrantAdvantage(message, quadrantNum);
+}
+
+async function setPairAdvantage(message, quadrantNum, advantage) {
+    const key = getAdvantagePairKey(quadrantNum);
+    if (!message || !key) return;
+
+    const numeric = Number(advantage);
+    const safeAdvantage = Number.isFinite(numeric) ? Math.max(0, Math.min(3, numeric)) : 0;
+    const pairAdvantage = message.getFlag("bizarre-adventures-d6", "pairAdvantage") || {};
+
+    await message.setFlag("bizarre-adventures-d6", "pairAdvantage", {
+        ...pairAdvantage,
+        [key]: safeAdvantage
+    });
+}
+
+function getPairQuadrantNumbers(quadrantNum) {
+    const key = getAdvantagePairKey(quadrantNum);
+    if (key === "action") return [1, 2];
+    if (key === "reaction") return [3, 4];
+    return [];
+}
+
+function getPairMulliganBonus(message, quadrantNum) {
+    const pairQuadrants = getPairQuadrantNumbers(quadrantNum);
+    return pairQuadrants.reduce((total, index) => {
+        const data = message?.getFlag("bizarre-adventures-d6", `quadrant${index}`) || {};
+        const luck = Number(data?.luckCounts?.mulligan || 0);
+        const gambit = Number(data?.gambitCounts?.mulligan || 0);
+        return total + Math.max(0, luck + gambit);
+    }, 0);
+}
+
+function getPairFudgeBonus(message, quadrantNum) {
+    const pairQuadrants = getPairQuadrantNumbers(quadrantNum);
+    return pairQuadrants.reduce((total, index) => {
+        const data = message?.getFlag("bizarre-adventures-d6", `quadrant${index}`) || {};
+        const luck = Number(data?.luckCounts?.fudge || 0);
+        const gambit = Number(data?.gambitCounts?.fudge || 0);
+        return total + Math.max(0, luck + gambit);
+    }, 0);
+}
+
+function reevaluateStoredRoll(formula, rollData) {
+    if (!formula || !rollData) return null;
+
+    const thresholdMatch = String(formula).match(/cs>=\s*(-?\d+)/u);
+    const modifierMatch = String(formula).match(/\+\s*(-?\d+)\s*$/u);
+    const threshold = Number(thresholdMatch?.[1]);
+    const modifier = Number(modifierMatch?.[1] ?? 0);
+    if (!Number.isFinite(threshold) || !Number.isFinite(modifier)) return null;
+
+    const clonedData = foundry.utils.deepClone(rollData);
+    let successes = 0;
+
+    for (const term of clonedData?.terms || []) {
+        if (Array.isArray(term?.modifiers)) {
+            term.modifiers = term.modifiers.map((modifier) => {
+                if (typeof modifier !== "string") return modifier;
+                return /^cs>=-?\d+$/u.test(modifier) ? `cs>=${threshold}` : modifier;
+            });
+        }
+
+        if (!Array.isArray(term?.results)) continue;
+        let termSuccesses = 0;
+        for (const result of term.results) {
+            if (result?.discarded) continue;
+            const dieValue = Number(result?.result);
+            const success = Number.isFinite(dieValue) && dieValue >= threshold;
+            result.active = true;
+            result.success = success;
+            result.failure = !success;
+            result.count = success ? 1 : 0;
+            if (success) {
+                successes += 1;
+                termSuccesses += 1;
+            }
+        }
+
+        term.total = termSuccesses;
+    }
+
+    return {
+        total: successes + modifier,
+        rollData: {
+            ...clonedData,
+            formula,
+            _formula: formula,
+            total: successes + modifier,
+            _total: successes + modifier
+        }
+    };
+}
+
+function updateRollHtmlFormula(rollHtml, formula) {
+    if (typeof rollHtml !== "string") return rollHtml;
+    return rollHtml.replace(/(<div class="dice-formula">)(.*?)(<\/div>)/u, `$1${formula}$3`);
+}
+
+function updateRollHtmlTotal(rollHtml, total) {
+    if (typeof rollHtml !== "string") return rollHtml;
+    return rollHtml.replace(/(<h4 class="dice-total">)(.*?)(<\/h4>)/u, `$1${total}$3`);
+}
+
+async function renderReevaluatedRollHtml(formula, rollData, total, fallbackHtml) {
+    try {
+        if (Roll?.fromData) {
+            const roll = Roll.fromData(foundry.utils.deepClone(rollData));
+            if (roll) {
+                roll._formula = formula;
+                roll._total = total;
+                const html = await roll.render();
+                if (html) return html;
+            }
+        }
+    } catch (_error) {
+        // Fallback below if roll reconstruction fails
+    }
+
+    const formulaUpdated = updateRollHtmlFormula(fallbackHtml, formula);
+    return updateRollHtmlTotal(formulaUpdated, total);
+}
+
+export async function reevaluatePairRollResults(messageId, quadrantNum) {
+    const message = game.messages.get(messageId);
+    if (!message) return;
+
+    const pairQuadrants = getPairQuadrantNumbers(quadrantNum);
+    for (const index of pairQuadrants) {
+        const current = message.getFlag("bizarre-adventures-d6", `quadrant${index}`);
+        if (!current?.rolled || !current?.rollData || !current?.formula) continue;
+
+        const reevaluated = reevaluateStoredRoll(current.formula, current.rollData);
+        if (!reevaluated) continue;
+
+        const reevaluatedHtml = await renderReevaluatedRollHtml(
+            current.formula,
+            reevaluated.rollData,
+            reevaluated.total,
+            current.rollHtml
+        );
+
+        await message.setFlag("bizarre-adventures-d6", `quadrant${index}`, {
+            ...current,
+            rollTotal: reevaluated.total,
+            rollData: reevaluated.rollData,
+            rollHtml: reevaluatedHtml
+        });
+    }
+
+    const type = message.getFlag("bizarre-adventures-d6", "type");
+    if (type === "action") {
+        const result =
+            (Number(message.getFlag("bizarre-adventures-d6", "quadrant1")?.rollTotal) || 0)
+            + (Number(message.getFlag("bizarre-adventures-d6", "quadrant2")?.rollTotal) || 0);
+        const { label, flavor } = getActionDCMeta(result);
+        await message.setFlag("bizarre-adventures-d6", "result", { result, label, flavor });
+    } else if (type === "contest") {
+        const actionTotal =
+            (Number(message.getFlag("bizarre-adventures-d6", "quadrant1")?.rollTotal) || 0)
+            + (Number(message.getFlag("bizarre-adventures-d6", "quadrant2")?.rollTotal) || 0);
+        const reactionTotal =
+            (Number(message.getFlag("bizarre-adventures-d6", "quadrant3")?.rollTotal) || 0)
+            + (Number(message.getFlag("bizarre-adventures-d6", "quadrant4")?.rollTotal) || 0);
+        const difference = actionTotal - reactionTotal;
+        const { label, flavor } = getHitDCMeta(difference);
+        await message.setFlag("bizarre-adventures-d6", "result", { difference, label, flavor });
+    }
+
+    await rerenderMessage(message);
 }
 
 /**
@@ -832,12 +1054,6 @@ export async function rerenderMessage(message) {
         const numeric = Number(value);
         return Number.isFinite(numeric) ? numeric : undefined;
     };
-    const getFudgeBonus = (flagData = {}) => {
-        const luckFudge = Number(flagData?.luckCounts?.fudge || 0);
-        const gambitFudge = Number(flagData?.gambitCounts?.fudge || 0);
-        return Math.max(0, luckFudge + gambitFudge);
-    };
-
     // Read all quadrant flags
     for (let i = 1; i <= count; i++) {
         const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${i}`);
@@ -853,6 +1069,11 @@ export async function rerenderMessage(message) {
         }
         else if (flagData.formula) { // Prepared quadrant
             const actor = resolveActorFromSource(flagData);
+            const pairBaseAdvantage = toAdvantage(getPairAdvantage(message, i));
+            const pairFudgeBonus = getPairFudgeBonus(message, i);
+            const pairResolvedAdvantage = Number.isFinite(pairBaseAdvantage)
+                ? Math.min(3, Math.max(0, pairBaseAdvantage + pairFudgeBonus))
+                : undefined;
             quadrants[i] = {
                 quadrantNum: i,
                 label: actionLabels[i - 1].label,
@@ -862,7 +1083,7 @@ export async function rerenderMessage(message) {
                 actorName: HIDDEN_ACTOR_NAME,
                 statLabel: flagData.stat || "",
                 statValue: flagData.statValue || 0,
-                advantage: Math.min(3, (toAdvantage(flagData.advantage) ?? 0) + getFudgeBonus(flagData)),
+                advantage: pairResolvedAdvantage ?? toAdvantage(flagData.advantage) ?? 0,
                 specialLabel: flagData.selectedSpecial?.label
                     || flagData.selectedSpecial?.name
                     || flagData.selectedSpecial?.key
@@ -913,19 +1134,6 @@ export async function rerenderMessage(message) {
         }
     }
 
-    const pairings = [[1, 2], [3, 4]];
-    for (const [first, second] of pairings) {
-        const firstAdvantage = toAdvantage(quadrants[first]?.advantage);
-        const secondAdvantage = toAdvantage(quadrants[second]?.advantage);
-
-        if (quadrants[first]) {
-            quadrants[first].advantage = firstAdvantage ?? secondAdvantage ?? 0;
-        }
-        if (quadrants[second]) {
-            quadrants[second].advantage = secondAdvantage ?? firstAdvantage ?? 0;
-        }
-    }
-
     Object.values(quadrants).forEach(q => {
         q.allPrepared = allPrepared;
     });
@@ -959,18 +1167,21 @@ export async function rerenderMessage(message) {
     }
 }
 
-export async function recalculateQuadrantFormula(messageId, quadrantNum) {
+export async function recalculateQuadrantFormula(messageId, quadrantNum, { includeMulligan = false } = {}) {
     const message = game.messages.get(messageId);
     if (!message) return;
 
     const current = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
     if (!current?.formula) return;
 
-    const baseAdvantage = Number(current.advantage);
-    const safeBaseAdvantage = Number.isFinite(baseAdvantage) ? baseAdvantage : 0;
-    const luckFudge = Number(current?.luckCounts?.fudge || 0);
-    const gambitFudge = Number(current?.gambitCounts?.fudge || 0);
-    const effectiveAdvantage = Math.max(0, Math.min(3, safeBaseAdvantage + Math.max(0, luckFudge + gambitFudge)));
+    const pairAdvantage = Number(getPairAdvantage(message, quadrantNum));
+    const currentAdvantage = Number(current.advantage);
+    const safeBaseAdvantage = Number.isFinite(pairAdvantage)
+        ? pairAdvantage
+        : (Number.isFinite(currentAdvantage) ? currentAdvantage : 0);
+    const pairFudgeBonus = getPairFudgeBonus(message, quadrantNum);
+    const pairMulliganBonus = includeMulligan ? getPairMulliganBonus(message, quadrantNum) : 0;
+    const effectiveAdvantage = Math.max(0, Math.min(3, safeBaseAdvantage + pairFudgeBonus + pairMulliganBonus));
 
     const actor = resolveActorFromSource(current);
     const customLines = actor
@@ -998,6 +1209,7 @@ export async function recalculateQuadrantFormula(messageId, quadrantNum) {
     const formula = evaluated?.formula || baseFormula;
     await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, {
         ...current,
+        advantage: effectiveAdvantage,
         formula,
         baseFormula,
         customApplied: !!evaluated?.customApplied,
@@ -1005,17 +1217,7 @@ export async function recalculateQuadrantFormula(messageId, quadrantNum) {
         customLinesApplied: evaluated?.appliedLines || []
     });
 
-    const pairedQuadrantNum = getPairedQuadrantNum(quadrantNum);
-    const pairedQuadrant = pairedQuadrantNum
-        ? message.getFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`)
-        : null;
-
-    if (pairedQuadrant && Number(pairedQuadrant.advantage) !== safeBaseAdvantage) {
-        await message.setFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`, {
-            ...pairedQuadrant,
-            advantage: safeBaseAdvantage
-        });
-    }
+    await setPairAdvantage(message, quadrantNum, safeBaseAdvantage);
 }
 
 // Execution Phase ----------------------------------------------------------------------------------------------
@@ -1029,6 +1231,8 @@ export async function rollAll(messageId) {
         return;
     }
     await message.setFlag("bizarre-adventures-d6", `Locked`, true);
+    message = game.messages.get(messageId);
+    if (message) await rerenderMessage(message);
     try {
         message = game.messages.get(messageId);
         const type = message.getFlag("bizarre-adventures-d6", "type");
@@ -1090,6 +1294,7 @@ export async function rollAll(messageId) {
     } finally {
     await rerenderMessage(game.messages.get(messageId));
     await message.setFlag("bizarre-adventures-d6", `Locked`, false);
+    await rerenderMessage(game.messages.get(messageId));
     }
 }
 

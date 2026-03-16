@@ -160,6 +160,12 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Better use of space
 - Gave chart to all actors
 - Normalized field names for modularity
+### Fixes
+- Mulligan properly applies at <=2 rather than < 2
+- Mulligan/Fudge functionality revaluates roll
+- Advantage syncs for entire pair
+- Linked actors are considered when showing custom modifiers
+
 
 # What's left?
 - Create different backgrounds for all user types
