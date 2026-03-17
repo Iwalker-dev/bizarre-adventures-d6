@@ -168,6 +168,9 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 ## [0.9.10.1] - 2026-3-16
 - Readded infinite stat logic (lost during overhaul)
 
+## [0.9.10.2] - 2026-3-17
+- Blind fix for worldbuilding actors not being migrated on reload attempted
+
 
 # What's left?
 - Create different backgrounds for all user types
