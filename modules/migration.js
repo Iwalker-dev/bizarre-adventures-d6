@@ -120,7 +120,10 @@ export async function migrateWorld() {
 			}
 		}
 	}
-	if (count > 0) ui.notifications.info(`BAD6 Migration | Migration process completed. ${count} actors migrated.`);
+	if (count > 0) {
+		ui.notifications.info(`BAD6 Migration | Migration process completed. ${count} actors migrated.`);
+		ui.notifications.warn('BAD6 Migration | Migration of actors is limited. It creates new actors with salvaged information. Please check all affected actors.');
+	}
 
 	const current = game.system.version;
 	if (!current) {
