@@ -179,6 +179,8 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Added Reckless Reactions
 - Made advantage per re/action more clear
 - Fix for chat permissions not being recalculated on reload
+## [0.9.11.1] -  3/19/25
+- Quick fix for drag strip blocking interaction
 
 # What's left?
 - Create different backgrounds for all user types
