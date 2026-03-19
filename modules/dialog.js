@@ -7,21 +7,20 @@ function capitalizeFirst(text) {
 }
 
 export async function renderDialog(dialog, dialogData = {}) {
-    if (dialog == 'statAndAdvantage') {
-        // Render template
+    if (dialog === "stat") {
         const content = await renderTemplateV1(
-            "systems/bizarre-adventures-d6/templates/dialog/statAndAdvantage.hbs"
-            , { actors: dialogData.actors, quadrantNum: dialogData.quadrantNum, currentAdvantage: dialogData.currentAdvantage }
+            "systems/bizarre-adventures-d6/templates/dialog/stat.hbs",
+            { actors: dialogData.actors, quadrantNum: dialogData.quadrantNum, currentAdvantage: dialogData.currentAdvantage }
         );
+
         return await new Promise((resolve) => {
             new Dialog({
-                title: `Select Stat and Advantage for ${actionLabels[dialogData.quadrantNum - 1].label}`,
-                content: content,
+                title: `Select Stat for ${actionLabels[dialogData.quadrantNum - 1].label}`,
+                content,
                 buttons: {
                     confirm: {
                         label: "Confirm",
                         callback: (html) => {
-                            const selectedAdvantage = html.find('input[name="advantage"]:checked').val();
                             const selectedStat = html.find(".stat-option.selected").data("stat");
                             const selectedSourceUuid = html.find(".stat-option.selected").data("sourceUuid");
                             const selectedActorId = html.find(".stat-option.selected").data("actorId");
@@ -29,18 +28,16 @@ export async function renderDialog(dialog, dialogData = {}) {
                                 .map((_, el) => String(el.value))
                                 .get();
 
-                            // Block if either missing
-                            if (selectedAdvantage === undefined || !selectedStat) {
-                                ui.notifications.warn("Pick both a Stat and an Advantage first.");
+                            if (!selectedStat) {
+                                ui.notifications.warn("Pick a Stat first.");
                                 return;
                             }
 
                             resolve({
-                                advantage: parseInt(selectedAdvantage, 10) // allows 0
-                                ,stat: selectedStat
-                                ,sourceUuid: selectedSourceUuid
-                                ,actorId: selectedActorId
-                                ,selectedModifierIds
+                                stat: selectedStat,
+                                sourceUuid: selectedSourceUuid,
+                                actorId: selectedActorId,
+                                selectedModifierIds
                             });
                         }
                     },
@@ -54,11 +51,7 @@ export async function renderDialog(dialog, dialogData = {}) {
                     const dialogButtons = dialogApp.find(".dialog-buttons");
                     const confirmBtn = dialogButtons.find('button[data-button="confirm"]');
 
-                    const isReady = () => {
-                        const hasAdvantage = html.find('input[name="advantage"]:checked').length > 0;
-                        const hasStat = html.find(".stat-option.selected").length > 0;
-                        return hasAdvantage && hasStat;
-                    };
+                    const isReady = () => html.find(".stat-option.selected").length > 0;
 
                     const triggerInvalidConfirmFeedback = () => {
                         confirmBtn.removeClass("bad6-invalid-shake");
@@ -69,18 +62,17 @@ export async function renderDialog(dialog, dialogData = {}) {
 
                     const updateConfirmState = () => {
                         const enabled = isReady();
-                            confirmBtn
-                                .prop("disabled", !enabled)
-                                .attr("title", enabled ? "" : "Pick both a Stat and an Advantage first.")
-                                .attr("aria-disabled", !enabled)
-                                .toggleClass("is-disabled", !enabled);
+                        confirmBtn
+                            .prop("disabled", !enabled)
+                            .attr("title", enabled ? "" : "Pick a Stat first.")
+                            .attr("aria-disabled", !enabled)
+                            .toggleClass("is-disabled", !enabled);
                     };
 
-                    // Capture phase: intercept before Dialog's own click handler
                     const onConfirmAttemptCapture = (event) => {
                         if (isReady()) return;
                         triggerInvalidConfirmFeedback();
-                        ui.notifications.warn("Pick both a Stat and an Advantage first.");
+                        ui.notifications.warn("Pick a Stat first.");
                         event.preventDefault();
                         event.stopPropagation();
                         event.stopImmediatePropagation();
@@ -169,21 +161,69 @@ export async function renderDialog(dialog, dialogData = {}) {
                         updateConfirmState();
                     });
 
-                const currentAdvantage = Number(dialogData.currentAdvantage);
-                if (Number.isInteger(currentAdvantage) && currentAdvantage >= 0 && currentAdvantage <= 3) {
-                    html.find(`input[name="advantage"][value="${currentAdvantage}"]`).prop("checked", true);
-                }
-
-                html.find('input[name="advantage"]').on("change", updateConfirmState);
-                renderCustomModifierChoices();
-                updateConfirmState(); // IMPORTANT: start disabled
-            }, 
-            close: () => resolve(null),
-            default: "confirm",
-        }, { width: 560, height: "auto", resizable: true }).render(true);
-    });
+                    renderCustomModifierChoices();
+                    updateConfirmState();
+                },
+                close: () => resolve(null),
+                default: "confirm"
+            }, { width: 560, height: "auto", resizable: true }).render(true);
+        });
     }
-    else if (dialog == "special") {
+
+    if (dialog === "advantage") {
+        const content = await renderTemplateV1(
+            "systems/bizarre-adventures-d6/templates/dialog/advantage.hbs",
+            { currentAdvantage: dialogData.currentAdvantage }
+        );
+
+        const rawQuadrant = Number(dialogData.quadrantNum);
+        const pairedEvenQuadrant = Number.isInteger(rawQuadrant)
+            ? (rawQuadrant % 2 === 0 ? rawQuadrant : rawQuadrant + 1)
+            : null;
+        const pairLabel = actionLabels[(pairedEvenQuadrant ?? 0) - 1]?.label ?? "Pair";
+
+        return await new Promise((resolve) => {
+            let settled = false;
+            const settle = (value) => {
+                if (settled) return;
+                settled = true;
+                resolve(value);
+            };
+
+            const dialogApp = new Dialog({
+                title: `Select Advantage for ${pairLabel}`,
+                content,
+                buttons: {
+                    cancel: {
+                        label: "Cancel",
+                        callback: () => settle(null)
+                    }
+                },
+                render: (html) => {
+                    const currentAdvantage = Number(dialogData.currentAdvantage);
+                    if (Number.isInteger(currentAdvantage) && currentAdvantage >= 0 && currentAdvantage <= 3) {
+                        html.find(`.advantage-option[data-advantage="${currentAdvantage}"]`).addClass("is-current");
+                    }
+
+                    html.find(".advantage-option").on("click", (event) => {
+                        const selected = Number($(event.currentTarget).data("advantage"));
+                        const safeAdvantage = Number.isFinite(selected)
+                            ? Math.max(0, Math.min(3, Math.floor(selected)))
+                            : 0;
+
+                        settle(safeAdvantage);
+                        dialogApp.close();
+                    });
+                },
+                close: () => settle(null),
+                default: "cancel"
+            }, { width: 360, height: "auto", resizable: false });
+
+            dialogApp.render(true);
+        });
+    }
+
+    if (dialog === "special") {
         const specialArray = dialogData.specialArray;
         const baseStat = specialArray[0];
         const baseStatKey = typeof baseStat === "string" ? baseStat : baseStat.key;
@@ -192,7 +232,7 @@ export async function renderDialog(dialog, dialogData = {}) {
 
         const specials = specialArray.slice(1).map((special, index) => {
             const fallbackKey = (`special-${index}`).toString().trim();
-            const specialLabel = capitalizeFirst(special?.label ?? special?.key ?? fallbackKey).toString()
+            const specialLabel = capitalizeFirst(special?.label ?? special?.key ?? fallbackKey).toString();
             return {
                 key: (special?.key ?? fallbackKey).toString(),
                 label: `${baseStatLabel} (${specialLabel})`,
@@ -201,21 +241,16 @@ export async function renderDialog(dialog, dialogData = {}) {
         });
 
         const stats = [{ key: baseStatKey, label: baseStatLabel, value: baseStatValue }, ...specials];
-        
 
-
-        // Render template
         const content = await renderTemplateV1(
-            "systems/bizarre-adventures-d6/templates/dialog/special.hbs"
-            , { key: baseStatKey
-                , label: baseStatLabel
-                , stats: stats
-             }
+            "systems/bizarre-adventures-d6/templates/dialog/special.hbs",
+            { key: baseStatKey, label: baseStatLabel, stats }
         );
+
         return await new Promise((resolve) => {
             new Dialog({
                 title: "Select a Special",
-                content: content,
+                content,
                 buttons: {
                     confirm: {
                         label: "Confirm",
@@ -233,7 +268,7 @@ export async function renderDialog(dialog, dialogData = {}) {
                         callback: () => resolve(null)
                     }
                 },
-                    render: (html) => {
+                render: (html) => {
                     const dialogApp = html.closest(".app");
                     const dialogButtons = dialogApp.find(".dialog-buttons");
                     const confirmBtn = dialogButtons.find('button[data-button="confirm"]');
@@ -249,18 +284,17 @@ export async function renderDialog(dialog, dialogData = {}) {
 
                     const updateConfirmState = () => {
                         const enabled = isReady();
-                            confirmBtn
-                                .prop("disabled", !enabled)
-                                .attr("title", enabled ? "" : "Pick both a Stat first.")
-                                .attr("aria-disabled", !enabled)
-                                .toggleClass("is-disabled", !enabled);
+                        confirmBtn
+                            .prop("disabled", !enabled)
+                            .attr("title", enabled ? "" : "Pick a Stat first.")
+                            .attr("aria-disabled", !enabled)
+                            .toggleClass("is-disabled", !enabled);
                     };
 
-                    // Capture phase: intercept before Dialog's own click handler
                     const onConfirmAttemptCapture = (event) => {
                         if (isReady()) return;
                         triggerInvalidConfirmFeedback();
-                        ui.notifications.warn("Pick both a Stat first.");
+                        ui.notifications.warn("Pick a Stat first.");
                         event.preventDefault();
                         event.stopPropagation();
                         event.stopImmediatePropagation();
@@ -273,11 +307,14 @@ export async function renderDialog(dialog, dialogData = {}) {
                         $(this).addClass("selected");
                         updateConfirmState();
                     });
-                updateConfirmState(); // IMPORTANT: start disabled
+
+                    updateConfirmState();
                 },
                 close: () => resolve(null),
                 default: "confirm"
             }).render(true);
         });
     }
+
+    return null;
 }

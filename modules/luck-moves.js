@@ -363,9 +363,21 @@ async function executeMulligan(messageId, quadrantNum) {
 async function executePersist(messageId, quadrantNum) {
 	// Execute a clash regardless of the last result, creating a new action/contest.
 	const message = game.messages.get(messageId);
-	const newMessage = await ChatMessage.create({
+	const persistChatData = {
 		content: `<p><strong>Persist!</strong></p>`
-	});
+	};
+	const rollMode = String(game.settings.get("core", "rollMode") || "publicroll");
+	if (typeof ChatMessage?.applyRollMode === "function") {
+		ChatMessage.applyRollMode(persistChatData, rollMode);
+	} else if (rollMode === "gmroll") {
+		persistChatData.whisper = ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
+	} else if (rollMode === "blindroll") {
+		persistChatData.whisper = ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
+		persistChatData.blind = true;
+	} else if (rollMode === "selfroll") {
+		persistChatData.whisper = game.user?.id ? [game.user.id] : [];
+	}
+	const newMessage = await ChatMessage.create(persistChatData);
 	await message.setFlag("bizarre-adventures-d6", "Locked", true); // keep locked, original message should not be editable after persist
 	await rerenderMessage(message);
 	const type = message.getFlag("bizarre-adventures-d6", "type");

@@ -63,7 +63,7 @@ export function modifyFormula(formula, stat = null, sides = null, advantage = nu
                 // Do nothing, the new value is already set
                 break;
             default:
-                notifications.info.warn("Invalid operand: " + operand);
+                ui.notifications.warn("Invalid operand: " + operand);
         }
     }
 

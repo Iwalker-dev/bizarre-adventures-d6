@@ -31,6 +31,54 @@
   margin: 0.5rem 0;
   border-radius: 4px;
 }
+.pair-advantage-control {
+  display: flex;
+  justify-content: center;
+}
+.pair-control-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 6px;
+}
+.pair-reckless-control {
+  display: flex;
+  justify-content: center;
+}
+.pair-advantage-btn {
+  display: inline-flex !important;
+  width: auto !important;
+  box-sizing: border-box;
+  margin: 0;
+  text-indent: 0;
+  transform: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.action-class .pair-advantage-btn.prepared-advantage-right {
+  border-radius: 999px !important;
+  padding: 0.15rem 0.55rem !important;
+}
+.pair-reckless-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid #a16e2a;
+  background: rgba(161, 110, 42, 0.12);
+  color: #4a300f;
+  font-size: 0.85em;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pair-reckless-btn.is-active {
+  border-color: #c53a2f;
+  background: rgba(197, 58, 47, 0.2);
+  color: #661810;
+}
 .action-header {
   font-weight: bold;
   margin-bottom: 4px;
@@ -85,6 +133,17 @@
   text-transform: uppercase;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
+.contest-resolve .select-stat.is-disabled.is-victory-action,
+.contest-resolve .select-stat.is-disabled.is-victory-reaction {
+  border-color: #2e7d32;
+  background: rgba(46, 125, 50, 0.16);
+  color: #174b1a;
+}
+.contest-resolve .select-stat.is-disabled.is-tie {
+  border-color: #2f5e9a;
+  background: rgba(47, 94, 154, 0.14);
+  color: #17365d;
+}
 .quadrant-context {
   border: 1px solid #777;
   border-radius: 4px;
@@ -100,6 +159,12 @@
 }
 .quadrant-context.is-rolled {
   border-color: #444;
+}
+.quadrant-context.is-winner {
+  border-color: #2e7d32;
+}
+.quadrant-context.is-tie {
+  border-color: #2f5e9a;
 }
 .prepared-label-actor {
   display: inline-block;

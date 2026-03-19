@@ -150,15 +150,33 @@ function userMeetsRoleThreshold(minimumRole = CONST.USER_ROLES.GAMEMASTER) {
 	return Number(game.user?.role ?? CONST.USER_ROLES.NONE) >= Number(minimumRole);
 }
 
-function isActorOwner(actor, sourceUuid) {
+function isActorOwner(actor, sourceUuid, actorId) {
 	if (!game.user) return false;
 
 	if (sourceUuid) {
-		const sourceDoc = fromUuidSync(sourceUuid);
-		if (sourceDoc?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
-			return true;
+		try {
+			const sourceDoc = fromUuidSync(sourceUuid);
+			if (sourceDoc?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
+				return true;
+			}
+			if (sourceDoc?.actor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
+				return true;
+			}
+			const tokenActorId = sourceDoc?.actorId || sourceDoc?.actor?.id;
+			if (tokenActorId) {
+				const worldActor = game.actors.get(tokenActorId);
+				if (worldActor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
+					return true;
+				}
+			}
+		} catch (_error) {
+			// Fall back to actor ownership checks below when UUID resolution fails.
 		}
-		if (sourceDoc?.actor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
+	}
+
+	if (!actor && actorId) {
+		const worldActor = game.actors.get(actorId);
+		if (worldActor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
 			return true;
 		}
 	}
@@ -173,8 +191,9 @@ function canViewActorData(actor, context, { roleSettingKey, ownerOverrideSetting
 	const minimumRole = Number(getWorldSetting(roleSettingKey, defaultRole));
 	const ownerOverride = !!getWorldSetting(ownerOverrideSettingKey, defaultOwnerOverride);
 	const sourceUuid = context?.sourceUuid;
+	const actorId = context?.actorId;
 
-	if (ownerOverride && isActorOwner(actor, sourceUuid)) {
+	if (ownerOverride && isActorOwner(actor, sourceUuid, actorId)) {
 		return true;
 	}
 

@@ -167,19 +167,27 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Linked actors are considered when showing custom modifiers
 ## [0.9.10.1] - 2026-3-16
 - Readded infinite stat logic (lost during overhaul)
-
 ## [0.9.10.2] - 2026-3-17
 - Blind fix for worldbuilding actors not being migrated on reload attempted
-
+## [0.9.11] - 2026-3-17
+- Changed order of sheet ribbon information
+- Added Draggable strip to top of sheets (Known issue: Slightly clips into tabs.)
+- Split character-actor-sheet.css into base-actor folder
+- Split BAD6 Roller for readability
+- Seperated Advantage and Stat dialogs
+- Added gradient to sheets
+- Added Reckless Reactions
+- Made advantage per re/action more clear
+- Fix for chat permissions not being recalculated on reload
 
 # What's left?
 - Create different backgrounds for all user types
 - Make more User-Friendly
-- Add custom images for user and stand type actors
-- Implement Learning automation
-- Rerender messages when locking them
+- Add custom images for default user and stand type actors
+- Implement Learning automation (Once added will set the system to 1.0.0)
 - Resolve gated by permissions
 - Actor gate by permissions
+
 
 
 
