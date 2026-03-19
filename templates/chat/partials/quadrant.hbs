@@ -1,4 +1,4 @@
-<div class="quadrant-context {{#if rolled}}is-rolled{{else if prepared}}is-prepared{{else}}is-pending{{/if}}">
+<div class="quadrant-context {{#if rolled}}is-rolled{{else if prepared}}is-prepared{{else}}is-pending{{/if}} {{winnerClass}}">
   <div class="luck-chips">
     {{#if luckCounts.feint}}
       <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="Feint (-1 Temp): Edit your Action/Reaction after hearing the enemy's">
@@ -118,7 +118,6 @@
               {{#if statLabel}}{{capitalize statLabel}}{{/if}}
               {{#if specialLabel}} ({{specialLabel}}){{/if}}
             </span>
-            <span class="prepared-advantage-right">Advantage: {{advantage}}</span>
           </div>
         </div>
 

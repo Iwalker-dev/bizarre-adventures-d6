@@ -211,6 +211,39 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			this.showBurnStat(statKey, valueType);
 		});
 
+		// Prevent button clicks in header from triggering drag
+		html.find('.sheet-header button').on('mousedown click', ev => {
+			ev.stopPropagation();
+		});
+
+		// Active tab content should win over the drag overlay.
+		html.find('.sheet-body > .tab.active').on('mousedown click', ev => {
+			ev.stopPropagation();
+		});
+
+		// Attach drag logic to the overlay so it can drag the window
+        html.find('.bad6-header-drag-overlay').on('mousedown', ev => {
+            // Get the app window and start its drag behavior
+            const app = this;
+            const initial = { x: ev.clientX, y: ev.clientY };
+            
+            const onMouseMove = (moveEv) => {
+                const dx = moveEv.clientX - initial.x;
+                const dy = moveEv.clientY - initial.y;
+                app.setPosition({ left: app.position.left + dx, top: app.position.top + dy });
+                initial.x = moveEv.clientX;
+                initial.y = moveEv.clientY;
+            };
+            
+            const onMouseUp = () => {
+                $(document).off('mousemove', onMouseMove);
+                $(document).off('mouseup', onMouseUp);
+            };
+            
+            $(document).on('mousemove', onMouseMove);
+            $(document).on('mouseup', onMouseUp);
+        });
+
 		// Pre-display the "original" stars for each Burn stat:
 		this.getData().stats
 			.filter(s => s.dtype === "Burn")

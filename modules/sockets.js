@@ -1,4 +1,4 @@
-import { updateQuadrant, resetQuadrant, rerenderMessage, rollAll, updateToContest } from "./apps/bad6-roller.js";
+import { updateQuadrant, resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless } from "./apps/bad6-roller.js";
 import { executeLuckMove } from "./luck-moves.js";
 let rollerSocket = null;
 
@@ -14,6 +14,8 @@ export function registerSockets() {
     rollerSocket.register("rollerRollAll", socketRollAll);
     rollerSocket.register("rollerUpdateToContest", socketUpdateToContest);
     rollerSocket.register("rollerFlashbackRequest", socketFlashbackRequest);
+    rollerSocket.register("rollerSetPairAdvantage", socketSetPairAdvantage);
+    rollerSocket.register("rollerSetPairReckless", socketSetPairReckless);
 }
 
 export async function socketApplyPreparedQuadrant(messageId, quadrantNum, preparedData) {
@@ -39,6 +41,15 @@ export async function socketRollAll(messageId) {
 export async function socketUpdateToContest(messageId) {
     return await updateToContest(messageId);
 }
+
+export async function socketSetPairAdvantage(messageId, quadrantNum, advantage) {
+    return await applySetPairAdvantage(messageId, quadrantNum, advantage);
+}
+
+export async function socketSetPairReckless(messageId, quadrantNum, reckless) {
+    return await applySetPairReckless(messageId, quadrantNum, reckless);
+}
+
 export async function socketFlashbackRequest(requesterName, flashbackText) {
     const approved = await new Promise((resolve) => {
         new Dialog({

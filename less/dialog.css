@@ -112,3 +112,20 @@
 .stat-selection-dialog .stat-option:active {
   transform: translateY(1px);
 }
+.advantage-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.advantage-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+.advantage-option {
+  min-height: 2rem;
+  font-weight: 700;
+}
+.advantage-option.is-current {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+}

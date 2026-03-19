@@ -1,4 +1,18 @@
 <div class="action-class">
+  <div class="pair-control-row">
+    <div class="pair-advantage-control">
+      <span class="select-stat pair-advantage-btn prepared-advantage-right" role="button" tabindex="0" data-action="set-advantage" data-quadrant="{{pairQuadrantNum}}" data-tooltip="Click to set Advantage for this pair">
+        Advantage: {{pairAdvantage}}
+      </span>
+    </div>
+    {{#if showReckless}}
+      <div class="pair-reckless-control">
+        <span class="select-stat pair-reckless-btn {{#if pairReckless}}is-active{{/if}}" role="button" tabindex="0" data-action="set-reckless" data-quadrant="{{pairQuadrantNum}}" data-tooltip="Toggle Reckless for this reaction pair">
+          Reckless: {{#if pairReckless}}On{{else}}Off{{/if}}
+        </span>
+      </div>
+    {{/if}}
+  </div>
   {{#each quadrants}}
     <div class="action-header">{{label}}</div>
     {{> roll-quadrant this}}
@@ -10,7 +24,7 @@
     {{#if (getProperty quadrants "0.allPrepared")}}
         {{#if isResolved}}
             <div class="contest-resolve">
-                <span class="select-stat is-disabled" data-tooltip="{{resolveTooltip}}">{{resolveLabel}}</span>
+            <span class="select-stat is-disabled {{resolveStateClass}}" data-tooltip="{{resolveTooltip}}">{{resolveLabel}}</span>
             </div>
         {{else}}
             <div class="contest-resolve">

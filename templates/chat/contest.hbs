@@ -9,7 +9,7 @@
     {{#if (getProperty actionSide "quadrants.0.allPrepared")}}
         {{#if isResolved}}
             <div class="contest-resolve">
-                <span class="select-stat is-disabled" data-tooltip="{{resolveTooltip}}">{{resolveLabel}}</span>
+                <span class="select-stat is-disabled {{resolveStateClass}}" data-tooltip="{{resolveTooltip}}">{{resolveLabel}}</span>
             </div>
         {{else}}
             <div class="contest-resolve">
