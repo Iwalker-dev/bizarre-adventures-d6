@@ -181,6 +181,8 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Fix for chat permissions not being recalculated on reload
 ## [0.9.11.1] -  3/19/25
 - Quick fix for drag strip blocking interaction
+## [0.9.11.2] - 3/20/25
+- Another fix for adding images (to user actor sheets)
 
 # What's left?
 - Create different backgrounds for all user types
