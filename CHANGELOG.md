@@ -191,6 +191,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Implement Learning automation (Once added will set the system to 1.0.0)
 - Resolve gated by permissions
 - Actor gate by permissions
+- Armed Phenomena (Realized it was forgotten)
 
 
 
