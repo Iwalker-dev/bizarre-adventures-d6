@@ -585,6 +585,38 @@ export const typeConfigs = {
 		, Armed: {
 			label: "Armed Phenomenon"
       , image: "systems/bizarre-adventures-d6/assets/icons/powers/tadpole.svg"
+      , fields: [
+        {
+          name: "Total Cost",
+          label: "cost",
+          type: "textarea",
+          placeholder: "Warning: Armed Phenomenon is not fully supported yet."
+        },
+        {
+          name: "Phenomena 1",
+          label: "ability-description-1",  
+          type: "textarea",
+          placeholder: "Stage 1 Phenomenon"
+        },
+        {
+          name: "Phenomena 2",
+          label: "ability-description-2",  
+          type: "textarea",
+          placeholder: "Stage 2 Phenomenon"
+        },
+        {
+          name: "Phenomena 3",
+          label: "ability-description-3",  
+          type: "textarea",
+          placeholder: "Stage 3 Phenomenon"
+        },
+        {
+          name: "Phenomena 4",
+          label: "ability-description-4",  
+          type: "textarea",
+          placeholder: "Stage 4 Phenomenon"
+        }
+      ]
 			, statlabels: [
         "Strength (Power)"
         , "Accuracy (Precision)"

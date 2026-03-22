@@ -183,6 +183,13 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Quick fix for drag strip blocking interaction
 ## [0.9.11.2] - 3/20/25
 - Another fix for adding images (to user actor sheets)
+- Gave Armed Phenomena its stage fields (Still need to add user stats)
+## [0.9.11.3] - 3/21/26
+- Fix for players triggering luck moves.
+- Created small warning for Armed Phenomena users.
+- Fixed tooltip being altered by locking the message for Resolution
+- Simplified resolve message to look better
+- Fixed non-buttons gaining the lock tooltip
 
 # What's left?
 - Create different backgrounds for all user types

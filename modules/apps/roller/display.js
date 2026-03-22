@@ -210,10 +210,11 @@ export async function rerenderMessage(message) {
     const compactResultLabel = getContestResultLabel(result.label ?? "Resolve", difference, winnerSide, { reactionReckless });
     const resolveLabel = type === "contest" ? compactResultLabel : (result.label ?? "Resolve");
     const resolveTooltip = result.flavor ?? "";
-    const resolveStateClass = type === "contest"
-        ? (winnerSide === "action"
-            ? "is-victory-action"
-            : (winnerSide === "reaction" ? "is-victory-reaction" : (winnerSide === "tie" ? "is-tie" : "")))
+    const resolveStateClass = type === "contest" ? (
+        winnerSide === "action" ? "is-victory-action"
+            : (winnerSide === "reaction" ? "is-victory-reaction" 
+                : (winnerSide === "tie" ? "is-tie" : ""
+                )))
         : "";
 
     if (type === "action") {

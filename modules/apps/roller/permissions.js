@@ -80,14 +80,14 @@ export function applyChatButtonPermissions(message, html) {
     const resolvedTip = "This roll is resolved. Only Persist, Mulligan, and Flashback remain available.";
 
     if (isMessageLocked(message)) {
-        root.querySelectorAll(".select-stat").forEach((button) => {
+        root.querySelectorAll("button.select-stat").forEach((button) => {
             setButtonDisabledState(button, true, lockedTip);
         });
         return;
     }
 
     if (isMessageResolved(message)) {
-        root.querySelectorAll(".select-stat").forEach((button) => {
+        root.querySelectorAll("button.select-stat").forEach((button) => {
             const action = String(button.dataset.action || "");
             const [actionType, actionArg] = action.split("-", 2);
             const postResolveAllowed = isPostResolveAllowedAction(actionType, actionArg);
