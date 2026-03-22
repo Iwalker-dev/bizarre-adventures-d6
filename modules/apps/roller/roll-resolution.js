@@ -108,10 +108,10 @@ export function getHitDCMeta(value, { reactionReckless = false } = {}) {
 export function getContestResultLabel(baseLabel, difference, winnerSide, { reactionReckless = false } = {}) {
     const safeBaseLabel = String(baseLabel || "Resolve").trim();
     if (!Number.isFinite(difference)) return safeBaseLabel;
-    if (winnerSide === "action") return `Action wins by ${Math.abs(difference)} | ${safeBaseLabel}`;
+    if (winnerSide === "action") return `Action hits | ${safeBaseLabel}`;
     if (winnerSide === "reaction") {
-        if (!reactionReckless) return safeBaseLabel;
-        return `Reaction wins by ${Math.abs(difference)} | ${safeBaseLabel}`;
+        if (reactionReckless) return `Reaction hits | ${safeBaseLabel}`;
+        return `Reaction wins | ${safeBaseLabel}`;
     }
     if (winnerSide === "tie") return `Tie | ${safeBaseLabel}`;
     return safeBaseLabel;

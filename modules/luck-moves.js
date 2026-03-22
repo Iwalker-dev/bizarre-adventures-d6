@@ -10,6 +10,101 @@ async function executeRollerAsGM(handler, ...args) {
 	return await socket.executeAsGM(handler, ...args);
 }
 
+function resolveActorFromSpenderRef(spenderRef) {
+	if (!spenderRef) return null;
+
+	if (typeof spenderRef === "object") {
+		if (spenderRef.sourceUuid) {
+			let doc = null;
+			try {
+				doc = fromUuidSync(spenderRef.sourceUuid);
+			} catch (_err) {
+				// Fall through to actorId fallback
+			}
+			if (doc?.documentName === "Actor") return doc;
+			if (doc?.actor) return doc.actor;
+		}
+		if (spenderRef.actorId) {
+			return game.actors.get(spenderRef.actorId) || null;
+		}
+		return null;
+	}
+
+	if (typeof spenderRef === "string") {
+		if (spenderRef.includes(".")) {
+			let doc = null;
+			try {
+				doc = fromUuidSync(spenderRef);
+			} catch (_err) {
+				// Fall through to actorId fallback
+			}
+			if (doc?.documentName === "Actor") return doc;
+			if (doc?.actor) return doc.actor;
+		}
+		return game.actors.get(spenderRef) || null;
+	}
+
+	return null;
+}
+
+function getSpenderStorageKey(spenderRef) {
+	if (!spenderRef) return null;
+	if (typeof spenderRef === "string") return spenderRef;
+	if (typeof spenderRef === "object") {
+		if (typeof spenderRef.sourceUuid === "string" && spenderRef.sourceUuid) return spenderRef.sourceUuid;
+		if (typeof spenderRef.actorId === "string" && spenderRef.actorId) return spenderRef.actorId;
+	}
+	return null;
+}
+
+export function getLuckMoveExecutionContext(move, spenders, { isGambit = false, checkCanUse = false } = {}) {
+	const moveData = LUCK_MOVES[move];
+	if (!moveData) {
+		return { ok: false, reason: "Unknown move: " + move };
+	}
+
+	if (isGambit || moveData.costType === "gambit") {
+		return { ok: true, spender: null, spenderActor: null, spenderKey: null, moveData };
+	}
+
+	const spenderList = Array.isArray(spenders) ? spenders : [];
+	let spender = null;
+	switch (moveData.costType) {
+		case "temp":
+			spender = spenderList[0];
+			break;
+		case "perm":
+			spender = spenderList[1];
+			break;
+		case "value":
+			spender = spenderList[2];
+			break;
+		default:
+			return { ok: false, reason: "Invalid cost type for move: " + moveData.name };
+	}
+
+	if (!spender) {
+		return { ok: false, reason: "No valid Luck-spending actor could be resolved for this move." };
+	}
+
+	const spenderActor = resolveActorFromSpenderRef(spender);
+	if (!spenderActor) {
+		return { ok: false, reason: "No valid Luck-spending actor could be resolved for this move." };
+	}
+
+	if (checkCanUse && !canUseMove(moveData, spenderActor)) {
+		return { ok: false, reason: "Cannot spend luck for this move." };
+	}
+
+	return {
+		ok: true,
+		spender,
+		spenderActor,
+		spenderKey: getSpenderStorageKey(spender),
+		moveData
+	};
+}
+
 function canUseMove(move, actor) {
 	if (!actor) {
 		ui.notifications.warn("No valid actor available to spend Luck.");
@@ -107,18 +202,22 @@ export function chooseLuckSpenders(rollableActors) {
         }));
 		const luckStat = statsArray.find(stat => stat.name.toLowerCase() === "luck");
 		if (!luckStat) continue; // Actor has no luck stat, skip
+		const spenderRef = {
+			sourceUuid: source.sourceUuid || actor.uuid,
+			actorId: source.actorId || actor.id
+		};
 		// Check if this actor has the highest of any luck value so far
 				if (!values[0] || luckStat.temp > values[0]) {
 					values[0] = luckStat.temp;
-					spenders[0] = source.actorId;
+					spenders[0] = spenderRef;
 				}
 				if (!values[1] || luckStat.perm > values[1]) {
 					values[1] = luckStat.perm;
-					spenders[1] = source.actorId;
+					spenders[1] = spenderRef;
 				}
 				if (!values[2] || luckStat.value > values[2]) {
 					values[2] = luckStat.value;
-					spenders[2] = source.actorId;
+					spenders[2] = spenderRef;
 				}
 	}
 
@@ -126,9 +225,10 @@ export function chooseLuckSpenders(rollableActors) {
 }
 
 export async function trySpendLuck(actorId, action, refund = false) {
-	const actor = game.actors.get(actorId);
+	const actor = resolveActorFromSpenderRef(actorId);
 	if (!actor) {
-		console.error(`BAD6 | trySpendLuck: could not find actor with id "${actorId}"`);
+		const displayRef = typeof actorId === "object" ? JSON.stringify(actorId) : String(actorId);
+		console.warn(`BAD6 | trySpendLuck: could not resolve luck spender "${displayRef}"`);
 		ui.notifications.warn("Could not find a valid Luck-spending actor.");
 		return false;
 	}
@@ -176,31 +276,13 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 		return;
 	}
 	*/
-	let spender;
-	// Determine the spender based on move cost type
-	switch (LUCK_MOVES[move].costType) {
-		case "gambit":
-			break;
-		case "temp":
-			spender = spenders[0]; // temp luck spender
-			break;
-		case "perm":
-			spender = spenders[1]; // perm luck spender
-			break;
-		case "value":
-			spender = spenders[2]; // value luck spender
-			break;
-		default:
-			ui.notifications.warn("Invalid cost type for move: " + LUCK_MOVES[move].name);
-			return;
-	}
-	if (!isGambit && !spender) {
-		ui.notifications.warn("No valid Luck-spending actor could be resolved for this move.");
+	const context = getLuckMoveExecutionContext(move, spenders, { isGambit, checkCanUse: true });
+	if (!context.ok) {
+		ui.notifications.warn(context.reason);
 		return;
 	}
-	if (!isGambit && !canUseMove(LUCK_MOVES[move], game.actors.get(spender))) {
-		return;
-	}
+	const spender = context.spender;
+	const spenderKey = context.spenderKey;
 
 	let executed = false;
 	// Attempt the luck move
@@ -245,12 +327,12 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 				gambitCounts: { ...(latest.gambitCounts || existing.gambitCounts || {}) }
 			};
 			updateData[countType][move] = (updateData[countType][move] || 0) + 1;
-			if (!isGambit && spender) {
+			if (!isGambit && spenderKey) {
 				updateData.luckSpenders = {
 					...lastSpenders,
 					[move]: {
 						...lastMoveSpenders,
-						[spender]: (lastMoveSpenders[spender] || 0) + 1
+						[spenderKey]: (lastMoveSpenders[spenderKey] || 0) + 1
 					}
 				};
 			}
