@@ -248,6 +248,16 @@ export async function migrateWorld() {
 		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
 	}
+	// V14 'update' —
+	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
+
+		if (isNewer(current, previous) &&
+		isNewer("0.9.12", previous) &&
+		!isNewer("0.9.12", current)
+	) {
+		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
+		ui.notifications.info("BAD6 Migration | Welcome message updated.");
+	}
 
 
 
@@ -259,23 +269,25 @@ export async function migrateWorld() {
 			, speaker: {
 				alias: game.system.title
 			}
-			, content: `<h2>Welcome to BAD6!</h2>
-      <p> Controls: </p>
-        <ul>
-          <li>🎲 Use the "D6 Roller" in token controls for actions. Double click for Contests.</li>
-          <li>🎲 As a GM, your highlighted tokens are the roll's context.</li>
-          <li>🎯 As a player your owned actors are the roll's context.</li>
-          <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
-          <li>🔧 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue</li>
-          <li>🌟 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called "Outro" and it will automatically switch to it afterwards.</li>
-          <li>🧑 Old Actors - On each load, actors will be automatically moved to a type (if set up properly in the Worldbuilding version.).</li>
-        </ul>
-        <p> This system is unfinished! Certain features are not yet implemented such as...</p>
-        <ul>
-          <li> Learning Automation.</li>
-		  <li> (View the changelog for longer list) </li>
-        </ul>
-        <p> Please report any problems, ideas, or comments to itpart on Discord as I try to handle them quickly. I would love to make this the perfect system with your help! </p>`
+			, content: `
+			<h2>Welcome to BAD6!</h2>
+			<h3>V14 Compliant!!!</h3>
+			<p> Controls: </p>
+				<ul>
+					<li>🎲 Use the "D6 Roller" in token controls for actions. Double click for Contests.</li>
+					<li>🎲 As a GM, your highlighted tokens are the roll's context.</li>
+					<li>🎯 As a player your owned actors are the roll's context.</li>
+					<li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
+					<li>🔧 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue</li>
+					<li>🌟 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called "Outro" and it will automatically switch to it afterwards.</li>
+					<li>🧑 Old Actors - On each load, actors will be automatically moved to a type (if set up properly in the Worldbuilding version.).</li>
+				</ul>
+				<p> This system is unfinished! Certain features are not yet implemented such as...</p>
+				<ul>
+					<li> Learning Automation.</li>
+					<li> (View the changelog for longer list) </li>
+				</ul>
+	        <p> Please report any problems, ideas, or comments to itpart on Discord as I try to handle them quickly. I would love to make this the perfect system with your help! </p>`
 			, whisper: game.users.filter(u => u.isGM).map(u => u.id)
 		});
 		await game.settings.set("bizarre-adventures-d6", "welcomed", true);

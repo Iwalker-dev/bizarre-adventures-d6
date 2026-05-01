@@ -179,9 +179,9 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Added Reckless Reactions
 - Made advantage per re/action more clear
 - Fix for chat permissions not being recalculated on reload
-## [0.9.11.1] -  3/19/25
+## [0.9.11.1] -  3/19/26
 - Quick fix for drag strip blocking interaction
-## [0.9.11.2] - 3/20/25
+## [0.9.11.2] - 3/20/26
 - Another fix for adding images (to user actor sheets)
 - Gave Armed Phenomena its stage fields (Still need to add user stats)
 ## [0.9.11.3] - 3/21/26
@@ -190,15 +190,22 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Fixed tooltip being altered by locking the message for Resolution
 - Simplified resolve message to look better
 - Fixed non-buttons gaining the lock tooltip
+## [0.9.11.4] - 3/21/26
+- Fixed changelog dating
 
-# What's left?
-- Create different backgrounds for all user types
-- Make more User-Friendly
-- Add custom images for default user and stand type actors
+## [0.9.12] - 5/1/26
+- Verified basic functionality with V14
+
+# What's left? (Ordered By Priority)
+- Armed Phenomena (Realized it was forgotten)
 - Implement Learning automation (Once added will set the system to 1.0.0)
+- Create different backgrounds for all user types
+- Add custom images for default user and stand type actors
 - Resolve gated by permissions
 - Actor gate by permissions
-- Armed Phenomena (Realized it was forgotten)
+- Make more User-Friendly
+
+
 
 
 
