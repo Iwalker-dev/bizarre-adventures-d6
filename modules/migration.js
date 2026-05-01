@@ -248,6 +248,16 @@ export async function migrateWorld() {
 		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
 	}
+	// V14 'update' —
+	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
+
+		if (isNewer(current, previous) &&
+		isNewer("0.9.11", previous) &&
+		!isNewer("0.9.11", current)
+	) {
+		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
+		ui.notifications.info("BAD6 Migration | Welcome message updated.");
+	}
 
 
 
