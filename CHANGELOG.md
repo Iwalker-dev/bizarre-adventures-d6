@@ -171,15 +171,21 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 ## [0.9.10.2] - 2026-3-17
 - Blind fix for worldbuilding actors not being migrated on reload attempted
 
+## [0.9.11] - 2026-5-19
+- Pre allowed use in V15
+- Added Pillarman user bonus functionality
+
 
 # What's left?
 - Create different backgrounds for all user types
 - Make more User-Friendly
+    - Includes larger draggable area on sheets
 - Add custom images for user and stand type actors
 - Implement Learning automation
 - Rerender messages when locking them
 - Resolve gated by permissions
 - Actor gate by permissions
+- Migration backs up actors to a compendium
 
 
 
