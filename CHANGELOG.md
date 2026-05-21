@@ -192,9 +192,12 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Fixed non-buttons gaining the lock tooltip
 ## [0.9.11.4] - 3/21/26
 - Fixed changelog dating
-
 ## [0.9.12] - 5/1/26
 - Verified basic functionality with V14
+## [0.9.12.5] - 2026-5-19
+- Pre allowed use in V15
+- Added Pillarman user bonus functionality
+
 
 # What's left? (Ordered By Priority)
 - Armed Phenomena (Realized it was forgotten)
@@ -204,7 +207,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Resolve gated by permissions
 - Actor gate by permissions
 - Make more User-Friendly
-
+- Backup actors to compendium when transferring
 
 
 
