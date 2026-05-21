@@ -285,7 +285,7 @@ export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = [
 
 export async function executeRoll(formula) {
     const roll = new Roll(formula);
-    await roll.evaluate();
+    await roll.evaluate({ async: true });
 
     if (game.dice3d?.showForRoll) {
         try {

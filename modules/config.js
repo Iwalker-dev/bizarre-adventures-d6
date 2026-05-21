@@ -23,12 +23,6 @@ BAD6.attributes = {
   Test: "TEST!"
 };
 
-// User stats list for checking stat groups
-export const USER_STATS = ["wit", "reason", "menacing", "pluck", "body", "luck"];
-
-// Stand stats list for checking stat groups (Not yet necessary)
-
-
 // Actor Type Configurations
 
 export const typeConfigs = {
@@ -62,13 +56,6 @@ export const typeConfigs = {
 		}
 		, Ghost: {
 			label: "Ghost"
-      , fields: [
-        {
-          name: "Mark"
-          , label: "Mark Description"
-          , type: "textarea"
-        }
-      ]
 			, cost: "2 User Points"
 			, description: `
         <p><em><u>Ghost 👻</u></em></p>
@@ -89,13 +76,6 @@ export const typeConfigs = {
 		}
 		, Alien: {
 			label: "Alien"
-      , fields: [
-        {
-          name: "Foreign Technology"
-          , label: "Foreign Technology Description"
-          , type: "textarea"
-        }
-      ]
 			, cost: "2 User Points"
 			, description: `
         <p><em><u>Alien 🛸</u></em></p>
@@ -109,13 +89,6 @@ export const typeConfigs = {
 		, }
 		, Rock: {
 			label: "Rock Human"
-      , fields: [
-        {
-          name: "Material"
-          , label: "Material Description"
-          , type: "textarea"
-        }
-      ]
 			, cost: "1 User Point"
 			, description: `
         <p><em><u>Rock Human 🪨</u></em></p>
@@ -133,14 +106,7 @@ export const typeConfigs = {
 		, }
 		, Pillar: {
 			label: "Pillar Man"
-      , fields: [
-        {
-          name: "Function / Mode"
-          , label: "Function / Mode Description"
-          , type: "textarea"
-        }
-      ]
-			, cost: "4 User/4 Stand, Vampire, GM Approval (Not fully implemented)"
+			, cost: "4 User/4 Stand, Vampire, GM Approval"
 			, description: `
         <p><em><u>Pillar Man 🗿</u></em></p>
         <p>A mesoamerican <em>ultra-vampire</em>, horned apex predators from a bygone era.</p>

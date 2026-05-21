@@ -170,11 +170,34 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 
 ## [0.9.10.2] - 2026-3-17
 - Blind fix for worldbuilding actors not being migrated on reload attempted
+## [0.9.11] - 2026-3-17
+- Changed order of sheet ribbon information
+- Added Draggable strip to top of sheets (Known issue: Slightly clips into tabs.)
+- Split character-actor-sheet.css into base-actor folder
+- Split BAD6 Roller for readability
+- Seperated Advantage and Stat dialogs
+- Added gradient to sheets
+- Added Reckless Reactions
+- Made advantage per re/action more clear
+- Fix for chat permissions not being recalculated on reload
+## [0.9.11.1] -  3/19/26
+- Quick fix for drag strip blocking interaction
+## [0.9.11.2] - 3/20/26
+- Another fix for adding images (to user actor sheets)
+- Gave Armed Phenomena its stage fields (Still need to add user stats)
+## [0.9.11.3] - 3/21/26
+- Fix for players triggering luck moves.
+- Created small warning for Armed Phenomena users.
+- Fixed tooltip being altered by locking the message for Resolution
+- Simplified resolve message to look better
+- Fixed non-buttons gaining the lock tooltip
+## [0.9.11.4] - 3/21/26
+- Fixed changelog dating
 
-## [0.9.11] - 2026-5-19
+## [0.9.12] - 5/1/26
+- Verified basic functionality with V14
 - Pre allowed use in V15
 - Added Pillarman user bonus functionality
-
 
 # What's left?
 - Create different backgrounds for all user types
