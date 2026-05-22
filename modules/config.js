@@ -25,6 +25,7 @@ BAD6.attributes = {
 
 // User stats list for checking stat groups
 export const USER_STATS = ["wit", "reason", "menacing", "pluck", "body", "luck"];
+export const ABILITY_STATS = ["power", "precision", "speed", "range", "durability", "learning"];
 
 // Stand stats list for checking stat groups (Not yet necessary)
 
