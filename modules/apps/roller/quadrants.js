@@ -9,6 +9,7 @@ import { shouldInheritLinkedActorModifiers, resolveActorFromSource } from "./act
 import { getPairAdvantage, getPairFudgeBonus, getPairMulliganBonus, getPairedQuadrantNum, setPairAdvantage, getPairQuadrantNumbers, getPairReckless } from "./pair-controls.js";
 import { reevaluateStoredRoll, renderReevaluatedRollHtml, getHitDCMeta, getActionDCMeta } from "./roll-resolution.js";
 import { rerenderMessage } from "./display.js";
+import { USER_STATS } from "../../config.js";
 
 // ---------------------------------------------------------------------------
 // Lock helpers
@@ -101,6 +102,63 @@ export async function updateQuadrant(messageId
     if (message) await rerenderMessage(message);
 }
 
+function getMasters(source) {
+    const actor = resolveActorFromSource(source || {});
+    if (!actor) return [];
+    if (actor.type === "user") return [actor];
+
+    const linkedActors = actor.system?.bio?.linkedActors?.value || [];
+    return linkedActors
+        .filter(entry => entry?.type === "user")
+        .map(entry => resolveActorFromSource({ sourceUuid: entry.uuid }))
+        .filter(a => a);
+}
+
+function hasPillarMaster(actorId) {
+    const actor = resolveActorFromSource(actorId || {});
+    if (actor?.system?.bio?.type === "Pillar") return true;
+    return getMasters(actorId).some(a => a.system?.bio?.type === "Pillar");
+}
+
+function getPillarMasterIds(actorId) {
+    const actor = resolveActorFromSource(actorId || {});
+    const masters = getMasters(actorId)
+        .filter(a => a.system?.bio?.type === "Pillar")
+        .map(a => a.id);
+    if (actor?.system?.bio?.type === "Pillar") {
+        masters.push(actor.id);
+    }
+    return [...new Set(masters.filter(Boolean))];
+}
+
+function shouldQuadrantPillarmanBonus(quadrantNum, message) {
+    const current = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
+    const pairedQuadrantNum = getPairedQuadrantNum(quadrantNum);
+    const pair = pairedQuadrantNum
+        ? (message.getFlag("bizarre-adventures-d6", `quadrant${pairedQuadrantNum}`) || {})
+        : {};
+    if (!hasPillarMaster(current)) return false;
+    if (!USER_STATS.includes(current.stat)) return false;
+
+    // If the pair slot has no Pillar master or does not use a user stat, this slot qualifies freely.
+    if (!hasPillarMaster(pair) || !USER_STATS.includes(pair.stat)) return true;
+
+    // Both slots are linked to a Pillar Man. Check whether they share the same master.
+    // A Pillar Man user and their own independent stand share the same master, so only
+    // the first slot in pair order should receive the bonus.
+    const currentPillarIds = new Set(getPillarMasterIds(current));
+    const sharedMaster = getPillarMasterIds(pair).some(id => currentPillarIds.has(id));
+
+    if (!sharedMaster) {
+        // Two genuinely different Pillar Men — each gets their own bonus.
+        return true;
+    }
+
+    // Same Pillar Man master: only the first slot in pair order gets the bonus.
+    const order = Number(quadrantNum) > 2 ? [3, 4] : [1, 2];
+    return Number(quadrantNum) === order[0];
+}
+
 export async function recalculateQuadrantFormula(messageId, quadrantNum, { includeMulligan = false } = {}) {
     const message = game.messages.get(messageId);
     if (!message) return;
@@ -121,12 +179,32 @@ export async function recalculateQuadrantFormula(messageId, quadrantNum, { inclu
     const customLines = actor
         ? collectActorFormulaLines(actor, { inheritLinkedActorModifiers: shouldInheritLinkedActorModifiers(actor) })
         : [];
+    let effectiveLines = [...customLines];
     const selectedModifierIds = Array.isArray(current.selectedModifierIds)
         ? current.selectedModifierIds.map(String)
         : [];
 
-    const statValue = Number(current.statValue ?? 0);
+    let statValue = Number(current.statValue ?? 0);
     const baseFormula = createFormula(statValue, 6, effectiveAdvantage, 0);
+    
+    let applyPillarBonus = shouldQuadrantPillarmanBonus(quadrantNum, message);
+
+
+    if (applyPillarBonus) {
+        const pillarBonus = {
+            id: "pillar-bonus-" + quadrantNum,
+            sourceName: "Pillarman",
+            stat: current.stat,
+            optional: false,
+            variable: "stat",
+            operand: "*",
+            value: 2
+        };
+        // Prepend so the stat doubling is applied before any other modifiers.
+        effectiveLines = [pillarBonus, ...customLines];
+    }
+
+
     const evaluated = applyFormulaLines(
         {
             stat: statValue,
@@ -136,7 +214,7 @@ export async function recalculateQuadrantFormula(messageId, quadrantNum, { inclu
             statKey: current.stat,
             statLabel: current.selectedSpecial?.label || current.stat
         },
-        customLines,
+        effectiveLines,
         selectedModifierIds
     );
 

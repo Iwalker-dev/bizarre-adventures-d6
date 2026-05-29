@@ -497,6 +497,18 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
             }
         }       
         await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
+
+        // Recalculate the surviving paired slot so pair-gated effects (like Pillar first user stat)
+        // are re-evaluated after one quadrant is cleared.
+        const pairNums = getPairQuadrantNumbers(Number(quadrantNum));
+        for (const qNum of pairNums) {
+            if (Number(qNum) === Number(quadrantNum)) continue;
+            const qFlag = message.getFlag("bizarre-adventures-d6", `quadrant${qNum}`);
+            if (qFlag?.formula) {
+                await recalculateQuadrantFormula(messageId, qNum);
+            }
+        }
+
         await rerenderMessage(message);
         await message.setFlag("bizarre-adventures-d6", "Locked", false);
         message = game.messages.get(messageId);
