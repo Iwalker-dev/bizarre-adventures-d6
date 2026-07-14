@@ -194,13 +194,19 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Fixed changelog dating
 ## [0.9.12] - 5/1/26
 - Verified basic functionality with V14
-## [0.9.12.5] - 2026-5-19
+## [0.9.13] - 2026-5-19
 - Pre allowed use in V15
-- Added Pillarman user bonus functionality
+- Added User stat group and Stand stat group to formulas
+- Added Unique Per-pair modifiers
+- Added Pillarman boosts
+- Fixed Phenomena fields
+- Fixed depreciated methods preventing stat list manipulation (ex for Independent and Armed Phenomenon users)
+- Added Armed Phenomena Support (The placeholder will be removed once Im sure)
 
 
 # What's left? (Ordered By Priority)
-- Armed Phenomena (Realized it was forgotten)
+- Fix Flashbacks only appearing for GM
+- Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)
 - Create different backgrounds for all user types
 - Add custom images for default user and stand type actors

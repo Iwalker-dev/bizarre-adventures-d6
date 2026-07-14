@@ -1742,6 +1742,13 @@ body {
   color: #4a300f;
   font-size: 0.85em;
   font-weight: 700;
+.custom-modifier-auto.is-unavailable,
+.custom-modifier-option-row.is-unavailable {
+  opacity: 0.55;
+}
+.custom-modifier-option-row.is-unavailable {
+  cursor: not-allowed;
+}
   white-space: nowrap;
   cursor: pointer;
 }

@@ -323,8 +323,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		const deletions = {};
 		for (const [key, val] of Object.entries(stats)) {
 			if (val === null) {
-				const path = `system.attributes.stats.-=${key}`;
-				deletions[`${path}`] = null;
+				deletions[`system.attributes.stats.${key}`] = new foundry.data.operators.ForcedDeletion();
 			}
 		}
 
