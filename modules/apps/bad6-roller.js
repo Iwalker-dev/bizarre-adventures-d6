@@ -355,13 +355,14 @@ async function dispatchResetQuadrant(messageId, quadrantNum, refundLuck = true) 
 }
 
 async function dispatchLuckMove(messageId, spenders, quadrantNum, move, isGambit = false) {
+    const sender = game.user.id;
     if (game.user.isGM) {
-        await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit);
+        await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit, sender);
         const updatedMessage = game.messages.get(messageId);
         if (updatedMessage) await rerenderMessage(updatedMessage);
         return;
     }
-    return await executeRollerAsGM("rollerExecuteLuckMove", messageId, spenders, quadrantNum, move, isGambit);
+    return await executeRollerAsGM("rollerExecuteLuckMove", messageId, spenders, quadrantNum, move, isGambit, sender);
 }
 
 async function dispatchRollAll(messageId) {

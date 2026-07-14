@@ -10,6 +10,15 @@ async function executeRollerAsGM(handler, ...args) {
 	return await socket.executeAsGM(handler, ...args);
 }
 
+async function executeRollerAsPlayer(handler, userId, ...args) {
+	const socket = getRollerSocket();
+	if (!socket) {
+		ui.notifications.error("Socket is not ready. Cannot execute player action.");
+		return null;
+	}
+	return await socket.executeAsUser(handler, userId,  ...args);
+}
+
 function resolveActorFromSpenderRef(spenderRef) {
 	if (!spenderRef) return null;
 
@@ -258,7 +267,7 @@ export async function trySpendLuck(actorId, action, refund = false) {
 
 }
 
-export async function executeLuckMove(messageId, spenders, quadrantNum, move, isGambit = false) {
+export async function executeLuckMove(messageId, spenders, quadrantNum, move, isGambit = false, sender = game.user.id) {
 	let message = game.messages.get(messageId);
 	if (!message) return;
 	if (!LUCK_MOVES[move]) {
@@ -283,6 +292,7 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 	}
 	const spender = context.spender;
 	const spenderKey = context.spenderKey;
+	const spenderActorName = context.spenderActor.name;
 
 	let executed = false;
 	// Attempt the luck move
@@ -294,7 +304,7 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 			executed = await executeFudge(messageId, quadrantNum);
 			break;
 		case "flashback":
-			executed = await executeFlashback(messageId, quadrantNum);
+			executed = await executeFlashback(messageId, quadrantNum, sender, spenderActorName);
 			break;
 		case "mulligan":
 			executed = await executeMulligan(messageId, quadrantNum);
@@ -411,20 +421,11 @@ async function executeFudge(messageId, quadrantNum) {
 	return executed;
 }
 
-async function executeFlashback(messageId, quadrantNum) {
-	const flashbackText = await new Promise((resolve) => {
-		new Dialog({
-			title: "Flashback",
-			content: `<p>Describe the retcon you want to make:</p><textarea id="flashback-input" rows="4" style="width: 100%;"></textarea>`,
-			buttons: {
-				ok: { label: "Send to GM", callback: (html) => resolve(html.find("#flashback-input").val().trim()) },
-				cancel: { label: "Cancel", callback: () => resolve(null) }
-			},
-			close: () => resolve(null)
-		}).render(true);
-	});
+async function executeFlashback(messageId, quadrantNum, sender, spenderActorName) {
+	const flashbackText = await executeRollerAsPlayer("rollerFlashbackCreate", sender);
 	if (!flashbackText) return false;
-	return await executeRollerAsGM("rollerFlashbackRequest", game.user.name, flashbackText);
+	const requesterName = `${game.users.get(sender)?.name ?? "A player"} (Spent by ${spenderActorName ?? "Unknown"})`;
+	return await executeRollerAsGM("rollerFlashbackRequest", requesterName, flashbackText);
 }
 
 async function executeMulligan(messageId, quadrantNum) {

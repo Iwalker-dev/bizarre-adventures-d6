@@ -202,10 +202,11 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Fixed Phenomena fields
 - Fixed depreciated methods preventing stat list manipulation (ex for Independent and Armed Phenomenon users)
 - Added Armed Phenomena Support (The placeholder will be removed once Im sure)
+- Fixed Flashbacks only appearing for GM (Still need to fix the created warning, probably will expand so all owners are alerted)
 
 
 # What's left? (Ordered By Priority)
-- Fix Flashbacks only appearing for GM
+- Fix Flashbacks only appearing for GM 
 - Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)
 - Create different backgrounds for all user types
