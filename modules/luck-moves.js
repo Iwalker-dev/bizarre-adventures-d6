@@ -1,6 +1,15 @@
 import { resetQuadrant, createActionMessage, createContestMessage, recalculateQuadrantFormula, reevaluatePairRollResults, rerenderMessage } from "./apps/bad6-roller.js";
 import { getRollerSocket } from "./sockets.js";
 
+function warnOwners(actor, warning) {
+	const socket = getRollerSocket();
+	if (!socket) {
+		ui.notifications.warn("Socket is not ready. Owners not notified.");
+		return null;
+	}
+	socket.executeForOthers("warnOwners", actor, warning)
+}
+
 async function executeRollerAsGM(handler, ...args) {
 	const socket = getRollerSocket();
 	if (!socket) {
@@ -122,7 +131,9 @@ function canUseMove(move, actor) {
 	const luckStat = actor.system.attributes.stats.luck;
 	const pool = move.costType === "perm" ? (luckStat.perm ?? 0) : (luckStat.temp ?? 0);
 	if (pool < move.cost) {
-		ui.notifications.warn("Not enough luck to spend!");
+		const warning = `${actor.name} doesn't have enough luck for ${move.name}.`
+		ui.notifications.warn(warning);
+		warnOwners(actor, warning);
 		return false;
 	}
 	return true;
