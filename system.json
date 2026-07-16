@@ -14,7 +14,7 @@
   "compatibility": {
     "minimum": "13",
     "verified": "14",
-    "maximum": "15"
+    "maximum": "14"
   },
   "esmodules": [
     "bad6.js"
