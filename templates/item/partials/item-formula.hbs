@@ -2,7 +2,7 @@
     <h2>Formula</h2>
 
     <div class="formula-row header">
-      <div class="col order">Optional | Stat | Variable | Operand | Value | Actions</div>
+      <div class="col order">Optional | Per-pair | Stat | Variable | Operand | Value | Actions</div>
     </div>
 
     <div class="formula-rows">
@@ -12,9 +12,15 @@
             <input type="checkbox" name="system.formula.lines.{{@index}}.optional" {{#if optional}}checked{{/if}} />
           </div>
 
+          <div class="col unique">
+            <input type="checkbox" name="system.formula.lines.{{@index}}.unique" {{#if unique}}checked{{/if}} />
+          </div>
+
           <div class="col stat">
             <select name="system.formula.lines.{{@index}}.stat">
               <option value="" {{#unless stat}}selected{{/unless}}>—Any / Global—</option>
+              <option value="user" {{#ifEquals stat "user"}}selected{{/ifEquals}}>User Stats</option>
+              <option value="ability" {{#ifEquals stat "ability"}}selected{{/ifEquals}}>Ability Stats</option>
               {{!-- If a variable list becomes necessary, it can be populated like...
               {{#if ../system.variables}}
                 {{#each ../system.variables}}
@@ -23,6 +29,7 @@
                 -- current hardcoded options (allows ignoring of linked actor conflicts):
                 'power', 'precision', 'speed', 'range', 'durability', 'learning'
                 "body", "luck", "menacing", "pluck", "reason", "wit"
+                'user', 'ability' which apply to their respective stat groups
               --}}
                 <option value="power" {{#ifEquals stat "power"}}selected{{/ifEquals}}>Power</option>
                 <option value="precision" {{#ifEquals stat "precision"}}selected{{/ifEquals}}>Precision</option>

@@ -27,8 +27,6 @@ BAD6.attributes = {
 export const USER_STATS = ["wit", "reason", "menacing", "pluck", "body", "luck"];
 export const ABILITY_STATS = ["power", "precision", "speed", "range", "durability", "learning"];
 
-// Stand stats list for checking stat groups (Not yet necessary)
-
 
 // Actor Type Configurations
 
@@ -92,7 +90,7 @@ export const typeConfigs = {
 			label: "Alien"
       , fields: [
         {
-          name: "Foreign Technology"
+          name: "Foreign Technologies"
           , label: "Foreign Technology Description"
           , type: "textarea"
         }
@@ -134,6 +132,16 @@ export const typeConfigs = {
 		, }
 		, Pillar: {
 			label: "Pillar Man"
+      , formulaLines: [
+        {
+          // First User-stat roll gets doubled dice via formula engine stat mutation.
+          stat: "user"
+          , variable: "stat"
+          , operand: "*"
+          , value: 2
+          , unique: true
+        }
+      ]
       , fields: [
         {
           name: "Function / Mode"
@@ -158,7 +166,6 @@ export const typeConfigs = {
         <p><u>Vampirification</u> - Creates <em>Vampires</em> with <em>Learning</em>, all Abilities, and (Ranks * 5) Points.</p>
       `
 		},
-		// …other user types…
 	},
 
 	stand: {
@@ -628,26 +635,26 @@ export const typeConfigs = {
           placeholder: "Warning: Armed Phenomenon is not fully supported yet."
         },
         {
-          name: "Phenomena 1",
-          label: "ability-description-1",  
+          name: "ability-description-1",
+          label: "Phenomena Stage 1",  
           type: "textarea",
           placeholder: "Stage 1 Phenomenon"
         },
         {
-          name: "Phenomena 2",
-          label: "ability-description-2",  
+          name: "ability-description-2",
+          label: "Phenomena Stage 2",  
           type: "textarea",
           placeholder: "Stage 2 Phenomenon"
         },
         {
-          name: "Phenomena 3",
-          label: "ability-description-3",  
+          name: "ability-description-3",
+          label: "Phenomena Stage 3",  
           type: "textarea",
           placeholder: "Stage 3 Phenomenon"
         },
         {
-          name: "Phenomena 4",
-          label: "ability-description-4",  
+          name: "ability-description-4",
+          label: "Phenomena Stage 4",  
           type: "textarea",
           placeholder: "Stage 4 Phenomenon"
         }
@@ -660,6 +667,7 @@ export const typeConfigs = {
         , "Endurance (Durability)"
         , "Learning (Learning)"
       ]
+      , stats: ["body", "wit", "reason", "menacing", "pluck"]
 			, description: `
         <p><em><u>Armed Phenomenon ⚙</u></em></p>
         <p>A lifeform infected with a <em>Parasite</em>, gaining power in exchange for a <em>doomed future</em>.</p>

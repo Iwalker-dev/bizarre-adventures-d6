@@ -84,5 +84,41 @@ export class PowerSheet extends BaseActorSheet {
 		if (current) {
 			html.find("#power-type").val(current);
 		}
+
+		html.find("#power-type").on("change", async ev => {
+			const newType = ev.target.value;
+			const updates = {
+				"system.bio.type": newType
+			};
+
+			// Map of power‐type configs
+			const configs = typeConfigs.power;
+
+			// Loop every entry in that map
+			for (const [typeName, config] of Object.entries(configs)) {
+				const statsArray = config.stats || [];
+				if (typeName !== newType) {
+					// if this isn’t the chosen type, remove those stats
+					for (const stat of statsArray) {
+						updates[`system.attributes.stats.${stat}`] = new foundry.data.operators.ForcedDeletion();
+					}
+
+				} else {
+					// if it is the chosen type, re-add with defaults
+					for (const stat of statsArray) {
+						updates[`system.attributes.stats.${stat}`] = {
+							label: stat.charAt(0).toUpperCase() + stat.slice(1)
+							, dtype: "Number"
+							, value: 0
+							, temp: 0
+							, perm: 0
+						};
+					}
+				}
+			}
+
+			await this.actor.update(updates);
+			this.render();
+		});
 	}
 }

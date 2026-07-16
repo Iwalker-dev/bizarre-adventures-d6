@@ -13,9 +13,11 @@ export function registerSockets() {
     rollerSocket.register("rollerExecuteLuckMove", socketExecuteLuckMove);
     rollerSocket.register("rollerRollAll", socketRollAll);
     rollerSocket.register("rollerUpdateToContest", socketUpdateToContest);
+    rollerSocket.register("rollerFlashbackCreate", socketFlashbackCreate);
     rollerSocket.register("rollerFlashbackRequest", socketFlashbackRequest);
     rollerSocket.register("rollerSetPairAdvantage", socketSetPairAdvantage);
     rollerSocket.register("rollerSetPairReckless", socketSetPairReckless);
+    rollerSocket.register("warnOwners", socketWarnOwners);
 }
 
 export async function socketApplyPreparedQuadrant(messageId, quadrantNum, preparedData) {
@@ -26,8 +28,8 @@ export async function socketResetQuadrant(messageId, quadrantNum, refundLuck = t
     return await resetQuadrant(messageId, quadrantNum, refundLuck);
 }
 
-export async function socketExecuteLuckMove(messageId, spenders, quadrantNum, move, isGambit = false) {
-    await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit);
+export async function socketExecuteLuckMove(messageId, spenders, quadrantNum, move, isGambit = false, sender = game.user.id) {
+    await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit, sender);
     const message = game.messages.get(messageId);
     if (message) {
         await rerenderMessage(message);
@@ -49,9 +51,24 @@ export async function socketSetPairAdvantage(messageId, quadrantNum, advantage) 
 export async function socketSetPairReckless(messageId, quadrantNum, reckless) {
     return await applySetPairReckless(messageId, quadrantNum, reckless);
 }
-
+export async function socketFlashbackCreate(requesterName) {
+	const flashbackText = await new Promise((resolve) => {
+        // TODO: Move to dialog.js
+		new Dialog({
+			title: "Flashback",
+			content: `<p>Describe the retcon you want to make:</p><textarea id="flashback-input" rows="4" style="width: 100%;"></textarea>`,
+			buttons: {
+				ok: { label: "Send to GM", callback: (html) => resolve(html.find("#flashback-input").val().trim()) },
+				cancel: { label: "Cancel", callback: () => resolve(null) }
+			},
+			close: () => resolve(null)
+		}).render(true);
+	});
+    return flashbackText;
+}
 export async function socketFlashbackRequest(requesterName, flashbackText) {
     const approved = await new Promise((resolve) => {
+        // TODO: Move to dialog.js
         new Dialog({
             title: "Flashback Request",
             content: `<p><strong>${requesterName ?? "A player"}</strong> wants to use a Flashback:</p><blockquote>${flashbackText}</blockquote><p>Approve?</p>`,
@@ -68,4 +85,8 @@ export async function socketFlashbackRequest(requesterName, flashbackText) {
         flags: { "bizarre-adventures-d6": { type: "flashback" } }
     });
     return true;
+}
+// Takes in the actor object and a string. Sends a warning if the current user owns the actor.
+export async function socketWarnOwners(actor, warning) {
+    if (actor.isOwner) ui.notifications.warn(warning);
 }

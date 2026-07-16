@@ -90,7 +90,7 @@ export class StandSheet extends BaseActorSheet {
 				if (typeName !== newType) {
 					// if this isn’t the chosen type, remove those stats
 					for (const stat of statsArray) {
-						updates[`system.attributes.stats.-=${stat}`] = null;
+						updates[`system.attributes.stats.${stat}`] = new foundry.data.operators.ForcedDeletion();
 					}
 
 				} else {
@@ -138,7 +138,7 @@ export class StandSheet extends BaseActorSheet {
 
 		for (const stat in current) {
 			if (!expected.includes(stat)) {
-				updates[`system.attributes.stats.-=${stat}`] = null;
+				updates[`system.attributes.stats.${stat}`] = new foundry.data.operators.ForcedDeletion();
 			}
 		}
 

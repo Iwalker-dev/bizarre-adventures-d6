@@ -159,9 +159,12 @@ export async function migrateWorld() {
 		for (const actor of game.actors.filter(a => a.type === "power")) {
 			if (actor.system.attributes.stats?.[`learning-original`]) {
 				await actor.update({
+					"system.attributes.stats.learning-original": new foundry.data.operators.ForcedDeletion()
+					, "system.attributes.stats.learning-temp": new foundry.data.operators.ForcedDeletion()
+					, "system.attributes.stats.learning-perm": new foundry.data.operators.ForcedDeletion()
+					/* Legacy
 					"system.attributes.stats.-=learning-original": null
-					, "system.attributes.stats.-=learning-temp": null
-					, "system.attributes.stats.-=learning-perm": null
+					*/
 				});
 			}
 		}
@@ -192,7 +195,7 @@ export async function migrateWorld() {
 				const bio = actor.system.bio || {};
 				await actor.update({
 					"system.bio": info,
-					"system.-=info": null
+					"system.info": new foundry.data.operators.ForcedDeletion()
 				});
 			}
 		}
@@ -202,7 +205,7 @@ export async function migrateWorld() {
 				const bio = actor.system.bio || {};
 				await actor.update({
 					"system.bio": info,
-					"system.-=info": null
+					"system.info": new foundry.data.operators.ForcedDeletion()
 				});
 			}
 		}
@@ -262,7 +265,7 @@ export async function migrateWorld() {
 
 
 	// — First ever world load —
-	const shouldWelcome = game.settings.get("bizarre-adventures-d6", "welcomed");
+	const shouldWelcome = !game.settings.get("bizarre-adventures-d6", "welcomed");
 	if (shouldWelcome) {
 		ChatMessage.create({
 			user: game.user.id
