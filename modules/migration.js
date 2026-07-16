@@ -135,12 +135,13 @@ export async function migrateWorld() {
 	if (!foundry.utils.isNewerVersion(current, previous)) return;
 
 	const isNewer = foundry.utils.isNewerVersion;
+	function updatingTo(version) {
+		if(isNewer(current, previous) && isNewer(version, previous) && !isNewer(version, current)) return true;
+		return false;
+	}
 
 	// — 0.9.1 migration: “Learning” → “Luck” —
-	if (isNewer(current, previous) &&
-		isNewer("0.9.1", previous) &&
-		!isNewer("0.9.1", current)
-	) {
+	if (updatingTo("0.9.1")) {
 		for (const actor of game.actors.filter(a => a.type === "user")) {
 			if (actor.system.attributes.stats.luck?.label === "Learning") {
 				await actor.update({
@@ -152,10 +153,7 @@ export async function migrateWorld() {
 	}
 
 	// — 0.9.3 migration: remove -learning-original,temp,perm
-	if (isNewer(current, previous) &&
-		isNewer("0.9.3", previous) &&
-		!isNewer("0.9.3", current)
-	) {
+	if (updatingTo("0.9.3")) {
 		for (const actor of game.actors.filter(a => a.type === "power")) {
 			if (actor.system.attributes.stats?.[`learning-original`]) {
 				await actor.update({
@@ -172,10 +170,7 @@ export async function migrateWorld() {
 	}
 
 	// — 0.9.5 migration: apply default type images to power actors with mystery man
-	if (isNewer(current, previous) &&
-		isNewer("0.9.5", previous) &&
-		!isNewer("0.9.5", current)
-	) {
+	if (updatingTo("0.9.5")) {
 		for (const actor of game.actors.filter(a => a.type === "power")) {
 			const typeKey = actor.system.info?.type;
 			await actor.update({ "system.info.type": typeKey });
@@ -185,10 +180,7 @@ export async function migrateWorld() {
 	}
 
 	//— 0.9.6 migration: move "info" to "bio" for universal linkedActors field —
-	if (isNewer(current, previous) &&
-		isNewer("0.9.6", previous) &&
-		!isNewer("0.9.6", current)
-	) {
+	if (updatingTo("0.9.6")) {
 		for (const actor of game.actors.filter(a => a.type === "power")) {
 			if (actor.system.info) {
 				const info = actor.system.info || {};
@@ -213,10 +205,7 @@ export async function migrateWorld() {
 	}
 
 	// — 0.9.9 migration: normalize stat specials to key/label/value —
-	if (isNewer(current, previous) &&
-		isNewer("0.9.9", previous) &&
-		!isNewer("0.9.9", current)
-	) {
+	if (updatingTo("0.9.9")) {
 		for (const actor of game.actors.filter(a => ["user", "stand", "power", "character"].includes(a.type))) {
 			const stats = actor.system.attributes?.stats;
 			if (!stats || typeof stats !== "object") continue;
@@ -241,28 +230,26 @@ export async function migrateWorld() {
 		}
 		console.log("BAD6 | Applied 0.9.9 migration (special stats normalized to key/label/value).");
 	}
-	// — Record that we’re now at `current` —
-	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
 
-		if (isNewer(current, previous) &&
-		isNewer("0.9.10", previous) &&
-		!isNewer("0.9.10", current)
-	) {
-		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
-		ui.notifications.info("BAD6 Migration | Welcome message updated.");
-	}
-	// V14 'update' —
-	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
-
-		if (isNewer(current, previous) &&
-		isNewer("0.9.12", previous) &&
-		!isNewer("0.9.12", current)
-	) {
+	if (updatingTo("0.9.10")) {
 		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
 	}
 
+	if (updatingTo("0.9.12")) {
+		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
+		ui.notifications.info("BAD6 Migration | Welcome message updated.");
+	}
 
+	if (updatingTo("0.9.13")) {
+		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
+		ui.notifications.info("BAD6 Migration | Welcome message updated.");
+	}
+
+	if (updatingTo("0.9.13.1")) {
+		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
+		ui.notifications.info("BAD6 Migration | Welcome message updated.");
+	}
 
 	// — First ever world load —
 	const shouldWelcome = !game.settings.get("bizarre-adventures-d6", "welcomed");
@@ -290,10 +277,14 @@ export async function migrateWorld() {
 					<li> Learning Automation.</li>
 					<li> (View the changelog for longer list) </li>
 				</ul>
-	        <p> Please report any problems, ideas, or comments to itpart on Discord as I try to handle them quickly. I would love to make this the perfect system with your help! </p>`
+	        <p> Please report any problems, ideas, or comments to itpart on Discord as I try to handle them quickly. I would love to make this the perfect system with your help!
+			<p> Link to the Official Bizarre Adventures Discord: https://discordapp.com/invite/2QVASDt</p>
+			<p>	Link to the FoundryVTT System's Discord:  https://discord.gg/f6t3tGMgMD</p>`
 			, whisper: game.users.filter(u => u.isGM).map(u => u.id)
 		});
 		await game.settings.set("bizarre-adventures-d6", "welcomed", true);
 	}
+	// — Record that we’re now at `current` —
+	await game.settings.set("bizarre-adventures-d6", "systemMigrationVersion", current);
 }
 
