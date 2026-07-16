@@ -203,11 +203,15 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Fixed depreciated methods preventing stat list manipulation (ex for Independent and Armed Phenomenon users)
 - Added Armed Phenomena Support (The placeholder will be removed once Im sure)
 - Fixed Flashbacks only appearing for GM
-
+## [0.9.13.1] - 2026-7-15
+- Simplified reused migration logic
+- Setup System Discord and Official Discord Links
+- Setup System Discord
 
 # What's left? (Ordered By Priority)
 - Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)
+- update RenderChatMessage hook to RenderChatMessageHTML before v16
 - Create different backgrounds for all user types
 - Add custom images for default user and stand type actors
 - Resolve gated by permissions
