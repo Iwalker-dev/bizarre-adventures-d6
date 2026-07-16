@@ -6,8 +6,8 @@ export class DefaultItemSheet extends foundry.appv1.sheets.ItemSheet {
 		return foundry.utils.mergeObject(super.defaultOptions, {
 			classes: ["bizarre-adventures-d6", "sheet", "item", "default"]
 			, template: "systems/bizarre-adventures-d6/templates/item/default-item-sheet.hbs"
-			, width: 400
-			, height: 300
+			, width: 750
+			, height: 400
 		, });
 	}
 
@@ -36,6 +36,7 @@ export class DefaultItemSheet extends foundry.appv1.sheets.ItemSheet {
 				line.variable = 'stat';
 			}
 			line.optional = !!line.optional;
+			line.unique = !!line.unique;
 			line.operand = line.operand || '+';
 			line.stat = line.stat || '';
 			line.variable = line.variable || 'modifier';
@@ -66,7 +67,7 @@ export class DefaultItemSheet extends foundry.appv1.sheets.ItemSheet {
 			if (formula.lines && typeof formula.lines === 'object') formula.lines = Object.values(formula.lines);
 			else formula.lines = [];
 		}
-		formula.lines.push({ optional: false, operand: '+', stat: '', variable: 'modifier', value: 0 });
+		formula.lines.push({ optional: false, unique: false, operand: '+', stat: '', variable: 'modifier', value: 0 });
 		await this.item.update({ 'system.formula': formula });
 		this.render();
 	}

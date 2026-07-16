@@ -10,6 +10,28 @@ import { getPairAdvantage, getPairFudgeBonus, getPairMulliganBonus, getPairedQua
 import { reevaluateStoredRoll, renderReevaluatedRollHtml, getHitDCMeta, getActionDCMeta } from "./roll-resolution.js";
 import { rerenderMessage } from "./display.js";
 
+export function getPairUsedUniqueModifierIds(message, quadrantNum) {
+    if (!message) return [];
+
+    const currentNum = Number(quadrantNum);
+    const pairNums = getPairQuadrantNumbers(currentNum);
+    const used = new Set();
+
+    for (const qNum of pairNums) {
+        if (Number(qNum) === currentNum) continue;
+        const quadrant = message.getFlag("bizarre-adventures-d6", `quadrant${qNum}`) || {};
+        const applied = Array.isArray(quadrant.customLinesApplied) ? quadrant.customLinesApplied : [];
+        for (const line of applied) {
+            if (!line?.unique) continue;
+            const lineId = String(line.id || "");
+            if (!lineId) continue;
+            used.add(lineId);
+        }
+    }
+
+    return Array.from(used);
+}
+
 // ---------------------------------------------------------------------------
 // Lock helpers
 // ---------------------------------------------------------------------------
@@ -124,6 +146,7 @@ export async function recalculateQuadrantFormula(messageId, quadrantNum, { inclu
     const selectedModifierIds = Array.isArray(current.selectedModifierIds)
         ? current.selectedModifierIds.map(String)
         : [];
+    const blockedUniqueLineIds = getPairUsedUniqueModifierIds(message, quadrantNum);
 
     const statValue = Number(current.statValue ?? 0);
     const baseFormula = createFormula(statValue, 6, effectiveAdvantage, 0);
@@ -137,7 +160,8 @@ export async function recalculateQuadrantFormula(messageId, quadrantNum, { inclu
             statLabel: current.selectedSpecial?.label || current.stat
         },
         customLines,
-        selectedModifierIds
+        selectedModifierIds,
+        { blockedUniqueLineIds }
     );
 
     const formula = evaluated?.formula || baseFormula;

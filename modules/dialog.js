@@ -1,4 +1,5 @@
 import { actionLabels } from "./constants.js";
+import { getScope } from "./dice.js";
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
 function capitalizeFirst(text) {
@@ -97,7 +98,10 @@ export async function renderDialog(dialog, dialogData = {}) {
                         const variable = capitalizeFirst(line.variable || "modifier");
                         const sourceName = line.sourceName || "Custom";
                         const lineValue = Number(line.value ?? 0);
-                        return `${variable} ${line.operand || "+"} ${lineValue} (${sourceName})`;
+                        const perPairBadge = line.unique
+                            ? (line.unavailable ? " [Per-pair: used]" : " [Per-pair]")
+                            : "";
+                        return `${variable} ${line.operand || "+"} ${lineValue} (${sourceName})${perPairBadge}`;
                     };
 
                     const renderCustomModifierChoices = () => {
@@ -116,14 +120,15 @@ export async function renderDialog(dialog, dialogData = {}) {
 
                         const selectedStat = String(selectedButton.data("stat") || "").trim().toLowerCase();
                         const allLines = parseSelectedModifiers();
+                        const scope = getScope(selectedStat);
                         const filtered = allLines.filter((line) => {
                             const lineStat = String(line?.stat || "").trim().toLowerCase();
-                            return !lineStat || lineStat === selectedStat;
+                            return !lineStat || lineStat === selectedStat || lineStat === scope;
                         });
 
                         const required = filtered.filter((line) => !line.optional);
                         const optional = filtered.filter((line) => !!line.optional);
-
+                        
                         if (!required.length && !optional.length) {
                             container.html("<em>No custom modifiers for this stat.</em>");
                             return;
@@ -133,7 +138,9 @@ export async function renderDialog(dialog, dialogData = {}) {
                         if (required.length) {
                             chunks.push('<div class="custom-modifier-group"><strong>Auto-applied</strong></div>');
                             for (const line of required) {
-                                chunks.push(`<div class="custom-modifier-auto">• ${formatModifierLabel(line)}</div>`);
+                                const unavailableClass = line.unavailable ? " is-unavailable" : "";
+                                const reason = line.unavailable && line.unavailableReason ? ` — ${line.unavailableReason}` : "";
+                                chunks.push(`<div class="custom-modifier-auto${unavailableClass}">• ${formatModifierLabel(line)}${reason}</div>`);
                             }
                         }
 
@@ -141,11 +148,15 @@ export async function renderDialog(dialog, dialogData = {}) {
                             chunks.push('<div class="custom-modifier-group"><strong>Optional</strong></div>');
                             for (const line of optional) {
                                 const lineId = String(line.id || "");
-                                const checked = existingChecked.has(lineId) ? "checked" : "";
+                                const isUnavailable = !!line.unavailable;
+                                const checked = !isUnavailable && existingChecked.has(lineId) ? "checked" : "";
+                                const disabled = isUnavailable ? "disabled" : "";
+                                const unavailableClass = isUnavailable ? " is-unavailable" : "";
+                                const reason = isUnavailable && line.unavailableReason ? ` — ${line.unavailableReason}` : "";
                                 chunks.push(
-                                    `<label class="custom-modifier-option-row">` +
-                                    `<input class="custom-modifier-option" type="checkbox" value="${lineId}" ${checked} /> ` +
-                                    `${formatModifierLabel(line)}` +
+                                    `<label class="custom-modifier-option-row${unavailableClass}">` +
+                                    `<input class="custom-modifier-option" type="checkbox" value="${lineId}" ${checked} ${disabled} /> ` +
+                                    `${formatModifierLabel(line)}${reason}` +
                                     `</label>`
                                 );
                             }

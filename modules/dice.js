@@ -1,3 +1,5 @@
+ import { USER_STATS, ABILITY_STATS, typeConfigs } from "./config.js";
+
  // {{!-- example formula: (@stat)d(@sides)cs>=(@advantage) + (@modifier) --}}
 
 /* Exports:
@@ -8,6 +10,7 @@ parseFormula(component, formula) - parses a specific component (stat, sides, adv
 */
 
 export function createFormula(stat, sides, advantage, modifier) {
+        // Final resolved dice count for the roll. Earlier stages may mutate this via formula lines.
     stat = (stat === 6) ? 10 : stat; // 6 is the placeholder for infinite stat
   return `${stat}d${sides}cs>=${5-advantage} + ${modifier}`;
 }
@@ -106,7 +109,10 @@ export function normalizeFormulaLines(rawLines = []) {
 
     return normalizedInput.map((rawLine) => {
         const line = rawLine || {};
+        // `stat` is the targeting scope selector for a line (which chosen stat this line applies to).
+        // Example values today: exact keys like "power"/"luck", or empty string for global.
         let stat = String(line.stat || "").trim().toLowerCase();
+        // `variable` is the formula component being changed (stat/sides/advantage/modifier).
         let variable = String(line.variable || "modifier").trim().toLowerCase();
 
         if (!stat && LEGACY_STAT_KEYS.has(variable)) {
@@ -117,12 +123,76 @@ export function normalizeFormulaLines(rawLines = []) {
         return {
             ...line,
             optional: !!line.optional,
+            unique: !!line.unique,
             operand: String(line.operand || "+").trim() || "+",
             stat,
             variable,
             value: Number(line.value ?? 0)
         };
     });
+}
+
+function parseConfigFormulaLine(rawLine) {
+    if (!rawLine) return null;
+
+    if (typeof rawLine === "object") {
+        return {
+            ...rawLine,
+            stat: String(rawLine.stat || "").trim().toLowerCase(),
+            variable: String(rawLine.variable || "modifier").trim().toLowerCase(),
+            operand: String(rawLine.operand || "+").trim() || "+",
+            value: Number(rawLine.value ?? 0),
+            optional: !!rawLine.optional,
+            unique: !!rawLine.unique,
+            label: rawLine.label
+        };
+    }
+
+    if (typeof rawLine !== "string") return null;
+    const compact = rawLine.trim();
+    if (!compact) return null;
+
+    const match = compact.match(/^(?:(user|ability|[a-z]+)\s*:?\s+)?(stat|sides|advantage|modifier)\s*([+\-*/=])\s*(-?\d+(?:\.\d+)?)\s*(.*)$/i);
+    if (!match) return null;
+
+    const [, statScope = "", variable = "modifier", operand = "+", value = "0", flags = ""] = match;
+    const flagSet = new Set(
+        String(flags || "")
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(Boolean)
+    );
+
+    return {
+        stat: String(statScope || "").trim().toLowerCase(),
+        variable: String(variable || "modifier").trim().toLowerCase(),
+        operand: String(operand || "+").trim() || "+",
+        value: Number(value ?? 0),
+        optional: flagSet.has("optional"),
+        unique: flagSet.has("unique")
+    };
+}
+
+function getTypeConfigFormulaLines(actor) {
+    const actorType = String(actor?.type || "").trim();
+    const bioType = String(actor?.system?.bio?.type || "").trim();
+    if (!actorType || !bioType) return [];
+
+    const config = typeConfigs?.[actorType]?.[bioType];
+    if (!config || typeof config !== "object") return [];
+
+    const rawLines = config.formulaLines ?? config.rollFormulas ?? config.formulas;
+    if (!Array.isArray(rawLines)) return [];
+
+    const parsed = rawLines
+        .map(parseConfigFormulaLine)
+        .filter(line => line && Number.isFinite(line.value) && VALID_FORMULA_VARIABLES.has(line.variable));
+
+    return normalizeFormulaLines(parsed).map((line, index) => ({
+        ...line,
+        id: `type:${actor.id}:${actorType}:${bioType}:${index}`,
+        sourceName: String(line.label || `${config.label || bioType} (Type Formula)`).trim()
+    }));
 }
 
 function safeFromUuidSync(uuid) {
@@ -164,6 +234,23 @@ export function collectActorFormulaLines(actor, { inheritLinkedActorModifiers = 
         if (!sourceActor?.id || seenActorIds.has(sourceActor.id)) return;
         seenActorIds.add(sourceActor.id);
 
+        const typeConfigLines = getTypeConfigFormulaLines(sourceActor);
+        typeConfigLines.forEach((line) => {
+            const sourceName = String(line.sourceName || "Custom").trim() || "Custom";
+            lines.push({
+                id: String(line.id),
+                sourceActorId: sourceActor.id,
+                sourceActorName: sourceActor.name || "",
+                sourceName: sourceLabelPrefix ? `${sourceLabelPrefix} • ${sourceName}` : sourceName,
+                optional: !!line.optional,
+                unique: !!line.unique,
+                stat: String(line.stat || "").trim().toLowerCase(),
+                variable: line.variable,
+                operand: String(line.operand || "+").trim(),
+                value: Number(line.value ?? 0)
+            });
+        });
+
         for (const item of sourceActor.items || []) {
             const normalizedLines = normalizeFormulaLines(item?.system?.formula?.lines);
             normalizedLines.forEach((line, index) => {
@@ -176,6 +263,7 @@ export function collectActorFormulaLines(actor, { inheritLinkedActorModifiers = 
                     sourceActorName: sourceActor.name || "",
                     sourceName: sourceLabelPrefix ? `${sourceLabelPrefix} • ${item.name || "Custom"}` : (item.name || "Custom"),
                     optional: !!line.optional,
+                    unique: !!line.unique,
                     stat: String(line.stat || "").trim().toLowerCase(),
                     variable: line.variable,
                     operand: String(line.operand || "+").trim(),
@@ -203,8 +291,9 @@ export function collectActorFormulaLines(actor, { inheritLinkedActorModifiers = 
     return lines;
 }
 
-export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = []) {
+export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = [], options = {}) {
     const selectedIds = new Set((selectedOptionalIds || []).map(String));
+    const blockedUniqueIds = new Set((options?.blockedUniqueLineIds || []).map(String));
     const values = {
         stat: Number(base.stat ?? 0),
         sides: Number(base.sides ?? 6),
@@ -227,16 +316,26 @@ export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = [
         const variable = String(line.variable || "").trim();
         if (!variableOrder.includes(variable)) continue;
 
+        // Stat targeting gate:
+        // - base.statKey is the currently selected roll stat (from prepare flow).
+        // - line.stat limits whether this line applies to that selected stat.
+        // - current behavior is exact-match only (or global when line.stat is empty).
+        // If group targeting is added later (e.g. user/stand), update this gate.
         const lineStat = String(line.stat || "").trim().toLowerCase();
         const selectedStat = String(base.statKey || "").trim().toLowerCase();
-        if (lineStat && selectedStat && lineStat !== selectedStat) continue;
+        const scope = getScope(selectedStat);
+
+        if ((lineStat && selectedStat && lineStat !== selectedStat)
+            && (lineStat != scope)) continue;
         if (line.optional && !selectedIds.has(String(line.id ?? ""))) continue;
+        if (line.unique && blockedUniqueIds.has(String(line.id ?? ""))) continue;
 
         const operand = String(line.operand || "+").trim();
         const lineValue = Number(line.value ?? 0);
         if (!Number.isFinite(lineValue)) continue;
 
         const before = values[variable];
+        // `variable === "stat"` means this line changes dice count directly.
         const after = applyOperand(before, operand, lineValue);
         if (!Number.isFinite(after)) continue;
 
@@ -248,6 +347,7 @@ export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = [
             sourceName: sourceLabel,
             stat: line.stat || "",
             optional: !!line.optional,
+            unique: !!line.unique,
             variable,
             operand,
             value: lineValue,
@@ -275,6 +375,7 @@ export function applyFormulaLines(base = {}, lines = [], selectedOptionalIds = [
     if (traceTokens.modifier.length > 1) traceParts.push(formatTrace("Result", traceTokens.modifier, unclamped.modifier, values.modifier));
 
     return {
+        // `values.stat` ends up as the X in XdY in the final constructed formula.
         formula: createFormula(values.stat, values.sides, values.advantage, values.modifier),
         values,
         appliedLines,
@@ -308,4 +409,13 @@ export function parseFormula(component, formula) {
     const regex = map[component];
     const match = formula.match(regex);
     return match ? parseInt(match[1]) : null;
+}
+
+export function getScope(checkedStat) {
+    for (const stat of USER_STATS) {
+        if (checkedStat == stat) return "user"
+    }
+    for (const stat of ABILITY_STATS) {
+        if (checkedStat == stat) return "ability"
+    }
 }
