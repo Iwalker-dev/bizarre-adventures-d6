@@ -207,6 +207,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Simplified reused migration logic
 - Setup System Discord and Official Discord Links
 - Setup System Discord
+- Removed pre-allowed use in v15 (Won't publish in such a state)
 
 # What's left? (Ordered By Priority)
 - Switch to V2 framework before V15
