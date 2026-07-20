@@ -211,6 +211,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Removed pre-allowed use in v15 (Won't allow publishing in such a state)
 
 # What's left? (Ordered By Priority)
+- Update logic to system V0.9
 - Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)
 - update RenderChatMessage hook to RenderChatMessageHTML before v16
