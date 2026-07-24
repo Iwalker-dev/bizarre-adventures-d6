@@ -135,11 +135,12 @@ export const typeConfigs = {
       , formulaLines: [
         {
           // First User-stat roll gets doubled dice via formula engine stat mutation.
+          // Explicitly read before custom formulas are applied
           stat: "user"
           , variable: "stat"
           , operand: "*"
           , value: 2
-          , unique: true
+          , unique: true // Once per pair
         }
       ]
       , fields: [
@@ -422,6 +423,17 @@ export const typeConfigs = {
           label: "Overdrive",
           type: "textarea",
           placeholder: "e.g. Ripple Strike"
+        }
+      ]
+      , formulaLines: [
+        {
+          // Advantage +1 per spent learning, up to +5
+          // Explicitly read before custom formulas are applied
+          stat: "any"
+          , variable: "advantage"
+          , operand: "+"
+          , value: 1
+          , optional: true
         }
       ]
 			, statlabels: [

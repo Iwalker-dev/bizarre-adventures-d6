@@ -188,6 +188,20 @@ export const LUCK_MOVES = {
 		timing: "anytime",
 		effect: "special"
 	}
+	/* New Gambit **NOT IMPORTANT, THE UNDERLYING EXECUTION LOGIC STILL WORKS UNTOUCHED**
+		Placed along with action
+		Activated After Contest resolution
+
+		Consists of:
+		 - Attempted Luck burn
+		 	- Half the Luck Burn's cost (Rounded Up)
+		 - Plan
+		 - Trigger
+		
+		 Stored in a 'private text channel' which no Player can see
+		  - Likely means for foundry, a whisper to the DM
+		  	 - Issue with 'revealing' could be solved with sending the message again
+	*/
 };
 
 export function chooseLuckSpenders(rollableActors) {

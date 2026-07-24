@@ -19,7 +19,7 @@ export const welcomeText = `
         </ul>
     <p> Please report any problems, ideas, or comments to itpart on Discord as I try to handle them quickly. I would love to make this the perfect system with your help!
     <p> Link to the Official Bizarre Adventures Discord: https://discordapp.com/invite/2QVASDt</p>
-    <p>	Link to the FoundryVTT System's Discord:  https://discord.gg/f6t3tGMgMD</p>`
+    <p>	Link to the FoundryVTT System's Discord:  https://discord.gg/9KXWzYgGT</p>`
 
 export const actionLabels = [ 
     {side:"action", quadrant: 1, label: "Action Setup"}
