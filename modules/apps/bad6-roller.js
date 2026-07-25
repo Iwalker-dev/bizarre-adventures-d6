@@ -18,6 +18,7 @@ let lastActionMessageAt = 0;
 let chatListenersRegistered = false;
 const DOUBLE_CLICK_WINDOW_MS = 500;
 
+// Certain functions require GM permissions, necessitating GM listener use
 async function executeRollerAsGM(handler, ...args) {
     const socket = getRollerSocket();
     if (!socket) {
@@ -27,6 +28,7 @@ async function executeRollerAsGM(handler, ...args) {
     return await socket.executeAsGM(handler, ...args);
 }
 
+// Used to take the chat message mode and apply it to the roll
 function withCurrentRollMode(chatData = {}) {
     const data = foundry.utils.deepClone(chatData);
     const rollMode = String(game.settings.get("core", "rollMode") || "publicroll");
@@ -35,7 +37,7 @@ function withCurrentRollMode(chatData = {}) {
         ChatMessage.applyRollMode(data, rollMode);
         return data;
     }
-
+    /*
     // Fallback for environments where applyRollMode is unavailable.
     if (rollMode === "gmroll") {
         data.whisper = ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
@@ -45,7 +47,7 @@ function withCurrentRollMode(chatData = {}) {
     } else if (rollMode === "selfroll") {
         data.whisper = game.user?.id ? [game.user.id] : [];
     }
-
+    */
     return data;
 }
 
@@ -99,6 +101,7 @@ export function rollerControl() {
 	});
 }
 
+// Renders a single pair chat message for uncontested actions
 export async function createActionMessage() { 
     const message = await ChatMessage.create(withCurrentRollMode({
         content: await renderAction()
@@ -107,6 +110,7 @@ export async function createActionMessage() {
     return message;
 }
 
+// Renders a double pair chat message for contested actions
 export async function createContestMessage() {
     const message = await ChatMessage.create(withCurrentRollMode({
         content: await renderContest()
@@ -115,6 +119,7 @@ export async function createContestMessage() {
     return message;
 }
 
+// Used for double click functionality. Changes the existing action message to a contest message.
 export async function updateToContest(messageId) {
     let message = game.messages.get(messageId);
 
@@ -151,7 +156,7 @@ export async function registerChatListeners() {
             const neverPatched = card.dataset.bad6Patched !== "1";
             return hasHiddenActor || hasRedactedRoll || neverPatched;
         };
-
+        // Rather hotwired way to use current visibility hiding strategies
         const patchVisibleChatCards = () => {
             const chatMessages = document.querySelectorAll(".chat-message[data-message-id]");
             let patchedCount = 0;

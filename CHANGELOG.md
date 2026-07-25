@@ -211,6 +211,9 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Removed pre-allowed use in v15 (Won't allow publishing in such a state)
 
 # What's left? (Ordered By Priority)
+- Properly Comment Roller
+- Reorganize Roller
+- Edit permissions to inherit current roll privacy on click (eg. when adding the roller and formula, check seperately if a blind roll compared to resolving.)
 - Update logic to system V0.9
 - Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)
