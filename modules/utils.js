@@ -127,105 +127,77 @@ export async function preloadHandlebarsTemplates() {
 
 const BAD6_MODULE_ID = "bizarre-adventures-d6";
 export const HIDDEN_ACTOR_NAME = "Hidden Actor";
+export const BAD6_PRIVACY_VERSION = 2;
 
-export function getVisibilityRoleChoices() {
+export function getCurrentRollMode() {
+	// Foundry v13 can keep message mode in the chat control state rather than core.rollMode.
+	if (typeof document !== "undefined") {
+		const activeModeBtn = document.querySelector('button[data-action="messageMode"][aria-pressed="true"]');
+		const mode = String(activeModeBtn?.dataset?.mode || "").trim().toLowerCase();
+		if (mode === "gm") return "gmroll";
+		if (mode === "blind") return "blindroll";
+		if (mode === "self") return "selfroll";
+		if (mode === "public" || mode === "ic") return "publicroll";
+	}
+
+	return String(game.settings.get("core", "rollMode") || "publicroll");
+}
+
+export function normalizeAudienceUserIds(userIds = []) {
+	const ids = new Set();
+	for (const id of userIds) {
+		const safe = String(id || "").trim();
+		if (!safe) continue;
+		ids.add(safe);
+	}
+	return Array.from(ids);
+}
+
+export function getRollModeAudienceUserIds(rollMode, clickedByUserId = game.user?.id) {
+	const mode = String(rollMode || "publicroll");
+	const clickerId = String(clickedByUserId || game.user?.id || "").trim();
+	const gmIds = game.users.filter((u) => u.isGM).map((u) => String(u.id));
+
+	if (mode === "blindroll") {
+		return normalizeAudienceUserIds(gmIds);
+	}
+
+	if (mode === "gmroll") {
+		return normalizeAudienceUserIds([...gmIds, clickerId]);
+	}
+
+	if (mode === "selfroll") {
+		return normalizeAudienceUserIds(clickerId ? [clickerId] : []);
+	}
+
+	return normalizeAudienceUserIds(game.users.map((u) => String(u.id)));
+}
+
+export function clampAudienceUserIds(parentAudienceUserIds = [], requestedAudienceUserIds = []) {
+	const parent = normalizeAudienceUserIds(parentAudienceUserIds);
+	const requested = new Set(normalizeAudienceUserIds(requestedAudienceUserIds));
+
+	if (!parent.length) return Array.from(requested);
+	return parent.filter((id) => requested.has(id));
+}
+
+export function canCurrentUserSeeAudience(audienceUserIds = [], userId = game.user?.id) {
+	const currentUserId = String(userId || "").trim();
+	if (!currentUserId) return false;
+	const set = new Set(normalizeAudienceUserIds(audienceUserIds));
+	return set.has(currentUserId);
+}
+
+export function buildClickMeta({ clickedByUserId, rollModeAtClick, parentAudienceUserIds = [] } = {}) {
+	const userId = String(clickedByUserId || game.user?.id || "").trim();
+	const mode = String(rollModeAtClick || getCurrentRollMode() || "publicroll");
+	const requestedAudienceUserIds = getRollModeAudienceUserIds(mode, userId);
+	const audienceUserIds = clampAudienceUserIds(parentAudienceUserIds, requestedAudienceUserIds);
+
 	return {
-		[CONST.USER_ROLES.NONE]: "None",
-		[CONST.USER_ROLES.PLAYER]: "Player",
-		[CONST.USER_ROLES.TRUSTED]: "Trusted Player",
-		[CONST.USER_ROLES.ASSISTANT]: "Assistant GM",
-		[CONST.USER_ROLES.GAMEMASTER]: "Game Master"
+		clickedByUserId: userId,
+		rollModeAtClick: mode,
+		audienceUserIds,
+		timestamp: Date.now()
 	};
-}
-
-function getWorldSetting(settingKey, fallbackValue) {
-	try {
-		return game.settings.get(BAD6_MODULE_ID, settingKey);
-	} catch (_error) {
-		return fallbackValue;
-	}
-}
-
-function userMeetsRoleThreshold(minimumRole = CONST.USER_ROLES.GAMEMASTER) {
-	return Number(game.user?.role ?? CONST.USER_ROLES.NONE) >= Number(minimumRole);
-}
-
-function isActorOwner(actor, sourceUuid, actorId) {
-	if (!game.user) return false;
-
-	if (sourceUuid) {
-		try {
-			const sourceDoc = fromUuidSync(sourceUuid);
-			if (sourceDoc?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
-				return true;
-			}
-			if (sourceDoc?.actor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
-				return true;
-			}
-			const tokenActorId = sourceDoc?.actorId || sourceDoc?.actor?.id;
-			if (tokenActorId) {
-				const worldActor = game.actors.get(tokenActorId);
-				if (worldActor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
-					return true;
-				}
-			}
-		} catch (_error) {
-			// Fall back to actor ownership checks below when UUID resolution fails.
-		}
-	}
-
-	if (!actor && actorId) {
-		const worldActor = game.actors.get(actorId);
-		if (worldActor?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
-			return true;
-		}
-	}
-
-	if (!actor) return false;
-	return !!actor.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
-}
-
-function canViewActorData(actor, context, { roleSettingKey, ownerOverrideSettingKey, defaultRole, defaultOwnerOverride }) {
-	if (game.user?.isGM) return true;
-
-	const minimumRole = Number(getWorldSetting(roleSettingKey, defaultRole));
-	const ownerOverride = !!getWorldSetting(ownerOverrideSettingKey, defaultOwnerOverride);
-	const sourceUuid = context?.sourceUuid;
-	const actorId = context?.actorId;
-
-	if (ownerOverride && isActorOwner(actor, sourceUuid, actorId)) {
-		return true;
-	}
-
-	return userMeetsRoleThreshold(minimumRole);
-}
-
-
-
-/**
- * Check whether the current user can see roll formulas for an actor.
- * @param {Actor|null} actor
- * @returns {boolean}
- */
-export function canViewActorFormula(actor, context = {}) {
-	return canViewActorData(actor, context, {
-		roleSettingKey: "formulaVisibilityRole",
-		ownerOverrideSettingKey: "formulaVisibilityOwnerOverride",
-		defaultRole: CONST.USER_ROLES.GAMEMASTER,
-		defaultOwnerOverride: true
-	});
-}
-
-/**
- * Check whether the current user can see actor names for an actor.
- * @param {Actor|null} actor
- * @returns {boolean}
- */
-export function canViewActorName(actor, context = {}) {
-	return canViewActorData(actor, context, {
-		roleSettingKey: "actorNameVisibilityRole",
-		ownerOverrideSettingKey: "actorNameVisibilityOwnerOverride",
-		defaultRole: CONST.USER_ROLES.PLAYER,
-		defaultOwnerOverride: true
-	});
 }

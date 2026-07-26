@@ -54,7 +54,7 @@ export async function waitForUnlock(message, maxWaitMs = 5000) {
 
 export async function updateQuadrant(messageId
     , quadrantNum
-    , { sourceUuid, actorId, stat, advantage, statValue, formula, baseFormula, selectedSpecial, customApplied, customTooltip, customLinesApplied, selectedModifierIds })
+    , { sourceUuid, actorId, stat, advantage, statValue, formula, baseFormula, selectedSpecial, customApplied, customTooltip, customLinesApplied, selectedModifierIds, visibility })
     {
 
     let message = game.messages.get(messageId);
@@ -98,6 +98,13 @@ export async function updateQuadrant(messageId
         customTooltip: customTooltip || "",
         customLinesApplied: Array.isArray(customLinesApplied) ? customLinesApplied : [],
         selectedModifierIds: Array.isArray(selectedModifierIds) ? selectedModifierIds.map(String) : [],
+        visibility: {
+            clickedByUserId: visibility?.clickedByUserId || existingQuadrant?.visibility?.clickedByUserId || game.user?.id,
+            rollModeAtClick: visibility?.rollModeAtClick || existingQuadrant?.visibility?.rollModeAtClick || "publicroll",
+            audienceUserIds: Array.isArray(visibility?.audienceUserIds)
+                ? visibility.audienceUserIds
+                : (Array.isArray(existingQuadrant?.visibility?.audienceUserIds) ? existingQuadrant.visibility.audienceUserIds : [])
+        },
         luckCounts: existingQuadrant.luckCounts || {},
         gambitCounts: existingQuadrant.gambitCounts || {},
         luckSpenders: existingQuadrant.luckSpenders || {}

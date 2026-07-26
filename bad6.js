@@ -1,7 +1,7 @@
 
 import { BAD6, isDebugEnabled } from "./modules/config.js";
 import { setupStats } from "./modules/listenerFunctions.js";
-import { registerHandlebarsHelpers, preloadHandlebarsTemplates, getVisibilityRoleChoices } from "./modules/utils.js"; 
+import { registerHandlebarsHelpers, preloadHandlebarsTemplates } from "./modules/utils.js"; 
 import { rollerControl, registerChatListeners } from './modules/apps/bad6-roller.js';
 import { registerSockets } from './modules/sockets.js';
 import { HueShiftControl } from "./modules/apps/hue-shift.js";
@@ -18,8 +18,6 @@ import { DefaultItemSheet } from "./modules/sheets/default-item-sheet.js";
 
 
 Hooks.once("init", async () => {
-	const refreshChatVisibility = () => ui.chat?.render(true);
-	const roleChoices = getVisibilityRoleChoices();
 	
 	// Register settings first, before any code that might use them
 	game.settings.register("bizarre-adventures-d6", "systemMigrationVersion", {
@@ -47,48 +45,6 @@ Hooks.once("init", async () => {
 		config: true,
 		type: Boolean,
 		default: false
-	});
-
-	game.settings.register("bizarre-adventures-d6", "formulaVisibilityRole", {
-		name: "Formula Visibility Role",
-		hint: "Minimum user role required to see roll formulas in BAD6 chat cards.",
-		scope: "world",
-		config: true,
-		type: Number,
-		choices: roleChoices,
-		default: CONST.USER_ROLES.GAMEMASTER,
-		onChange: refreshChatVisibility
-	});
-
-	game.settings.register("bizarre-adventures-d6", "formulaVisibilityOwnerOverride", {
-		name: "Formula Visibility Owner Override",
-		hint: "Allow actor owners to see roll formulas even if their user role is below the formula visibility requirement.",
-		scope: "world",
-		config: true,
-		type: Boolean,
-		default: true,
-		onChange: refreshChatVisibility
-	});
-
-	game.settings.register("bizarre-adventures-d6", "actorNameVisibilityRole", {
-		name: "Actor Name Visibility Role",
-		hint: "Minimum user role required to see actor names in BAD6 chat cards.",
-		scope: "world",
-		config: true,
-		type: Number,
-		choices: roleChoices,
-		default: CONST.USER_ROLES.PLAYER,
-		onChange: refreshChatVisibility
-	});
-
-	game.settings.register("bizarre-adventures-d6", "actorNameVisibilityOwnerOverride", {
-		name: "Actor Name Visibility Owner Override",
-		hint: "Allow actor owners to see actor names even if their user role is below the actor-name visibility requirement.",
-		scope: "world",
-		config: true,
-		type: Boolean,
-		default: true,
-		onChange: refreshChatVisibility
 	});
 
 	game.system.migrateWorld = migrateWorld;

@@ -8,6 +8,7 @@ export const welcomeText = `
             <li>🎲 As a GM, your highlighted tokens are the roll's context.</li>
             <li>🎯 As a player your owned actors are the roll's context.</li>
             <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
+            <li>🔒 GM Notice: Roll visibility now uses a new secured truth-message model. Older roll cards were created under the previous model and are treated as legacy entries.</li>
             <li>🔧 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue</li>
             <li>🌟 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called "Outro" and it will automatically switch to it afterwards.</li>
             <li>🧑 Old Actors - On each load, actors will be automatically moved to a type (if set up properly in the Worldbuilding version.).</li>

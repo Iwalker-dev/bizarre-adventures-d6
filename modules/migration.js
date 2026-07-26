@@ -256,6 +256,11 @@ export async function migrateWorld() {
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
 	}
 
+	if (updatingTo("0.9.14")) {
+		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
+		ui.notifications.info("BAD6 Migration | Welcome message updated for roll visibility changes.");
+	}
+
 	// — First ever world load —
 	const shouldWelcome = !game.settings.get("bizarre-adventures-d6", "welcomed");
 	if (shouldWelcome) {

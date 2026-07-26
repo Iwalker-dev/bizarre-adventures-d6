@@ -1,4 +1,4 @@
-import { updateQuadrant, resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless } from "./apps/bad6-roller.js";
+import { updateQuadrant, resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless, stampClickMetaAuthoritative } from "./apps/bad6-roller.js";
 import { executeLuckMove } from "./luck-moves.js";
 let rollerSocket = null;
 
@@ -8,6 +8,7 @@ export function getRollerSocket() {
 
 export function registerSockets() {
     rollerSocket = socketlib.registerSystem("bizarre-adventures-d6");
+    rollerSocket.register("rollerStampClickMeta", socketStampClickMeta);
     rollerSocket.register("rollerApplyPreparedQuadrant", socketApplyPreparedQuadrant);
     rollerSocket.register("rollerResetQuadrant", socketResetQuadrant);
     rollerSocket.register("rollerExecuteLuckMove", socketExecuteLuckMove);
@@ -20,35 +21,40 @@ export function registerSockets() {
     rollerSocket.register("warnOwners", socketWarnOwners);
 }
 
-export async function socketApplyPreparedQuadrant(messageId, quadrantNum, preparedData) {
+export async function socketStampClickMeta(messageId, clickMeta = null) {
+    if (!clickMeta) return;
+    await stampClickMetaAuthoritative(messageId, clickMeta);
+}
+
+export async function socketApplyPreparedQuadrant(messageId, quadrantNum, preparedData, clickMeta = null) {
     return await updateQuadrant(messageId, quadrantNum, preparedData);
 }
 
-export async function socketResetQuadrant(messageId, quadrantNum, refundLuck = true) {
+export async function socketResetQuadrant(messageId, quadrantNum, refundLuck = true, _clickMeta = null) {
     return await resetQuadrant(messageId, quadrantNum, refundLuck);
 }
 
-export async function socketExecuteLuckMove(messageId, spenders, quadrantNum, move, isGambit = false, sender = game.user.id) {
-    await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit, sender);
+export async function socketExecuteLuckMove(messageId, spenders, quadrantNum, move, isGambit = false, sender = game.user.id, clickMeta = null) {
+    await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit, sender, clickMeta);
     const message = game.messages.get(messageId);
     if (message) {
         await rerenderMessage(message);
     }
 }
 
-export async function socketRollAll(messageId) {
-    return await rollAll(messageId);
+export async function socketRollAll(messageId, clickMeta = null) {
+    return await rollAll(messageId, clickMeta);
 }
 
 export async function socketUpdateToContest(messageId) {
     return await updateToContest(messageId);
 }
 
-export async function socketSetPairAdvantage(messageId, quadrantNum, advantage) {
+export async function socketSetPairAdvantage(messageId, quadrantNum, advantage, _clickMeta = null) {
     return await applySetPairAdvantage(messageId, quadrantNum, advantage);
 }
 
-export async function socketSetPairReckless(messageId, quadrantNum, reckless) {
+export async function socketSetPairReckless(messageId, quadrantNum, reckless, _clickMeta = null) {
     return await applySetPairReckless(messageId, quadrantNum, reckless);
 }
 export async function socketFlashbackCreate(requesterName) {

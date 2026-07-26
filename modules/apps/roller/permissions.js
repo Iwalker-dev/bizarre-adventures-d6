@@ -1,33 +1,48 @@
 import { resolveActorFromSource } from "./actors.js";
+const BAD6_SCOPE = "bizarre-adventures-d6";
+
+function resolveSourceMessage(messageOrId) {
+    const message = typeof messageOrId === "string" ? game.messages.get(messageOrId) : messageOrId;
+    if (!message) return null;
+
+    if (message.getFlag(BAD6_SCOPE, "isTruthMessage")) return message;
+    const truthId = String(message.getFlag(BAD6_SCOPE, "truthMessageId") || "").trim();
+    if (!truthId) return message;
+    return game.messages.get(truthId) || message;
+}
 
 export function getQuadrantOwnerState(message, quadrantNum) {
-    const flagData = message?.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
+    const sourceMessage = resolveSourceMessage(message);
+    const flagData = sourceMessage?.getFlag(BAD6_SCOPE, `quadrant${quadrantNum}`);
     const actor = flagData ? resolveActorFromSource(flagData) : null;
     const isOwner = game.user.isGM || !actor || !!actor?.isOwner;
     return { actor, isOwner, flagData };
 }
 
 export function canUserResolveMessage(message) {
-    if (!message) return false;
+    const sourceMessage = resolveSourceMessage(message);
+    if (!sourceMessage) return false;
     if (game.user.isGM) return true;
 
-    const type = message.getFlag("bizarre-adventures-d6", "type") || "action";
+    const type = sourceMessage.getFlag(BAD6_SCOPE, "type") || "action";
     const required = type === "action" ? [1, 2] : [1, 2, 3, 4];
     return required.every((quadrantNum) => {
-        const { actor } = getQuadrantOwnerState(message, quadrantNum);
+        const { actor } = getQuadrantOwnerState(sourceMessage, quadrantNum);
         return !actor || !!actor?.isOwner;
     });
 }
 
 export function isMessageLocked(message) {
-    return !!message?.getFlag("bizarre-adventures-d6", "Locked");
+    const sourceMessage = resolveSourceMessage(message);
+    return !!sourceMessage?.getFlag(BAD6_SCOPE, "Locked");
 }
 
 export function isMessageResolved(message) {
-    if (!message) return false;
-    const type = message.getFlag("bizarre-adventures-d6", "type") || "action";
+    const sourceMessage = resolveSourceMessage(message);
+    if (!sourceMessage) return false;
+    const type = sourceMessage.getFlag(BAD6_SCOPE, "type") || "action";
     const required = type === "action" ? [1, 2] : [1, 2, 3, 4];
-    return required.every((quadrantNum) => !!message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`)?.rolled);
+    return required.every((quadrantNum) => !!sourceMessage.getFlag(BAD6_SCOPE, `quadrant${quadrantNum}`)?.rolled);
 }
 
 function isPostResolveAllowedAction(actionType, actionArg) {
@@ -35,7 +50,7 @@ function isPostResolveAllowedAction(actionType, actionArg) {
 }
 
 export function canUserExecuteAction(messageId, actionType, quadrantNum, actionArg = "") {
-    const message = game.messages.get(messageId);
+    const message = resolveSourceMessage(messageId);
     if (!message) return false;
     if (isMessageLocked(message)) return false;
     if (isMessageResolved(message) && !isPostResolveAllowedAction(actionType, actionArg)) return false;

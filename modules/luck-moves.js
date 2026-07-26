@@ -278,7 +278,7 @@ export async function trySpendLuck(actorId, action, refund = false) {
 
 }
 
-export async function executeLuckMove(messageId, spenders, quadrantNum, move, isGambit = false, sender = game.user.id) {
+export async function executeLuckMove(messageId, spenders, quadrantNum, move, isGambit = false, sender = game.user.id, clickMeta = null) {
 	let message = game.messages.get(messageId);
 	if (!message) return;
 	if (!LUCK_MOVES[move]) {
@@ -345,7 +345,14 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 			const updateData = {
 				...latest,
 				luckCounts: { ...(latest.luckCounts || existing.luckCounts || {}) },
-				gambitCounts: { ...(latest.gambitCounts || existing.gambitCounts || {}) }
+				gambitCounts: { ...(latest.gambitCounts || existing.gambitCounts || {}) },
+				visibility: {
+					clickedByUserId: clickMeta?.clickedByUserId || latest?.visibility?.clickedByUserId || game.user?.id,
+					rollModeAtClick: clickMeta?.rollModeAtClick || latest?.visibility?.rollModeAtClick || "publicroll",
+					audienceUserIds: Array.isArray(clickMeta?.audienceUserIds)
+						? clickMeta.audienceUserIds
+						: (Array.isArray(latest?.visibility?.audienceUserIds) ? latest.visibility.audienceUserIds : [])
+				}
 			};
 			updateData[countType][move] = (updateData[countType][move] || 0) + 1;
 			if (!isGambit && spenderKey) {
