@@ -48,7 +48,7 @@ Hooks.once("init", async () => {
 		type: Boolean,
 		default: false
 	});
-
+	/*
 	game.settings.register("bizarre-adventures-d6", "formulaVisibilityRole", {
 		name: "Formula Visibility Role",
 		hint: "Minimum user role required to see roll formulas in BAD6 chat cards.",
@@ -90,6 +90,7 @@ Hooks.once("init", async () => {
 		default: true,
 		onChange: refreshChatVisibility
 	});
+	*/
 
 	game.system.migrateWorld = migrateWorld;
 

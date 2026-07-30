@@ -4,7 +4,7 @@
 
 import { actionLabels } from "../../constants.js";
 import { isDebugEnabled } from "../../config.js";
-import { canViewActorFormula, canViewActorName, HIDDEN_ACTOR_NAME } from "../../utils.js";
+// import { canViewActorFormula, canViewActorName, HIDDEN_ACTOR_NAME } from "../../utils.js";
 import { resolveActorFromSource } from "./actors.js";
 import { getPairAdvantage, getPairFudgeBonus, getPairReckless } from "./pair-controls.js";
 import { getContestResultLabel } from "./roll-resolution.js";
@@ -70,19 +70,61 @@ export async function renderContest(data = {}) {
     );
 }
 
+export async function renderSource(data = {}) {
+    const quadrants = data.quadrants || {}; // object map by quadrant number
+    const summaryLines = [];
+
+    const appendQuadrantSummary = (quadrantNum, quadrant) => {
+        if (!quadrant) return;
+
+        const parts = [
+            `label: ${quadrant?.label ?? "Unknown"}`,
+            `prepared: ${quadrant?.prepared ? "yes" : "no"}`,
+            quadrant?.statLabel !== undefined
+                ? `stat: ${quadrant.statLabel}${quadrant?.statValue !== undefined ? ` (${quadrant.statValue})` : ""}`
+                : null,
+            quadrant?.advantage !== undefined ? `advantage: ${quadrant.advantage}` : null,
+            quadrant?.specialLabel ? `special: ${quadrant.specialLabel}` : null,
+            `rolled: ${quadrant?.rolled ? "yes" : "no"}`,
+            quadrant?.rollTotal !== undefined && quadrant?.rollTotal !== null
+                ? `rollTotal: ${quadrant.rollTotal}`
+                : null,
+            quadrant?.customTooltip ? `customTooltip: ${quadrant.customTooltip}` : null
+        ].filter(Boolean);
+
+        summaryLines.push(`Quadrant ${quadrantNum}: ${parts.join(", ")}`);
+    };
+
+    Object.entries(quadrants).forEach(([quadrantNum, quadrant]) => {
+        appendQuadrantSummary(quadrantNum, quadrant);
+    });
+
+    if (data.actionPairAdvantage !== undefined) {
+        summaryLines.push(`Action Advantage: ${data.actionPairAdvantage}`);
+    }
+    if (data.reactionPairAdvantage !== undefined) {
+        summaryLines.push(`Reaction Advantage: ${data.reactionPairAdvantage}`);
+    }
+    if (data.reactionPairReckless !== undefined) {
+        summaryLines.push(`Reaction Reckless: ${data.reactionPairReckless ? "yes" : "no"}`);
+    }
+
+    return summaryLines.join("\n").trim();
+}
+
 // ---------------------------------------------------------------------------
 // Client-side DOM patching
 // ---------------------------------------------------------------------------
-
+/*
 function resolveActorDisplayName({ sourceUuid, actorId, fallbackText }) {
     const actor = resolveActorFromSource({ sourceUuid, actorId });
-    const canViewName = canViewActorName(actor, { sourceUuid, actorId });
+    // const canViewName = canViewActorName(actor, { sourceUuid, actorId });
     if (isDebugEnabled()) {
         logVisibilityDecision("name", { sourceUuid, actorId, actor, allowed: canViewName });
     }
-    if (!canViewName) return HIDDEN_ACTOR_NAME;
+    // if (!canViewName) return HIDDEN_ACTOR_NAME;
     if (actor?.name) return actor.name;
-    return fallbackText || HIDDEN_ACTOR_NAME;
+    return fallbackText // || HIDDEN_ACTOR_NAME;
 }
 
 export function createRedactedRollHtml(flagData = {}) {
@@ -154,6 +196,7 @@ export function applyClientRollVisibility(message, html) {
     });
 }
 
+
 function logVisibilityDecision(type, { sourceUuid, actorId, actor, quadrant = null, allowed }) {
     const sourceDoc = sourceUuid ? fromUuidSync(sourceUuid) : null;
     const sourceOwner = !!sourceDoc?.testUserPermission?.(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
@@ -189,13 +232,20 @@ function logVisibilityDecision(type, { sourceUuid, actorId, actor, quadrant = nu
         allowed
     });
 }
-
+*/
 // ---------------------------------------------------------------------------
 // Main rerender orchestrator
 // ---------------------------------------------------------------------------
 
 export async function rerenderMessage(message) {
-    const type = message.getFlag("bizarre-adventures-d6", "type") || "action";
+    let type = message.getFlag("bizarre-adventures-d6", "type");
+    let targetMessage = message; // What message gets rerendered with the action/contest template
+    if (type == "source") {
+        const childId = message.getFlag("bizarre-adventures-d6", "displayId");
+        const childMessage = game.messages.get(childId);
+        type = childMessage.getFlag("bizarre-adventures-d6", "type");
+        targetMessage = childMessage;
+    };
     const quadrants = {};
     let count = 4; // default for contests
     let allPrepared = true;
@@ -253,7 +303,7 @@ export async function rerenderMessage(message) {
                 winnerClass: "",
                 sourceUuid: flagData.sourceUuid || null,
                 actorId: flagData.actorId || null,
-                actorName: HIDDEN_ACTOR_NAME,
+                actorName: null,
                 statLabel: flagData.stat || "",
                 statValue: flagData.statValue || 0,
                 advantage: pairResolvedAdvantage ?? toAdvantage(flagData.advantage) ?? 0,
@@ -279,7 +329,7 @@ export async function rerenderMessage(message) {
                 },
                 rolled: !!flagData.rolled,
                 rollTotal: flagData.rollTotal ?? null,
-                rollHtml: createRedactedRollHtml(flagData),
+                rollHtml: flagData,
                 canUnready: game.user.isGM || !!actor?.isOwner,
                 lock: false
             };
@@ -333,19 +383,20 @@ export async function rerenderMessage(message) {
     Object.values(quadrants).forEach(q => {
         q.allPrepared = allPrepared;
     });
-
+    // Apply to the current message (Update based on template)
+    // TODO: All rerenders should also recalculate permissions. This will require having something to calculate those permissions to begin with.
     if (type == "action") {
         const pairAdvantage = getPairAdvantage(message, 1) ?? 0;
-        await message.update({ content: await renderAction({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, pairAdvantage }) });
+        await message.update({ content: await renderSource({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, pairAdvantage }) });
     } else { // its a contest
         const actionPairAdvantage = getPairAdvantage(message, 1) ?? 0;
         const reactionPairAdvantage = getPairAdvantage(message, 3) ?? 0;
         const reactionPairReckless = reactionReckless;
-        await message.update({ content: await renderContest({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, actionPairAdvantage, reactionPairAdvantage, reactionPairReckless }) });
+        await message.update({ content: await renderSource({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, actionPairAdvantage, reactionPairAdvantage, reactionPairReckless }) });
     }
 
     if (isDebugEnabled()) {
-        const updatedMessage = game.messages.get(message.id) || message;
+        const updatedMessage = game.messages.get(targetMessage.id) || targetMessage;
         const messageData = updatedMessage.toObject();
         const flagScope = messageData.flags?.["bizarre-adventures-d6"] || {};
         const quadrantFlags = {

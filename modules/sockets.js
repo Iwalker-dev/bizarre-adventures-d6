@@ -1,4 +1,5 @@
-import { updateQuadrant, resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless } from "./apps/bad6-roller.js";
+import { resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless } from "./apps/bad6-roller.js";
+import { updateQuadrant } from "./apps/roller/quadrants.js";
 import { executeLuckMove } from "./luck-moves.js";
 let rollerSocket = null;
 

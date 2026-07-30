@@ -8,9 +8,11 @@ import { shouldInheritLinkedActorModifiers, resolveActorFromSource, getRollableA
 import { canUserExecuteAction, canUserResolveMessage, isMessageLocked, applyChatButtonPermissions } from "./roller/permissions.js";
 import { getPairAdvantage, getPairReckless, setPairAdvantage, setPairReckless, getPairQuadrantNumbers } from "./roller/pair-controls.js";
 import { getHitDCMeta, getActionDCMeta } from "./roller/roll-resolution.js";
-import { renderAction, renderContest, rerenderMessage, applyClientActorLabels, applyClientRollVisibility } from "./roller/display.js";
+import { renderAction, renderContest, renderSource, rerenderMessage, } from "./roller/display.js";
 import { waitForUnlock, updateQuadrant, recalculateQuadrantFormula, reevaluatePairRollResults, getPairUsedUniqueModifierIds } from "./roller/quadrants.js";
-export { rerenderMessage, updateQuadrant, recalculateQuadrantFormula, reevaluatePairRollResults };
+export { rerenderMessage, recalculateQuadrantFormula, reevaluatePairRollResults };
+
+// TODO: Calling a flag calls source message. Calling a Render also calls the Display message
 
 let rollerClickTimer = null;
 let lastActionMessageId = null;
@@ -66,6 +68,7 @@ export function rollerControl() {
 			, button: true
 			, order: 50
 				, onChange: async () => {
+                    // If you very recently created an action
 					if (rollerClickTimer) {
 						clearTimeout(rollerClickTimer);
 						rollerClickTimer = null;
@@ -98,13 +101,24 @@ export function rollerControl() {
 		};
 	});
 }
-
+// TODO: Reduce to renderAction
 export async function createActionMessage() { 
-    const message = await ChatMessage.create(withCurrentRollMode({
+    const displayMessage = await ChatMessage.create(withCurrentRollMode({
         content: await renderAction()
     }));
-    await message.setFlag("bizarre-adventures-d6", "type", "action");
-    return message;
+    await displayMessage.setFlag("bizarre-adventures-d6", "type", "action");
+    const messageData = {
+        speaker: {
+            alias: "Debug Message"
+        }
+        , content: await renderSource()
+    };
+    ChatMessage.applyMode(messageData, "gm");
+    const sourceMessage = await ChatMessage.create(messageData);
+    await sourceMessage.setFlag("bizarre-adventures-d6", "type", "source");
+    await sourceMessage.setFlag("bizarre-adventures-d6", "displayId", displayMessage.id);
+    await displayMessage.setFlag("bizarre-adventures-d6", "sourceId", sourceMessage.id);
+    return displayMessage;
 }
 
 export async function createContestMessage() {
@@ -140,7 +154,26 @@ export async function updateToContest(messageId) {
 export async function registerChatListeners() {
         if (chatListenersRegistered) return;
         chatListenersRegistered = true;
-
+        // First time Check
+        const chatMessages = document.querySelectorAll(".chat-message[data-message-id]");
+        // For GMs with debug off, hide the debug cards by removing the html.
+        if (game.user.isGM && !isDebugEnabled) {
+            const sourceMessages = game.messages.filter(message =>
+                message.visible && message.getFlag('bizarre-adventures-d6', 'type') == 'source'
+            );
+            sourceMessages.forEach(message => {
+                const el = document.querySelector(`[data-message-id="${message.id}"]`);
+                el?.remove();
+            });
+        };
+        // TODO: For Everyone, compute what roll messages should render.
+        const displayMessages = game.messages.filter(message =>
+                message.visible && 
+                (message.getFlag('bizarre-adventures-d6', 'type') == 'action' ||
+                message.getFlag('bizarre-adventures-d6', 'type') == 'contest')
+            );
+        
+        /*
         const cardNeedsVisibilityPass = (card) => {
             const hasBad6Nodes = !!card.querySelector(".bad6-actor-name, .bad6-roll-display[data-quadrant]");
             if (!hasBad6Nodes) return false;
@@ -182,7 +215,7 @@ export async function registerChatListeners() {
 
             return pendingCount;
         };
-
+        */
         if (isDebugEnabled()) {
             console.log("[BAD6][ChatDebug] registerChatListeners attached", {
                 userId: game.user?.id,
@@ -191,8 +224,8 @@ export async function registerChatListeners() {
                 currentMessageCount: game.messages?.size ?? 0
             });
         }
-
-        Hooks.on("renderChatMessage", (message, html) => {
+        // switched from renderChatMessage blind - unsure what context is
+        Hooks.on("renderChatMessageHTML", (message, html, context) => {
             if (isDebugEnabled()) {
                 const root = html?.[0] || html;
                 const actorNameNodes = root?.querySelectorAll?.(".bad6-actor-name")?.length ?? 0;
@@ -205,9 +238,13 @@ export async function registerChatListeners() {
                     locked: !!message?.getFlag?.("bizarre-adventures-d6", "Locked")
                 });
             }
-            applyClientActorLabels(html);
-            applyClientRollVisibility(message, html);
-            applyChatButtonPermissions(message, html);
+            // TODO: Check if privacy related and remove if so
+            // applyClientActorLabels(html);
+            // applyClientRollVisibility(message, html);
+            // For our roll messages, re-add client limitation, or hide message entirely if debug is off
+            const type = message.getFlag('bizarre-adventures-d6', 'type');
+            if (type == 'contest' || type == 'action') applyChatButtonPermissions(message, html)
+            else if (type == 'source' && !isDebugEnabled()) html.remove();
         });
 
         $(document).on("click", ".chat-message .select-stat", async (event) => {
@@ -216,11 +253,13 @@ export async function registerChatListeners() {
             const quadrantNum = button.dataset.quadrant;
             const messageId = $(button).closest(".chat-message").data("messageId");
             const message = game.messages.get(messageId);
-            if (isMessageLocked(message)) return;
+            const sourceMessageId = message.getFlag('bizarre-adventures-d6', 'sourceId');
+            const sourceMessage = game.messages.get(sourceMessageId);
+            if (isMessageLocked(sourceMessage)) return;
             const [actionType, actionArg] = button.dataset.action.split("-", 2);
-            const isAllowed = canUserExecuteAction(messageId, actionType, quadrantNum, actionArg);
+            const isAllowed = canUserExecuteAction(sourceMessageId, actionType, quadrantNum, actionArg);
             if (!isAllowed) {
-                ui.notifications.warn("You do not own the required actor(s) for this action.");
+                ui.notifications.warn("You cannot execute this action.");
                 return;
             }
             switch (actionType) {
@@ -228,34 +267,34 @@ export async function registerChatListeners() {
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return;
-                    await prepareQuadrant(messageId, quadrantNum, actorSources);
+                    await prepareQuadrant(sourceMessageId, quadrantNum, actorSources);
                     }
                     break;
                 case "unready":
-                    await dispatchResetQuadrant(messageId, quadrantNum);
+                    await dispatchResetQuadrant(sourceMessageId, quadrantNum);
                     break;
                 case "luck":
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return;
                     const luckActors = chooseLuckSpenders(actorSources);
-                    await dispatchLuckMove(messageId, luckActors, quadrantNum, actionArg, false);
+                    await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
                     }
                     break;
                 case "resolve":
-                    await dispatchRollAll(messageId);
+                    await dispatchRollAll(sourceMessageId);
                     break;
                 case "set":
                     if (actionArg === "advantage") {
                         const pairAdvantage = getPairAdvantage(message, Number(quadrantNum)) ?? 0;
                         const newAdvantage = await renderDialog("advantage", { quadrantNum: Number(quadrantNum), currentAdvantage: pairAdvantage });
                         if (newAdvantage === null || newAdvantage === undefined) break;
-                        await dispatchSetPairAdvantage(messageId, Number(quadrantNum), newAdvantage);
+                        await dispatchSetPairAdvantage(sourceMessageId, Number(quadrantNum), newAdvantage);
                         break;
                     }
                     if (actionArg === "reckless") {
                         const currentReckless = getPairReckless(message, Number(quadrantNum));
-                        await dispatchSetPairReckless(messageId, Number(quadrantNum), !currentReckless);
+                        await dispatchSetPairReckless(sourceMessageId, Number(quadrantNum), !currentReckless);
                         break;
                     }
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
@@ -279,8 +318,9 @@ export async function registerChatListeners() {
             event.stopImmediatePropagation();
             const button = event.currentTarget;
             const quadrantNum = button.dataset.quadrant;
-            const messageId = $(button).closest(".chat-message").data("messageId");
+            const displayMessageId = $(button).closest(".chat-message").data("messageId");
             const message = game.messages.get(messageId);
+            const sourceMessageId = message.getFlag('bizarre-adventures-d6', 'sourceId');
             if (isMessageLocked(message)) return false;
             const [actionType, actionArg] = button.dataset.action.split("-", 2);
             const isAllowed = canUserExecuteAction(messageId, actionType, quadrantNum, actionArg);
@@ -294,7 +334,7 @@ export async function registerChatListeners() {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return false;
                     const luckActors = chooseLuckSpenders(actorSources);
-                    await dispatchLuckMove(messageId, luckActors, quadrantNum, actionArg, true);
+                    await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, true);
                     }
                     break;
                 case "set":
@@ -313,7 +353,7 @@ export async function registerChatListeners() {
             }
             return false;
         });
-
+    /* TODO: Readd if breaks system, this may be the problem that causes unrendered messages to render
         // Existing chat cards may already be in the log before listeners are attached.
         // Re-render once so actor/formula visibility is applied to all visible messages.
         if (isDebugEnabled()) {
@@ -321,8 +361,8 @@ export async function registerChatListeners() {
                 messageCount: game.messages?.size ?? 0
             });
         }
-        ui.chat?.render(true);
-
+         
+        
         // Do a direct pass over currently visible chat cards in case renderChatMessage
         // does not re-fire for existing entries on world refresh.
         const runPatchPasses = (attempt = 1, maxAttempts = 3) => {
@@ -342,6 +382,7 @@ export async function registerChatListeners() {
                 });
             }, 250);
         }
+    */
 }
 
 async function dispatchUpdateToContest(messageId) {
@@ -567,7 +608,7 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
     let statValue = actor.system.attributes.stats[stat].value;
     let selectedSpecial = null;
     if (isDebugEnabled()) {
-        console.log(`[Rework] Selected stat: "${stat}", Actor: ${actor.name}`
+        console.log(`Selected stat: "${stat}", Actor: ${actor.name}`
         , {
             hasSpecialProperty: !!actor.system.attributes.stats?.[stat]?.special,
             specialArray: specialArray,
@@ -591,7 +632,7 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
         }
     } else {
         if (isDebugEnabled()) {
-        console.log(`[Rework] No specials found for stat "${stat}"`);
+        console.log(`No specials found for stat "${stat}"`);
         }
     }
 
