@@ -1,4 +1,4 @@
-import { resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless } from "./apps/bad6-roller.js";
+import { resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless, setFlag } from "./apps/bad6-roller.js";
 import { updateQuadrant } from "./apps/roller/quadrants.js";
 import { executeLuckMove } from "./luck-moves.js";
 let rollerSocket = null;
@@ -19,6 +19,7 @@ export function registerSockets() {
     rollerSocket.register("rollerSetPairAdvantage", socketSetPairAdvantage);
     rollerSocket.register("rollerSetPairReckless", socketSetPairReckless);
     rollerSocket.register("warnOwners", socketWarnOwners);
+    rollerSocket.register("setFlag", socketSetFlag);
 }
 
 export async function socketApplyPreparedQuadrant(messageId, quadrantNum, preparedData) {
@@ -90,4 +91,8 @@ export async function socketFlashbackRequest(requesterName, flashbackText) {
 // Takes in the actor object and a string. Sends a warning if the current user owns the actor.
 export async function socketWarnOwners(actor, warning) {
     if (actor.isOwner) ui.notifications.warn(warning);
+}
+
+export async function socketSetFlag(message, flag, value) {
+    return await setFlag(message, flag, value)
 }

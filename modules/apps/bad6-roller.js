@@ -8,7 +8,7 @@ import { shouldInheritLinkedActorModifiers, resolveActorFromSource, getRollableA
 import { canUserExecuteAction, canUserResolveMessage, isMessageLocked, applyChatButtonPermissions } from "./roller/permissions.js";
 import { getPairAdvantage, getPairReckless, setPairAdvantage, setPairReckless, getPairQuadrantNumbers } from "./roller/pair-controls.js";
 import { getHitDCMeta, getActionDCMeta } from "./roller/roll-resolution.js";
-import { renderAction, renderContest, renderSource, rerenderMessage, } from "./roller/display.js";
+import { renderAction, renderContest, renderSource, rerenderMessage } from "./roller/display.js";
 import { waitForUnlock, updateQuadrant, recalculateQuadrantFormula, reevaluatePairRollResults, getPairUsedUniqueModifierIds } from "./roller/quadrants.js";
 export { rerenderMessage, recalculateQuadrantFormula, reevaluatePairRollResults };
 
@@ -28,7 +28,7 @@ async function executeRollerAsGM(handler, ...args) {
     }
     return await socket.executeAsGM(handler, ...args);
 }
-
+// Todo, check if shoudl switch to messageMode
 function withCurrentRollMode(chatData = {}) {
     const data = foundry.utils.deepClone(chatData);
     const rollMode = String(game.settings.get("core", "rollMode") || "publicroll");
@@ -63,7 +63,7 @@ export function rollerControl() {
 			tokenControls.tools["rollerButton"] = {
 			name: "rollerButton"
 			, title: "D6 Roller"
-			, icon: "fas fa-dice-d6"
+			, icon: "fas fa-dice-d6" // TODO: Default to menacing symbol, however allow the setting to change it to Aaesos' menacing kanji
 			, visible: true
 			, button: true
 			, order: 50
@@ -101,7 +101,7 @@ export function rollerControl() {
 		};
 	});
 }
-// TODO: Reduce to renderAction
+
 export async function createActionMessage() { 
     const displayMessage = await ChatMessage.create(withCurrentRollMode({
         content: await renderAction()
@@ -262,12 +262,15 @@ export async function registerChatListeners() {
                 ui.notifications.warn("You cannot execute this action.");
                 return;
             }
+            
             switch (actionType) {
                 case "prepare":
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return;
-                    await prepareQuadrant(sourceMessageId, quadrantNum, actorSources);
+                    ui.notifications.warn("I did not return")
+                    const shouldContinue = !!await prepareQuadrant(sourceMessageId, quadrantNum, actorSources);
+                    if (shouldContinue) return;
                     }
                     break;
                 case "unready":
@@ -288,7 +291,7 @@ export async function registerChatListeners() {
                     if (actionArg === "advantage") {
                         const pairAdvantage = getPairAdvantage(message, Number(quadrantNum)) ?? 0;
                         const newAdvantage = await renderDialog("advantage", { quadrantNum: Number(quadrantNum), currentAdvantage: pairAdvantage });
-                        if (newAdvantage === null || newAdvantage === undefined) break;
+                        if (newAdvantage === null || newAdvantage === undefined) return; // TODO: confirm changing from break to return solves passing advantage even on fail
                         await dispatchSetPairAdvantage(sourceMessageId, Number(quadrantNum), newAdvantage);
                         break;
                     }
@@ -298,10 +301,21 @@ export async function registerChatListeners() {
                         break;
                     }
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
-                    break;
+                    return;
                 default:
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
+                    return;
             }
+            ui.notifications.warn("I passed the switch")
+            // The system only gets to this point if an action succeeded.
+            await executeRollerAsGM("setFlag", message, `quadrant${quadrantNum}Visibility`, { 
+                playerId: game.user.id,
+                messageMode: game.settings.get("core", "messageMode") 
+            });
+
+            const visibility = message.getFlag('bizarre-adventures-d6', `quadrant${quadrantNum}Visibility`);
+            const visibilityText = JSON.stringify(visibility);
+            ui.notifications.warn(`Visibility Flag: ${visibilityText}`);
         });
 
         $(document).on("mousedown", ".chat-message .select-stat", (event) => {
@@ -463,6 +477,10 @@ export async function applySetPairReckless(messageId, quadrantNum, reckless) {
     await applyPairControlMutation(messageId, async (message) => {
         await setPairReckless(message, quadrantNum, reckless);
     });
+}
+// TODO: Standardize across system after optimizing
+export async function setFlag(message, flag, value) {
+    await message.setFlag('bizarre-adventures-d6', flag, value);
 }
 
 async function prepareQuadrant(messageId, quadrantNum, actorSources) {

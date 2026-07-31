@@ -240,12 +240,12 @@ function logVisibilityDecision(type, { sourceUuid, actorId, actor, quadrant = nu
 export async function rerenderMessage(message) {
     let type = message.getFlag("bizarre-adventures-d6", "type");
     let targetMessage = message; // What message gets rerendered with the action/contest template
-    if (type == "source") {
-        const childId = message.getFlag("bizarre-adventures-d6", "displayId");
-        const childMessage = game.messages.get(childId);
-        type = childMessage.getFlag("bizarre-adventures-d6", "type");
-        targetMessage = childMessage;
-    };
+    if (type != "source") ui.notifications.error("AAAAAAAAAAAAAA");
+    const displayId = message.getFlag("bizarre-adventures-d6", "displayId");
+    const displayMessage = game.messages.get(displayId);
+    type = displayMessage.getFlag("bizarre-adventures-d6", "type");
+    targetMessage = displayMessage;
+
     const quadrants = {};
     let count = 4; // default for contests
     let allPrepared = true;
@@ -416,4 +416,79 @@ export async function rerenderMessage(message) {
             fullMessageData: messageData
         });
     }
+    rerenderDisplayMessage(displayMessage);
+}
+// TODO: Must calculate each quadrant's visiblity based on message flags
+async function rerenderDisplayMessage(message) {
+    const sourceMessageId = message.getFlag('bizarre-adventures-d6', 'sourceId')
+    const type = message.getFlag("bizarre-adventures-d6", "type");
+    // Display message, therefore it cannot be a 'source' type. only 'action' and 'contest'
+    let count = 2;
+    if (type == "contest") count = 4;
+
+    const quadrants = {};
+    for (let i = 1; i <= count; i++) {
+        const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${i}Visibility`);
+        // Unprepared Quadrant
+        if(!flagData) {
+            quadrants[i] = {
+                quadrantNum: i,
+                label: actionLabels[i - 1].label,
+                prepared: false,
+                winnerClass: "",
+                lock: false
+            };
+            continue
+        }
+        // At this point there is flag data
+        const lastPlayerId = message.getFlag('bizarre-adventures-d6', `quadrant${i}Visibility`).playerId
+        // "public" | "gm" | "blind" | "self"
+        const lastMessageMode = message.getFlag('bizarre-adventures-d6', `quadrant${i}Visibility`).messageMode
+        // 0 = self, 1 = gm, 2 = players
+        let playerPermissions = [ 0, 0, 1 ];
+        if (game.user.id == lastPlayerId) playerPermissions[0] = 1;
+        if (game.user.isGM) playerPermissions[1] = 1;
+        // Assumes user has player permissions
+        let shouldRender = false;
+
+        switch (lastMessageMode) {
+            case "public" :
+                shouldRender = true
+                /*
+                necessaryPermissions[0] = 1
+                necessaryPermissions[1] = 1
+                necessaryPermissions[2] = 1
+                */
+            case "gm" :
+                if ( playerPermissions[0] == 1 || playerPermissions[1] == 1 ) shouldRender = true;
+                /*
+                necessaryPermissions[0] = 1
+                necessaryPermissions[1] = 1
+                necessaryPermissions[2] = 0
+                */
+            
+            case "blind" :
+                if ( playerPermissions[1] == 1 ) shouldRender = true;
+                /*
+                necessaryPermissions[0] = 0
+                necessaryPermissions[1] = 1
+                necessaryPermissions[2] = 0
+                */
+            
+            case "self" :
+                if ( playerPermissions[0] == 0 ) shouldRender = true
+                /*
+                necessaryPermissions[0] = 1
+                necessaryPermissions[1] = 0
+                necessaryPermissions[2] = 0
+                */
+        }
+
+        if (shouldRender) ui.notifications.error("[BAD6] [Display Renderr] I would render here"); // render
+
+    }
+
+
+
+
 }
