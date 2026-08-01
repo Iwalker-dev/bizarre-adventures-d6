@@ -231,7 +231,7 @@ export async function migrateWorld() {
 		}
 		console.log("BAD6 | Applied 0.9.9 migration (special stats normalized to key/label/value).");
 	}
-
+	/*
 	if (updatingTo("0.9.10")) {
 		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
@@ -252,6 +252,11 @@ export async function migrateWorld() {
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
 	}
 	if (updatingTo("0.9.13.3")) {
+		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
+		ui.notifications.info("BAD6 Migration | Welcome message updated.");
+	}
+	*/
+	if (updatingTo("0.9.14")) {
 		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
 	}

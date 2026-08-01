@@ -8,7 +8,7 @@ import { shouldInheritLinkedActorModifiers, resolveActorFromSource, getRollableA
 import { canUserExecuteAction, canUserResolveMessage, isMessageLocked, applyChatButtonPermissions } from "./roller/permissions.js";
 import { getPairAdvantage, getPairReckless, setPairAdvantage, setPairReckless, getPairQuadrantNumbers } from "./roller/pair-controls.js";
 import { getHitDCMeta, getActionDCMeta } from "./roller/roll-resolution.js";
-import { renderAction, renderContest, renderSource, rerenderMessage } from "./roller/display.js";
+import { renderAction, renderContest, renderSource, rerenderMessage, rerenderDisplayMessage } from "./roller/display.js";
 import { waitForUnlock, updateQuadrant, recalculateQuadrantFormula, reevaluatePairRollResults, getPairUsedUniqueModifierIds } from "./roller/quadrants.js";
 export { rerenderMessage, recalculateQuadrantFormula, reevaluatePairRollResults };
 
@@ -24,30 +24,15 @@ async function executeRollerAsGM(handler, ...args) {
     const socket = getRollerSocket();
     if (!socket) {
         ui.notifications.error("Socket is not ready. Cannot execute GM action.");
-        return null;
+        return false;
     }
     return await socket.executeAsGM(handler, ...args);
 }
-// Todo, check if shoudl switch to messageMode
-function withCurrentRollMode(chatData = {}) {
+
+function withCurrentMessageMode(chatData = {}) {
     const data = foundry.utils.deepClone(chatData);
-    const rollMode = String(game.settings.get("core", "rollMode") || "publicroll");
-
-    if (typeof ChatMessage?.applyRollMode === "function") {
-        ChatMessage.applyRollMode(data, rollMode);
-        return data;
-    }
-
-    // Fallback for environments where applyRollMode is unavailable.
-    if (rollMode === "gmroll") {
-        data.whisper = ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
-    } else if (rollMode === "blindroll") {
-        data.whisper = ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
-        data.blind = true;
-    } else if (rollMode === "selfroll") {
-        data.whisper = game.user?.id ? [game.user.id] : [];
-    }
-
+    const messageMode = String(game.settings.get("core", "messageMode") || "public");
+    ChatMessage.applyRollMode(data, messageMode);
     return data;
 }
 
@@ -103,7 +88,7 @@ export function rollerControl() {
 }
 
 export async function createActionMessage() { 
-    const displayMessage = await ChatMessage.create(withCurrentRollMode({
+    const displayMessage = await ChatMessage.create(withCurrentMessageMode({
         content: await renderAction()
     }));
     await displayMessage.setFlag("bizarre-adventures-d6", "type", "action");
@@ -122,7 +107,7 @@ export async function createActionMessage() {
 }
 
 export async function createContestMessage() {
-    const message = await ChatMessage.create(withCurrentRollMode({
+    const message = await ChatMessage.create(withCurrentMessageMode({
         content: await renderContest()
     }));
     await message.setFlag("bizarre-adventures-d6", "type", "contest");
@@ -143,7 +128,7 @@ export async function updateToContest(messageId) {
         return message;
     }
 
-    const msg = await ChatMessage.create(withCurrentRollMode({ content: await renderContest() }));
+    const msg = await ChatMessage.create(withCurrentMessageMode({ content: await renderContest() }));
     await msg.setFlag("bizarre-adventures-d6", "type", "contest");
     ui.notifications.info(LUCK_MOVE_HINTS.GAMBIT_HINT);
     return msg;
@@ -172,6 +157,9 @@ export async function registerChatListeners() {
                 (message.getFlag('bizarre-adventures-d6', 'type') == 'action' ||
                 message.getFlag('bizarre-adventures-d6', 'type') == 'contest')
             );
+        displayMessages.forEach(message => 
+            rerenderDisplayMessage(message)
+        );
         
         /*
         const cardNeedsVisibilityPass = (card) => {
@@ -252,9 +240,9 @@ export async function registerChatListeners() {
             const button = event.currentTarget;
             const quadrantNum = button.dataset.quadrant;
             const messageId = $(button).closest(".chat-message").data("messageId");
-            const message = game.messages.get(messageId);
+            let message = game.messages.get(messageId);
             const sourceMessageId = message.getFlag('bizarre-adventures-d6', 'sourceId');
-            const sourceMessage = game.messages.get(sourceMessageId);
+            let sourceMessage = game.messages.get(sourceMessageId);
             if (isMessageLocked(sourceMessage)) return;
             const [actionType, actionArg] = button.dataset.action.split("-", 2);
             const isAllowed = canUserExecuteAction(sourceMessageId, actionType, quadrantNum, actionArg);
@@ -268,13 +256,13 @@ export async function registerChatListeners() {
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return;
-                    ui.notifications.warn("I did not return")
                     const shouldContinue = !!await prepareQuadrant(sourceMessageId, quadrantNum, actorSources);
-                    if (shouldContinue) return;
+                    if (!shouldContinue) return;
                     }
                     break;
                 case "unready":
-                    await dispatchResetQuadrant(sourceMessageId, quadrantNum);
+                    const shouldContinue = await dispatchResetQuadrant(sourceMessageId, quadrantNum);
+                    if (!shouldContinue) return;
                     break;
                 case "luck":
                     {
@@ -306,16 +294,19 @@ export async function registerChatListeners() {
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
                     return;
             }
-            ui.notifications.warn("I passed the switch")
             // The system only gets to this point if an action succeeded.
-            await executeRollerAsGM("setFlag", message, `quadrant${quadrantNum}Visibility`, { 
+            await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, { 
                 playerId: game.user.id,
                 messageMode: game.settings.get("core", "messageMode") 
             });
+            const speaker = ChatMessage.getSpeaker();
+            const isInCharacter = !!speaker.actor;
 
-            const visibility = message.getFlag('bizarre-adventures-d6', `quadrant${quadrantNum}Visibility`);
+            sourceMessage = game.messages.get(sourceMessageId);
+            const visibility = sourceMessage.getFlag('bizarre-adventures-d6', `quadrant${quadrantNum}Visibility`);
             const visibilityText = JSON.stringify(visibility);
             ui.notifications.warn(`Visibility Flag: ${visibilityText}`);
+            await rerenderDisplayMessage(message);
         });
 
         $(document).on("mousedown", ".chat-message .select-stat", (event) => {
@@ -485,7 +476,7 @@ export async function setFlag(message, flag, value) {
 
 async function prepareQuadrant(messageId, quadrantNum, actorSources) {
     const prepare = await renderStatSelectionDialog(messageId, quadrantNum, actorSources);
-    if (!prepare) return;
+    if (!prepare) return false;
     const message = game.messages.get(messageId);
     const blockedUniqueLineIds = getPairUsedUniqueModifierIds(message, quadrantNum);
     const safeAdvantage = Number.isFinite(Number(prepare.advantage))
@@ -523,18 +514,19 @@ async function prepareQuadrant(messageId, quadrantNum, actorSources) {
     };
 
     if (game.user.isGM) {
-        await updateQuadrant(messageId, quadrantNum, preparedData);
-        return;
+        const shouldContinue = await updateQuadrant(messageId, quadrantNum, preparedData);
+        return shouldContinue;
     }
 
-    await executeRollerAsGM("rollerApplyPreparedQuadrant", messageId, quadrantNum, preparedData);
+    const shouldContinue = await executeRollerAsGM("rollerApplyPreparedQuadrant", messageId, quadrantNum, preparedData);
+    return shouldContinue;
 }
 export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
     let message = game.messages.get(messageId);
     const locked = !await waitForUnlock(message)
     if (locked) {
         ui.notifications.error("Message is locked. Cannot update.");
-        return;
+        return false;
     }
     await message.setFlag("bizarre-adventures-d6", "Locked", true);
     message = game.messages.get(messageId);
@@ -559,13 +551,15 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
             }
         }       
         await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
+        await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}Visibility`);
         await rerenderMessage(message);
         await message.setFlag("bizarre-adventures-d6", "Locked", false);
         message = game.messages.get(messageId);
         if (message) await rerenderMessage(message);
+        return true;
     } else {
         ui.notifications.error("Could not find message to update.");
-         return;
+         return false;
      }
 }
 
@@ -712,7 +706,7 @@ export async function rollAll(messageId) {
             const { label: label, flavor: flavor } = getHitDCMeta(difference, { reactionReckless });
 
             if (difference == 0) {
-                await ChatMessage.create(withCurrentRollMode({
+                await ChatMessage.create(withCurrentMessageMode({
                     content: `<p><strong>Clash!</strong></p>`
                 }));
                 await createContestMessage();
@@ -734,7 +728,10 @@ export async function rollAll(messageId) {
     } finally {
     await rerenderMessage(game.messages.get(messageId));
     await message.setFlag("bizarre-adventures-d6", `Locked`, false);
-    await rerenderMessage(game.messages.get(messageId));
+    message = game.messages.get(messageId);
+    await rerenderMessage(message);
+    const displayMessage = game.messages.get(message.getFlag('bizarre-adventures-d6', 'displayId'));
+    await rerenderDisplayMessage(displayMessage);
     }
 }
 

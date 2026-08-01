@@ -240,7 +240,7 @@ function logVisibilityDecision(type, { sourceUuid, actorId, actor, quadrant = nu
 export async function rerenderMessage(message) {
     let type = message.getFlag("bizarre-adventures-d6", "type");
     let targetMessage = message; // What message gets rerendered with the action/contest template
-    if (type != "source") ui.notifications.error("AAAAAAAAAAAAAA");
+    // if (type != "source") ui.notifications.error("AAAAAAAAAAAAAA");
     const displayId = message.getFlag("bizarre-adventures-d6", "displayId");
     const displayMessage = game.messages.get(displayId);
     type = displayMessage.getFlag("bizarre-adventures-d6", "type");
@@ -416,79 +416,195 @@ export async function rerenderMessage(message) {
             fullMessageData: messageData
         });
     }
-    rerenderDisplayMessage(displayMessage);
+    // rerenderDisplayMessage(displayMessage);
 }
 // TODO: Must calculate each quadrant's visiblity based on message flags
-async function rerenderDisplayMessage(message) {
-    const sourceMessageId = message.getFlag('bizarre-adventures-d6', 'sourceId')
+export async function rerenderDisplayMessage(message) {
+    if (!message) return;
+    const sourceMessageId = message.getFlag("bizarre-adventures-d6", "sourceId");
+    const sourceMessage = game.messages.get(sourceMessageId);
+    if (!sourceMessage) return;
+
     const type = message.getFlag("bizarre-adventures-d6", "type");
-    // Display message, therefore it cannot be a 'source' type. only 'action' and 'contest'
     let count = 2;
-    if (type == "contest") count = 4;
+    if (type === "contest") count = 4;
 
     const quadrants = {};
+    let allPrepared = true;
+
     for (let i = 1; i <= count; i++) {
-        const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${i}Visibility`);
-        // Unprepared Quadrant
-        if(!flagData) {
+        const visibility = sourceMessage.getFlag("bizarre-adventures-d6", `quadrant${i}Visibility`) || null;
+        const sourceFlag = sourceMessage.getFlag("bizarre-adventures-d6", `quadrant${i}`) || null;
+        const visibilityMode = visibility?.messageMode || null;
+
+        let shouldRender = false;
+        if (visibility) {
+            const isSelf = visibility.playerId === game.user.id;
+            const isGM = !!game.user.isGM;
+            switch (visibilityMode) {
+                case "public":
+                    shouldRender = true;
+                    break;
+                case "gm":
+                    shouldRender = isSelf || isGM;
+                    break;
+                case "blind":
+                    shouldRender = isGM;
+                    break;
+                case "self":
+                    shouldRender = isSelf;
+                    break;
+                case "ic":
+                    shouldRender = true;
+                default:
+                    shouldRender = false;
+                    break;
+            }
+        }
+
+        if (!sourceFlag) {
+            // Nothing has happened in this quadrant yet.
+            allPrepared = false;
             quadrants[i] = {
                 quadrantNum: i,
                 label: actionLabels[i - 1].label,
                 prepared: false,
                 winnerClass: "",
+                lock: false,
+                visibilityMode
+            };
+            continue;
+        }
+
+        if (!shouldRender) {
+            // Something exists in this quadrant, but this viewer isn't permitted to see it.
+            // Only reveal that something happened and how much (chip counts) — never the real content.
+            const isPrepared = !!sourceFlag.formula;
+            const isRolled = !!sourceFlag.rolled;
+            if (!isPrepared) allPrepared = false;
+
+            const luckTotal = Object.values(sourceFlag.luckCounts || {})
+                .reduce((sum, n) => sum + (Number(n) || 0), 0);
+            const gambitTotal = Object.values(sourceFlag.gambitCounts || {})
+                .reduce((sum, n) => sum + (Number(n) || 0), 0);
+
+            // Resolved only to gate the Flashback button — never exposed to the DOM for a hidden quadrant.
+            const hiddenActor = resolveActorFromSource(sourceFlag);
+            const canFlashback = game.user.isGM || !hiddenActor || !!hiddenActor?.isOwner;
+
+            quadrants[i] = {
+                quadrantNum: i,
+                label: actionLabels[i - 1].label,
+                prepared: isPrepared,
+                rolled: isRolled,
+                winnerClass: "",
+                hidden: true,
+                visibilityMode,
+                actorName: "(Hidden Actor)",
+                statLabel: "(Hidden Stat)",
+                specialLabel: null,
+                rollHtml: isRolled
+                    ? `<div class="dice-roll bad6-redacted-roll"><div class="dice-result"><div class="dice-formula">(Hidden Formula)</div><h4 class="dice-total">${sourceFlag.rollTotal ?? "?"}</h4></div></div>`
+                    : null,
+                hiddenLuckCount: luckTotal,
+                hiddenGambitCount: gambitTotal,
+                canUnready: false,
+                canFlashback,
                 lock: false
             };
-            continue
-        }
-        // At this point there is flag data
-        const lastPlayerId = message.getFlag('bizarre-adventures-d6', `quadrant${i}Visibility`).playerId
-        // "public" | "gm" | "blind" | "self"
-        const lastMessageMode = message.getFlag('bizarre-adventures-d6', `quadrant${i}Visibility`).messageMode
-        // 0 = self, 1 = gm, 2 = players
-        let playerPermissions = [ 0, 0, 1 ];
-        if (game.user.id == lastPlayerId) playerPermissions[0] = 1;
-        if (game.user.isGM) playerPermissions[1] = 1;
-        // Assumes user has player permissions
-        let shouldRender = false;
-
-        switch (lastMessageMode) {
-            case "public" :
-                shouldRender = true
-                /*
-                necessaryPermissions[0] = 1
-                necessaryPermissions[1] = 1
-                necessaryPermissions[2] = 1
-                */
-            case "gm" :
-                if ( playerPermissions[0] == 1 || playerPermissions[1] == 1 ) shouldRender = true;
-                /*
-                necessaryPermissions[0] = 1
-                necessaryPermissions[1] = 1
-                necessaryPermissions[2] = 0
-                */
-            
-            case "blind" :
-                if ( playerPermissions[1] == 1 ) shouldRender = true;
-                /*
-                necessaryPermissions[0] = 0
-                necessaryPermissions[1] = 1
-                necessaryPermissions[2] = 0
-                */
-            
-            case "self" :
-                if ( playerPermissions[0] == 0 ) shouldRender = true
-                /*
-                necessaryPermissions[0] = 1
-                necessaryPermissions[1] = 0
-                necessaryPermissions[2] = 0
-                */
+            continue;
         }
 
-        if (shouldRender) ui.notifications.error("[BAD6] [Display Renderr] I would render here"); // render
-
+        const actor = resolveActorFromSource(sourceFlag);
+        const canFlashback = game.user.isGM || !actor || !!actor?.isOwner;
+        quadrants[i] = {
+            quadrantNum: i,
+            label: actionLabels[i - 1].label,
+            prepared: !!sourceFlag.formula,
+            winnerClass: "",
+            visibilityMode,
+            canFlashback,
+            sourceUuid: sourceFlag.sourceUuid || null,
+            actorId: sourceFlag.actorId || null,
+            actorName: actor?.name || "Hidden Actor",
+            statLabel: sourceFlag.stat || "",
+            statValue: sourceFlag.statValue || 0,
+            advantage: Number.isFinite(Number(sourceFlag.advantage)) ? Number(sourceFlag.advantage) : 0,
+            specialLabel: sourceFlag.selectedSpecial?.label
+                || sourceFlag.selectedSpecial?.name
+                || sourceFlag.selectedSpecial?.key
+                || null,
+            customApplied: !!sourceFlag.customApplied,
+            customTooltip: sourceFlag.customTooltip || "",
+            luckCounts: {
+                feint: sourceFlag.luckCounts?.feint || 0,
+                fudge: sourceFlag.luckCounts?.fudge || 0,
+                flashback: sourceFlag.luckCounts?.flashback || 0,
+                mulligan: sourceFlag.luckCounts?.mulligan || 0,
+                persist: sourceFlag.luckCounts?.persist || 0,
+            },
+            gambitCounts: {
+                feint: sourceFlag.gambitCounts?.feint || 0,
+                fudge: sourceFlag.gambitCounts?.fudge || 0,
+                flashback: sourceFlag.gambitCounts?.flashback || 0,
+                mulligan: sourceFlag.gambitCounts?.mulligan || 0,
+                persist: sourceFlag.gambitCounts?.persist || 0
+            },
+            rolled: !!sourceFlag.rolled,
+            rollTotal: sourceFlag.rollTotal ?? null,
+            rollHtml: sourceFlag.rollHtml || `<div class="dice-roll bad6-redacted-roll"><div class="dice-result"><div class="dice-formula">Hidden Formula</div><h4 class="dice-total">${sourceFlag.rollTotal ?? "?"}</h4></div></div>`,
+            canUnready: game.user.isGM || !!actor?.isOwner,
+            lock: false
+        };
     }
 
+    const result = sourceMessage.getFlag("bizarre-adventures-d6", "result") || {};
+    const required = type === "action" ? [1, 2] : [1, 2, 3, 4];
+    const isResolved = required.every((index) => !!sourceMessage.getFlag("bizarre-adventures-d6", `quadrant${index}`)?.rolled);
+    const difference = Number(result.difference);
+    const winnerSide = Number.isFinite(difference)
+        ? (difference > 0 ? "action" : (difference < 0 ? "reaction" : "tie"))
+        : null;
+    const reactionReckless = getPairReckless(sourceMessage, 3);
+    const resolveLabel = type === "contest"
+        ? getContestResultLabel(result.label ?? "Resolve", difference, winnerSide, { reactionReckless })
+        : (result.label ?? "Resolve");
+    const resolveTooltip = result.flavor ?? "";
+    const resolveStateClass = type === "contest"
+        ? (winnerSide === "action" ? "is-victory-action"
+            : (winnerSide === "reaction" ? "is-victory-reaction"
+                : (winnerSide === "tie" ? "is-tie" : "")))
+        : "";
 
+    if (type === "contest") {
+        if (winnerSide === "action") {
+            [1, 2].forEach((index) => { if (quadrants[index]) quadrants[index].winnerClass = "is-winner"; });
+            [3, 4].forEach((index) => { if (quadrants[index]) quadrants[index].winnerClass = "is-loser"; });
+        } else if (winnerSide === "reaction") {
+            [3, 4].forEach((index) => { if (quadrants[index]) quadrants[index].winnerClass = "is-winner"; });
+            [1, 2].forEach((index) => { if (quadrants[index]) quadrants[index].winnerClass = "is-loser"; });
+        } else if (winnerSide === "tie") {
+            [1, 2, 3, 4].forEach((index) => { if (quadrants[index]) quadrants[index].winnerClass = "is-tie"; });
+        }
+    }
 
+    Object.values(quadrants).forEach((q) => {
+        if (!q?.prepared) allPrepared = false;
+    });
+    Object.values(quadrants).forEach((q) => {
+        q.allPrepared = allPrepared;
+    });
 
+    const card = document.querySelector(`.chat-message[data-message-id="${message.id}"]`);
+    const contentNode = card?.querySelector(".message-content");
+    if (!contentNode) return;
+
+    if (type === "action") {
+        const pairAdvantage = getPairAdvantage(sourceMessage, 1) ?? 0;
+        contentNode.innerHTML = await renderAction({ quadrants, pairAdvantage, isResolved, resolveLabel, resolveTooltip, resolveStateClass });
+    } else {
+        const actionPairAdvantage = getPairAdvantage(sourceMessage, 1) ?? 0;
+        const reactionPairAdvantage = getPairAdvantage(sourceMessage, 3) ?? 0;
+        contentNode.innerHTML = await renderContest({ quadrants, actionPairAdvantage, reactionPairAdvantage, reactionPairReckless: reactionReckless, isResolved, resolveLabel, resolveTooltip, resolveStateClass });
+    }
 }

@@ -6,6 +6,7 @@ export const welcomeText = `
         <ul>
             <li>🎲 Access the dice through </li>
             <li>🎲 Use the "D6 Roller" in token controls for actions. Double click for Contests.</li>
+            <li>🎲❗ Note: Your messsage mode when clicking a buttonm decides who can see it!</li>
             <li>🎲 As a GM, your highlighted tokens are the roll's context.</li>
             <li>🎯 As a player your owned actors are the roll's context.</li>
             <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
