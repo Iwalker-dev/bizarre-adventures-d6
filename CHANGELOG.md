@@ -209,9 +209,9 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Setup System Discord
 ## [0.9.13.2] - 2026-7-15
 - Removed pre-allowed use in v15 (Won't allow publishing in such a state)
-## [0.9.13.2] - 2026-7-15
+## [0.9.13.5] - 2026-7-15
 - Reworked Privacy Settings to be based on messageMode. (Still need to remove depreciated code. Also need to assure changes apply to contests.)
-- Updating version semantics "0.9" is the doc version. "13.2" is the system version.
+- Updating version semantics "0.9" is the doc version. "13.2" is the system version. Not intended, but seems like the least confusion solution
 
 # What's left? (Ordered By Priority)
 - Update logic to system V0.9
