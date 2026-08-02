@@ -206,7 +206,6 @@ function canViewActorData(actor, context, { roleSettingKey, ownerOverrideSetting
  * Check whether the current user can see roll formulas for an actor.
  * @param {Actor|null} actor
  * @returns {boolean}
- */
 export function canViewActorFormula(actor, context = {}) {
 	return canViewActorData(actor, context, {
 		roleSettingKey: "formulaVisibilityRole",
@@ -215,12 +214,12 @@ export function canViewActorFormula(actor, context = {}) {
 		defaultOwnerOverride: true
 	});
 }
+*/
 
 /**
  * Check whether the current user can see actor names for an actor.
  * @param {Actor|null} actor
  * @returns {boolean}
- */
 export function canViewActorName(actor, context = {}) {
 	return canViewActorData(actor, context, {
 		roleSettingKey: "actorNameVisibilityRole",
@@ -229,3 +228,4 @@ export function canViewActorName(actor, context = {}) {
 		defaultOwnerOverride: true
 	});
 }
+	*/

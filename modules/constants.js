@@ -1,10 +1,12 @@
 export const welcomeText = `
     <h2>Welcome to BAD6!</h2>
-    <h3>For V0.86</h3>
-    <h4>Not yet updated for V0.9</h4>
+    <h3>For Google Doc version V0.86</h3>
+    <h4>(Not yet updated for V0.9)</h4>
     <p> Controls: </p>
         <ul>
+            <li>🎲 Access the dice through </li>
             <li>🎲 Use the "D6 Roller" in token controls for actions. Double click for Contests.</li>
+            <li>🎲❗ Note: Your messsage mode when clicking a buttonm decides who can see it!</li>
             <li>🎲 As a GM, your highlighted tokens are the roll's context.</li>
             <li>🎯 As a player your owned actors are the roll's context.</li>
             <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>

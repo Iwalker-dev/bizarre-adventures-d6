@@ -187,6 +187,25 @@
   border-color: #444;
 }
 
+// Background/border reflect the chosen visibility/message mode for this quadrant,
+// mirroring Foundry's own whisper/blind/public chat message colors, for everyone —
+// regardless of whether the current viewer is allowed to see its contents.
+.quadrant-context.visibility-public {
+  background: var(--color-emote-background, #f3edde);
+  border-color: var(--color-emote-border, #887c5d);
+}
+
+.quadrant-context.visibility-gm,
+.quadrant-context.visibility-self {
+  background: var(--color-whisper-background, #e8e8ef);
+  border-color: var(--color-whisper-border, #545469);
+}
+
+.quadrant-context.visibility-blind {
+  background: var(--color-blind-background, #f5eaf5);
+  border-color: var(--color-blind-border, #6b476b);
+}
+
 .quadrant-context.is-winner {
   border-color: #2e7d32;
 }
@@ -351,4 +370,14 @@
 .luck-chip--custom {
   border-color: var(--accent-color);
   background: rgba(0, 0, 0, 0.08);
+}
+
+// Generic placeholder chip shown when a chip exists but its type is hidden from this viewer.
+.luck-chip--hidden {
+  border-color: #888;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.luck-chip--hidden > i {
+  color: #ccc;
 }
