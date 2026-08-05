@@ -198,7 +198,8 @@
     "Item": {
             "types": [
                 "item", 
-                "hit"
+                "hit",
+                "gambit"
             ],
             "htmlFields": ["description"],
             
@@ -215,6 +216,12 @@
                 "description": "",
                 "quantity": 1,
                 "severity": 0
+            },
+            "gambit": {
+                "type": "gambit",
+                "trigger": "",
+                "luckmove": "",
+                "notes": ""
             }
         }
 }

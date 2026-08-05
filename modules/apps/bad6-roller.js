@@ -1,6 +1,6 @@
 import { LUCK_MOVE_HINTS } from "../constants.js";
 import { renderDialog } from "../dialog.js";
-import { chooseLuckSpenders, executeLuckMove, trySpendLuck, LUCK_MOVES} from "../luck-moves.js";
+import { chooseLuckSpenders, executeLuckMove, trySpendLuck, createGambit, LUCK_MOVES} from "../luck-moves.js";
 import { isDebugEnabled } from "../config.js";
 import { createFormula, executeRoll, applyFormulaLines, collectActorFormulaLines } from "../dice.js";
 import { getRollerSocket } from "../sockets.js";
@@ -294,7 +294,7 @@ export async function registerChatListeners() {
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
                     return;
             }
-            // The system only gets to this point if an action succeeded.
+            // The system only gets to this point if an action succeeded. TODO: THIS IS A LIE, ALL BUTTONS ALTER VISIBILITY
             await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, { 
                 playerId: game.user.id,
                 messageMode: game.settings.get("core", "messageMode") 
@@ -305,7 +305,7 @@ export async function registerChatListeners() {
             sourceMessage = game.messages.get(sourceMessageId);
             const visibility = sourceMessage.getFlag('bizarre-adventures-d6', `quadrant${quadrantNum}Visibility`);
             const visibilityText = JSON.stringify(visibility);
-            ui.notifications.warn(`Visibility Flag: ${visibilityText}`);
+            if(isDebugEnabled()) ui.notifications.warn(`Visibility Flag: ${visibilityText}`);
             await rerenderDisplayMessage(message);
         });
 
@@ -333,29 +333,16 @@ export async function registerChatListeners() {
                 ui.notifications.warn("You do not own the required actor(s) for this action.");
                 return false;
             }
-            switch (actionType) {
-                case "luck":
-                    {
-                    const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
-                    if (!actorSources) return false;
-                    const luckActors = chooseLuckSpenders(actorSources);
-                    await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, true);
-                    }
+                if (actionArg === "advantage") {
+                    // Left-click only; ignore right-click on the pair advantage control.
                     break;
-                case "set":
-                    if (actionArg === "advantage") {
-                        // Left-click only; ignore right-click on the pair advantage control.
-                        break;
-                    }
-                    if (actionArg === "reckless") {
-                        // Left-click only; ignore right-click on the reckless control.
-                        break;
-                    }
-                    ui.notifications.warn("Unknown action for button: " + button.dataset.action);
+                }
+                if (actionArg === "reckless") {
+                    // Left-click only; ignore right-click on the reckless control.
                     break;
-                default:
-                    ui.notifications.warn("Unknown action for button: " + button.dataset.action);
-            }
+                }
+                ui.notifications.warn("Unknown action for button: " + button.dataset.action);
+                break;
             return false;
         });
     /* TODO: Readd if breaks system, this may be the problem that causes unrendered messages to render
@@ -477,6 +464,7 @@ export async function setFlag(message, flag, value) {
 async function prepareQuadrant(messageId, quadrantNum, actorSources) {
     const prepare = await renderStatSelectionDialog(messageId, quadrantNum, actorSources);
     if (!prepare) return false;
+
     const message = game.messages.get(messageId);
     const blockedUniqueLineIds = getPairUsedUniqueModifierIds(message, quadrantNum);
     const safeAdvantage = Number.isFinite(Number(prepare.advantage))
@@ -512,7 +500,7 @@ async function prepareQuadrant(messageId, quadrantNum, actorSources) {
         customLinesApplied: evaluated?.appliedLines || [],
         selectedModifierIds: prepare.selectedModifierIds || []
     };
-
+    // TODO: unnecessary?
     if (game.user.isGM) {
         const shouldContinue = await updateQuadrant(messageId, quadrantNum, preparedData);
         return shouldContinue;
@@ -521,6 +509,7 @@ async function prepareQuadrant(messageId, quadrantNum, actorSources) {
     const shouldContinue = await executeRollerAsGM("rollerApplyPreparedQuadrant", messageId, quadrantNum, preparedData);
     return shouldContinue;
 }
+
 export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
     let message = game.messages.get(messageId);
     const locked = !await waitForUnlock(message)
@@ -546,6 +535,20 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
                     const count = moveSpenders[spender] || 0;
                     for (let i = 0; i < count; i++) {
                         await trySpendLuck(spender, moveData.name, true);
+                    }
+                }
+            }
+            const spentGambits = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`)?.gambitSpenders || {};
+            for (const move in spentGambits) {
+                const moveData = LUCK_MOVES[move];
+                if (!moveData) continue;
+                if (moveData.costType === "gambit") continue;
+
+                const moveSpenders = spentGambits[move] || {};
+                for (const spender in moveSpenders) {
+                    const count = moveSpenders[spender] || 0;
+                    for (let i = 0; i < count; i++) {
+                        await trySpendLuck(spender, moveData.name, true, true);
                     }
                 }
             }
@@ -607,7 +610,7 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
     const statDialogResult = await renderDialog('stat', { actors, quadrantNum });
     if (!statDialogResult) return;
 
-    const { stat, sourceUuid, actorId, selectedModifierIds = [] } = statDialogResult;
+    const { stat, sourceUuid, actorId, selectedModifierIds = [], gambit = null } = statDialogResult;
     if (!stat) return;
     if (!sourceUuid && !actorId) return;
 
@@ -648,7 +651,13 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
         }
     }
 
-    return { stat, sourceUuid, actorId, statValue, selectedSpecial, selectedModifierIds };
+    let hasGambit = false;
+    if(gambit) {
+        createGambit(actor.id, gambit); //TODO: Create this function in luck-moves.js
+        hasGambit = true;
+    }
+
+    return { stat, sourceUuid, actorId, statValue, selectedSpecial, selectedModifierIds, hasGambit }; //TODO: add hasGambit logic to all who call this function
     
 };
 

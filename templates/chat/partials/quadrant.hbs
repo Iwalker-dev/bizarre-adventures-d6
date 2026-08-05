@@ -130,6 +130,7 @@
             {{#if canFlashback}}
               <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
             {{/if}}
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
           </div>
         </div>
       {{else if prepared}}
@@ -146,6 +147,7 @@
             {{#if canFlashback}}
               <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
             {{/if}}
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
           </div>
         </div>
       {{else}}
@@ -153,6 +155,7 @@
           {{#if canFlashback}}
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
           {{/if}}
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
         </div>
       {{/if}}
     {{else if rolled}}
@@ -166,6 +169,7 @@
           {{#if canFlashback}}
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
           {{/if}}
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
         </div>
       </div>
     {{else if prepared}}
@@ -191,6 +195,7 @@
           {{#if canFlashback}}
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
           {{/if}}
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
         </div>
       </div>
     {{else}}
@@ -199,6 +204,8 @@
         {{#if lock}}Locked...{{else}}Select Stat{{/if}}
       </button>
       <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+      <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
+
     </div>
     {{/if}}
   </div>

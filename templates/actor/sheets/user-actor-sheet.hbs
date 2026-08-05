@@ -163,30 +163,6 @@
           {{{system.bio.description}}}
         </div>
       </div>
-      <!-- ───────────── Hits Tab ───────────── -->
-      <div class="tab" data-tab="hit" data-group="primary">
-        <div class="hit-container">
-          <div class="hit-form">
-            <button id="create-hit" type="button" title="Create Hit">
-              <i class="fa-solid fa-plus fa-fw" aria-hidden="true"></i>
-            </button>
-          </div>
-
-          <div class="hit-list scrollable-list">
-            <ul id="hit-items">
-              {{#each actor.items}}
-                {{#if (eq this.type "hit")}}
-                  <li data-item-id="{{this.id}}">
-                    <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}</span>
-                    <p class="item-description">{{this.system.description}}</p>
-                    <i class="fas fa-trash delete-hit" data-item-id="{{this.id}}"></i>
-                  </li>
-                {{/if}}
-              {{/each}}
-            </ul>
-          </div>
-        </div>
-      </div>
 
       <!-- ───────────── Items Tab ───────────── -->
       <div class="tab" data-tab="item" data-group="primary">
@@ -212,8 +188,53 @@
           </div>
         </div>
       </div>
+
+      <!-- ───────────── Hits Tab ───────────── -->
+      <div class="tab" data-tab="hit" data-group="primary">
+        <div class="hit-container">
+          <div class="hit-form">
+            <button id="create-hit" type="button" title="Create Hit">
+              <i class="fa-solid fa-plus fa-fw" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <div class="hit-list scrollable-list">
+            <ul id="hit-items">
+              {{#each actor.items}}
+                {{#if (eq this.type "hit")}}
+                  <li data-item-id="{{this.id}}">
+                    <span>{{this.name}} - Weight: {{this.system.weight}}, Quantity: {{this.system.quantity}}</span>
+                    <p class="item-description">{{this.system.description}}</p>
+                    <i class="fas fa-trash delete-hit" data-item-id="{{this.id}}"></i>
+                  </li>
+                {{/if}}
+              {{/each}}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ───────────── Gambits Tab ───────────── -->
+      <div class="tab" data-tab="gambit" data-group="primary">
+        <div class="gambit-container">
+
+          <div class="gambit-list scrollable-list">
+            <ul id="gambit-items">
+              {{#each actor.items}}
+                {{#if (eq this.type "gambit")}}
+                  <li data-item-id="{{this.id}}">
+                    <span>{{this.name}} - Trigger: {{this.system.trigger}}, Move: {{this.system.move}}</span>
+                    <p class="item-notes">{{this.system.notes}}</p>
+                    <i class="fas fa-trash delete-gambit" data-item-id="{{this.id}}"></i>
+                  </li>
+                {{/if}}
+              {{/each}}
+            </ul>
+          </div>
+        </div>
+      </div>
     </section>
-  </div>
+</div>
 
   <nav class="sheet-tabs tabs" data-group="primary">
     {{> actor-nav}}

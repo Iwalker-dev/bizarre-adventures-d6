@@ -1,5 +1,6 @@
 import { actionLabels } from "./constants.js";
 import { getScope } from "./dice.js";
+import { LUCK_MOVES } from "./luck-moves.js";
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
 function capitalizeFirst(text) {
@@ -8,20 +9,123 @@ function capitalizeFirst(text) {
 }
 
 export async function renderDialog(dialog, dialogData = {}) {
-    if (dialog === "stat") {
-        const content = await renderTemplateV1(
-            "systems/bizarre-adventures-d6/templates/dialog/stat.hbs",
-            { actors: dialogData.actors, quadrantNum: dialogData.quadrantNum, currentAdvantage: dialogData.currentAdvantage }
+    // Requires actor object
+    if (dialog === "gambit") {
+        const luckMoves = Object.fromEntries(
+                        Object.entries(LUCK_MOVES)
+                    );
+        const gambitsByActor = Object.fromEntries(
+            dialogData.actors.map((actor) => [
+                actor.name,
+                (actor.items ?? []).filter((item) => item.type === "gambit")
+            ])
         );
-
+        const content = await renderTemplateV1(
+            "systems/bizarre-adventures-d6/templates/dialog/gambit.hbs",
+            { gambitsByActor, luckMoves, quadrantNum: dialogData.quadrantNum }
+        );
         return await new Promise((resolve) => {
             new Dialog({
-                title: `Select Stat for ${actionLabels[dialogData.quadrantNum - 1].label}`,
+                title: `Select a Gambit for ${actionLabels[dialogData.quadrantNum - 1].label} (CANNOT BE UNDONE ONCE REVEALED)`,
                 content,
                 buttons: {
                     confirm: {
                         label: "Confirm",
-                        callback: (html) => {
+                        callback: (html) => { 
+
+                            const selectedGambit = html.find(".gambit-option.selected").data("item");
+                            // const selectedSourceUuid = html.find(".gambit-option.selected").data("sourceUuid");
+                            const selectedActorId = html.find(".gambit-option.selected").data("actorId");
+                            const selectedItemId = html.find(".gambit-option.selected").data("itemId");
+
+                            if (!selectedGambit) {
+                                ui.notifications.warn("Pick a Gambit first.");
+                                return;
+                            }
+
+                            resolve({
+                                gambit: selectedGambit,
+                                // sourceUuid: selectedSourceUuid,
+                                itemId: selectedItemId,
+                                actorId: selectedActorId
+                            });
+                        }
+                    },
+                    cancel: {
+                        label: "Cancel",
+                        callback: () => resolve(null)
+                    }
+                },
+                render: (html) => {
+                    const dialogApp = html.closest(".app");
+                    const dialogButtons = dialogApp.find(".dialog-buttons");
+                    const confirmBtn = dialogButtons.find('button[data-button="confirm"]');
+
+                    const isReady = () => html.find(".gambit-option.selected").length > 0;
+
+                    const triggerInvalidConfirmFeedback = () => {
+                        confirmBtn.removeClass("bad6-invalid-shake");
+                        void confirmBtn[0]?.offsetWidth;
+                        confirmBtn.addClass("bad6-invalid-shake");
+                        window.setTimeout(() => confirmBtn.removeClass("bad6-invalid-shake"), 220);
+                    };
+
+                    const updateConfirmState = () => {
+                        const enabled = isReady();
+                        confirmBtn
+                            .prop("disabled", !enabled)
+                            .attr("title", enabled ? "" : "Pick a Gambit first.")
+                            .attr("aria-disabled", !enabled)
+                            .toggleClass("is-disabled", !enabled);
+                    };
+
+                    const onConfirmAttemptCapture = (event) => {
+                        if (isReady()) return;
+                        triggerInvalidConfirmFeedback();
+                        ui.notifications.warn("Pick a Gambit first.");
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+                    };
+
+                    confirmBtn[0]?.addEventListener("click", onConfirmAttemptCapture, true);
+
+                    html.find(".stat-option").on("click", function () {
+                        html.find(".stat-option").removeClass("selected");
+                        $(this).addClass("selected");
+                        updateConfirmState();
+                    });
+
+                    updateConfirmState();
+                },
+                close: () => resolve(null),
+                default: "confirm"
+            }, { width: 560, height: "auto", resizable: true }).render(true);
+        });
+
+    }
+
+    if (dialog === "stat") {
+        const luckMoves = Object.fromEntries( //TODO: Add logic to fail luck buttons you cannot use. Base this off of highlighted token for gm, and owned actors for player.
+                                Object.entries(LUCK_MOVES).filter(([key]) => key !== "gambit") // Cannot save a gambit with a gambit
+                            );
+        const content = await renderTemplateV1(
+            "systems/bizarre-adventures-d6/templates/dialog/stat.hbs",
+            { actors: dialogData.actors, quadrantNum: dialogData.quadrantNum, currentAdvantage: dialogData.currentAdvantage, luckMoves }
+        );
+
+        return await new Promise((resolve) => {
+            new Dialog({
+                title: `Select Stat and Gambit for ${actionLabels[dialogData.quadrantNum - 1].label}`,
+                content,
+                buttons: {
+                    confirm: {
+                        label: "Confirm",
+                        callback: (html) => { 
+                            const gambitName =  html.find("#gambit-name").val() || null;
+                            const gambitTrigger =  html.find("#gambit-trigger").val()|| null;
+                            const gambitMove = html.find(".gambit-option").data("stat")|| null;
+
                             const selectedStat = html.find(".stat-option.selected").data("stat");
                             const selectedSourceUuid = html.find(".stat-option.selected").data("sourceUuid");
                             const selectedActorId = html.find(".stat-option.selected").data("actorId");
@@ -33,12 +137,32 @@ export async function renderDialog(dialog, dialogData = {}) {
                                 ui.notifications.warn("Pick a Stat first.");
                                 return;
                             }
+                            
+                            if(gambitMove || gambitTrigger || gambitName) {
+                                if (!gambitMove) {
+                                    ui.notifications.warn("Incomplete Gambit: Gambit requires a luck move.");
+                                    return;
+                                }
+                                if (!gambitTrigger) {
+                                    ui.notifications.warn("Incomplete Gambit: Gambit requires a trigger.");
+                                    return;
+                                }
+                                if (!gambitName) {
+                                    ui.notifications.warn("Incomplete Gambit: Gambit requires a name.");
+                                    return;
+                                }
+                            }
 
                             resolve({
                                 stat: selectedStat,
                                 sourceUuid: selectedSourceUuid,
                                 actorId: selectedActorId,
-                                selectedModifierIds
+                                selectedModifierIds,
+                                gambit: {
+                                    name: gambitName,
+                                    trigger: gambitTrigger,
+                                    move: gambitMove
+                                }
                             });
                         }
                     },

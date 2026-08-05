@@ -1,6 +1,7 @@
 import { resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless, setFlag } from "./apps/bad6-roller.js";
 import { updateQuadrant } from "./apps/roller/quadrants.js";
 import { executeLuckMove } from "./luck-moves.js";
+import { getRollableActorSources } from "./apps/roller/actors.js";
 let rollerSocket = null;
 
 export function getRollerSocket() {
@@ -20,6 +21,7 @@ export function registerSockets() {
     rollerSocket.register("rollerSetPairReckless", socketSetPairReckless);
     rollerSocket.register("warnOwners", socketWarnOwners);
     rollerSocket.register("setFlag", socketSetFlag);
+    rollerSocket.register("getUserActors", socketGetUserActors);
 }
 
 export async function socketApplyPreparedQuadrant(messageId, quadrantNum, preparedData) {
@@ -95,4 +97,8 @@ export async function socketWarnOwners(actor, warning) {
 
 export async function socketSetFlag(message, flag, value) {
     return await setFlag(message, flag, value)
+}
+
+export async function socketGetUserActors(sender) {
+    return getRollableActorSources(sender);
 }

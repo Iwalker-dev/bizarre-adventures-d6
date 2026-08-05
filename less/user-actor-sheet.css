@@ -50,7 +50,8 @@
 }
 /* ────────────────────────── Shared Styles ────────────────────────── */
 .tab[data-tab="item"] li,
-.tab[data-tab="hit"] li {
+.tab[data-tab="hit"] li,
+.tab[data-tab="gambit"] li {
   background-color: rgba(0, 0, 0, 0.5);
   color: white;
   padding: 10px;
@@ -62,11 +63,13 @@
   cursor: pointer;
 }
 .tab[data-tab="item"] li:hover,
-.tab[data-tab="hit"] li:hover {
+.tab[data-tab="hit"] li:hover,
+.tab[data-tab="gambit"] li:hover {
   background-color: var(--accent-dark);
 }
 .delete-item,
-.delete-hit {
+.delete-hit,
+.delete-gambit {
   background-color: black;
   color: white;
   border: 1px solid white;
@@ -76,7 +79,8 @@
   margin-left: 10px;
 }
 .delete-item:hover,
-.delete-hit:hover {
+.delete-hit:hover,
+.delete-gambit {
   background-color: white;
   color: black;
 }
@@ -85,7 +89,8 @@
 /* Hide their text and size them nicely */
 /* 1) Center the form wrappers under the tabs */
 .item-form,
-.hit-form {
+.hit-form,
+.gambit-form {
   display: flex;
   justify-content: center;
   margin: 0.75em 0;
@@ -93,7 +98,8 @@
 }
 /* Center the icon both vertically and horizontally */
 #create-item,
-#create-hit {
+#create-hit,
+#create-gambit {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -107,14 +113,16 @@
 }
 /* Style the FontAwesome icon inside */
 #create-item i,
-#create-hit i {
+#create-hit i,
+#create-gambit i {
   font-size: 1.5em;
   color: var(--accent-light);
   transform: translateX(0.05em);
 }
 /* Hover effect */
 #create-item:hover i,
-#create-hit:hover i {
+#create-hit:hover i,
+#create-gambit:hover i {
   color: var(--accent-dark);
 }
 /* ────────────────────────── Input Fields in Hit Tab ────────────────────────── */

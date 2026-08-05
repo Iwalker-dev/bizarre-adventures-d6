@@ -1,5 +1,7 @@
 import { resetQuadrant, createActionMessage, createContestMessage, recalculateQuadrantFormula, reevaluatePairRollResults, rerenderMessage } from "./apps/bad6-roller.js";
+import { renderDialog } from "./dialog.js";
 import { getRollerSocket } from "./sockets.js";
+import { resolveActorFromSource } from "./apps/roller/actors.js";
 
 function warnOwners(actor, warning) {
 	const socket = getRollerSocket();
@@ -80,9 +82,8 @@ export function getLuckMoveExecutionContext(move, spenders, { isGambit = false, 
 	if (!moveData) {
 		return { ok: false, reason: "Unknown move: " + move };
 	}
-
-	if (isGambit || moveData.costType === "gambit") {
-		return { ok: true, spender: null, spenderActor: null, spenderKey: null, moveData };
+	if (moveData.costType === "gambit") {
+		return { ok: false, reason: "Gambit must resolve a target move before spending context is built." };
 	}
 
 	const spenderList = Array.isArray(spenders) ? spenders : [];
@@ -110,7 +111,8 @@ export function getLuckMoveExecutionContext(move, spenders, { isGambit = false, 
 		return { ok: false, reason: "No valid Luck-spending actor could be resolved for this move." };
 	}
 
-	if (checkCanUse && !canUseMove(moveData, spenderActor)) {
+	const gambitCost = isGambit ? Math.ceil(moveData.cost / 2) : null;
+	if (checkCanUse && !canUseMove(moveData, spenderActor, { costOverride: gambitCost })) {
 		return { ok: false, reason: "Cannot spend luck for this move." };
 	}
 
@@ -123,14 +125,15 @@ export function getLuckMoveExecutionContext(move, spenders, { isGambit = false, 
 	};
 }
 
-function canUseMove(move, actor) {
+function canUseMove(move, actor, { costOverride = null } = {}) {
 	if (!actor) {
 		ui.notifications.warn("No valid actor available to spend Luck.");
 		return false;
 	}
 	const luckStat = actor.system.attributes.stats.luck;
 	const pool = move.costType === "perm" ? (luckStat.perm ?? 0) : (luckStat.temp ?? 0);
-	if (pool < move.cost) {
+	const requiredCost = Number.isFinite(costOverride) ? costOverride : move.cost;
+	if (pool < requiredCost) {
 		const warning = `${actor.name} doesn't have enough luck for ${move.name}.`
 		ui.notifications.warn(warning);
 		warnOwners(actor, warning);
@@ -142,14 +145,16 @@ function canUseMove(move, actor) {
 export const LUCK_MOVES = {
 	feint: {
 		name: "Feint",
+		key: "feint",
 		description: "Edit your Action/Reaction after hearing the enemy's",
 		costType: "temp",
 		cost: 1,
 		timing: "pre-roll",
-		effect: "feint"
+		effect: "unprepare"
 	},
 	fudge: {
 		name: "Fudge",
+		key: "fudge",
 		description: "Add a free Advantage, pre-roll",
 		costType: "temp",
 		cost: 2,
@@ -158,6 +163,7 @@ export const LUCK_MOVES = {
 	},
 	flashback: {
 		name: "Flashback",
+		key: "flashback",
 		description: "Retcon a detail you choose",
 		costType: "temp",
 		cost: 3,
@@ -166,6 +172,7 @@ export const LUCK_MOVES = {
 	},
 	mulligan: {
 		name: "Mulligan",
+		key: "mulligan",
 		description: "Add a free Advantage, post-roll",
 		costType: "temp",
 		cost: 4,
@@ -174,22 +181,25 @@ export const LUCK_MOVES = {
 	},
 	persist: {
 		name: "Persist",
+		key: "persist",
 		description: "Try another Action/Reaction after a failed one, as if it tied",
 		costType: "perm",
 		cost: 2,
 		timing: "post-roll",
-		effect: "reroll"
+		effect: "reset"
 	},
 	gambit: {
 		name: "Gambit",
-		description: "Zero cost if using Chekhov's Gun or successful plan",
+		key: "gambit",
+		description: "Zero cost if using successful plan",
 		costType: "gambit",
 		cost: 0,
 		timing: "anytime",
-		effect: "special"
+		effect: "trigger"
 	}
 };
 
+// TODO: Change to find arrays for each luck type.
 export function chooseLuckSpenders(rollableActors) {
 	let values = [];
 	let spenders = [];
@@ -244,7 +254,7 @@ export function chooseLuckSpenders(rollableActors) {
 	return spenders;
 }
 
-export async function trySpendLuck(actorId, action, refund = false) {
+export async function trySpendLuck(actorId, action, isRefund = false, isGambit = false) { //TODO: Refund logic into own function?
 	const actor = resolveActorFromSpenderRef(actorId);
 	if (!actor) {
 		const displayRef = typeof actorId === "object" ? JSON.stringify(actorId) : String(actorId);
@@ -256,18 +266,20 @@ export async function trySpendLuck(actorId, action, refund = false) {
 	for (const move of Object.values(LUCK_MOVES)) {
 		if (move.name === action) {
 			const pool = move.costType === "perm" ? (luckStat.perm ?? 0) : (luckStat.temp ?? 0);
-			if (!refund && !canUseMove(move, actor)) {
+			const gambitCost = isGambit ? Math.ceil(move.cost / 2) : null;
+			if (!isRefund && !canUseMove(move, actor, { costOverride: gambitCost })) {
 				return false;
 			}
+			const cost = isGambit ? Math.ceil(move.cost / 2) : move.cost;
 			switch (move.costType) {
 				case "temp":
-					actor.update({ "system.attributes.stats.luck.temp": luckStat.temp - (refund ? -move.cost : move.cost) });
+					actor.update({ "system.attributes.stats.luck.temp": luckStat.temp - (isRefund ? -cost : cost) });
 					return true;
 				case "perm":
-					await actor.update({ "system.attributes.stats.luck.perm": luckStat.perm - (refund ? -move.cost : move.cost) });
+					await actor.update({ "system.attributes.stats.luck.perm": luckStat.perm - (isRefund ? -cost : cost) });
 					return true;
 				case "value":
-					await actor.update({ "system.attributes.stats.luck.value": luckStat.value - (refund ? -move.cost : move.cost) });
+					await actor.update({ "system.attributes.stats.luck.value": luckStat.value - (isRefund ? -cost : cost) });
 					return true;
 				default:
 					ui.notifications.warn("Invalid cost type for move: " + move.name);
@@ -296,18 +308,32 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 		return;
 	}
 	*/
-	const context = getLuckMoveExecutionContext(move, spenders, { isGambit, checkCanUse: true });
+	let moveType = LUCK_MOVES[move].key // May be edited by gambit
+	let gambitActor = null;
+	let gambitId = null; //item id
+
+	if (moveType == "gambit") {
+		const gambitResult = await executeGambit(messageId, quadrantNum, sender);
+		if (!gambitResult) return;
+		const [newMoveType, gambitActorId, newGambitId] = gambitResult;
+		moveType = newMoveType;
+		gambitActor = game.actors.get(gambitActorId);
+		gambitId = newGambitId; // TODO: change to this.gambitId once learned
+		isGambit = true; // TODO: Move logic so this is where isGambit is initialized
+	}
+
+	const context = getLuckMoveExecutionContext(moveType, spenders, { isGambit, checkCanUse: true });
 	if (!context.ok) {
 		ui.notifications.warn(context.reason);
 		return;
 	}
 	const spender = context.spender;
 	const spenderKey = context.spenderKey;
-	const spenderActorName = context.spenderActor.name;
+	const spenderActorName = context.spenderActor?.name;
 
 	let executed = false;
 	// Attempt the luck move
-	switch (LUCK_MOVES[move].name.toLowerCase()) {
+	switch (moveType) {
 		case "feint":
 			executed = await executeFeint(messageId, quadrantNum);
 			break;
@@ -324,59 +350,76 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 			executed = await executePersist(messageId, quadrantNum);
 			break;
 		default:
-			ui.notifications.warn("Unknown move: " + move);
+			ui.notifications.warn("Unknown move: " + moveType);
 			return;
 	}
 
-		// Save execution data in flags
-		if (executed) {
-			if (!isGambit) {
-				const spent = await trySpendLuck(spender, LUCK_MOVES[move].name);
-				if (!spent) return;
-			}
-			message = game.messages.get(messageId); // Refetch message to ensure we have the latest flags after move execution
-			// Prepare existing data
-			const countType = isGambit ? "gambitCounts" : "luckCounts";
-			const latest = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
-			const lastSpenders = latest.luckSpenders || existing.luckSpenders || {};
-			const lastMoveSpenders = lastSpenders[move] || {};
+	// Save execution data in flags
+	if (executed) {
+		const spent = await trySpendLuck(spender, LUCK_MOVES[moveType].name, false, isGambit);
+		if (!spent) return;
 
-			// Create the update data
-			const updateData = {
-				...latest,
-				luckCounts: { ...(latest.luckCounts || existing.luckCounts || {}) },
-				gambitCounts: { ...(latest.gambitCounts || existing.gambitCounts || {}) }
-			};
-			updateData[countType][move] = (updateData[countType][move] || 0) + 1;
-			if (!isGambit && spenderKey) {
+		message = game.messages.get(messageId); // Refetch message to ensure we have the latest flags after move execution
+		// Prepare existing data
+		const countType = isGambit ? "gambitCounts" : "luckCounts";
+		const latest = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
+		const lastLuckSpenders = latest.luckSpenders || existing.luckSpenders || {};
+		const lastLuckMoveSpenders = lastLuckSpenders[moveType] || {};
+		const lastGambitSpenders = latest.gambitSpenders || existing.gambitSpenders || {};
+		const lastGambitMoveSpenders = lastGambitSpenders[moveType] || {};
+
+		// Create the update data
+		const updateData = {
+			...latest,
+			luckCounts: { ...(latest.luckCounts || existing.luckCounts || {}) },
+			gambitCounts: { ...(latest.gambitCounts || existing.gambitCounts || {}) }
+		};
+		// luckSpenders are default cost. gambitSpenders are half cost.
+		updateData[countType][moveType] = (updateData[countType][moveType] || 0) + 1;
+		if (spenderKey) {
+			if (!isGambit) {
 				updateData.luckSpenders = {
-					...lastSpenders,
-					[move]: {
-						...lastMoveSpenders,
-						[spenderKey]: (lastMoveSpenders[spenderKey] || 0) + 1
+					...lastLuckSpenders,
+					[moveType]: {
+						...lastLuckMoveSpenders,
+						[spenderKey]: (lastLuckMoveSpenders[spenderKey] || 0) + 1
+					}
+				};
+			} else {
+				updateData.gambitSpenders = {
+					...lastGambitSpenders,
+					[moveType]: {
+						...lastGambitMoveSpenders,
+						[spenderKey]: (lastGambitMoveSpenders[spenderKey] || 0) + 1
 					}
 				};
 			}
-
-
-
-			// Update the message flags with the new data
-			await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, updateData);
-			if (move === "fudge") {
-				const quadrantNumber = Number(quadrantNum);
-				const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
-				for (const pairQuadrant of pairQuadrants) {
-					await recalculateQuadrantFormula(messageId, pairQuadrant);
-				}
-			} else if (move === "mulligan") {
-				const quadrantNumber = Number(quadrantNum);
-				const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
-				for (const pairQuadrant of pairQuadrants) {
-					await recalculateQuadrantFormula(messageId, pairQuadrant, { includeMulligan: true });
-				}
-				await reevaluatePairRollResults(messageId, quadrantNum);
-			}
 		}
+
+
+
+		// Update the message flags with the new data
+		await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, updateData);
+		if (moveType === "fudge") {
+			const quadrantNumber = Number(quadrantNum);
+			const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
+			for (const pairQuadrant of pairQuadrants) {
+				await recalculateQuadrantFormula(messageId, pairQuadrant);
+			}
+		} else if (moveType === "mulligan") {
+			const quadrantNumber = Number(quadrantNum);
+			const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
+			for (const pairQuadrant of pairQuadrants) {
+				await recalculateQuadrantFormula(messageId, pairQuadrant, { includeMulligan: true });
+			}
+			await reevaluatePairRollResults(messageId, quadrantNum);
+		}
+		// Reveal and delete gambit document
+		if (isGambit) {
+			const isRevealed = revealGambit(gambitActor, gambitId);
+			if (isRevealed) gambitActor.deleteEmbeddedDocuments("gambit", [gambitId]);
+		}
+	}
 }
 
 function getPairMulliganBonus(message, quadrantNum) {
@@ -407,6 +450,32 @@ function getQuadrantAdvantage(message, quadrantNum) {
 	if (Number.isFinite(own)) return Math.max(0, Math.min(3, own));
 
 	return 0;
+}
+
+
+// Returns the executed luckMove
+async function executeGambit(messageId, quadrantNum, sender) { // TODO: Clarify in all contexts that sender is an id
+	// TODO: Generate actors from quadrant num. Use linked users and highlighted if GM, and owned users if player
+	const socket = getRollerSocket();
+	if (!socket) {
+				ui.notifications.error("Socket is not ready. Cannot execute player action.");
+				return null;
+	}
+	let actors = await socket.executeAsUser("getUserActors", sender, sender) // TODO: luck-moves.js currently runs in the context of the GM, not the user
+	const isGM = !!game.users.get(sender).isGM ?? null;
+	if (isGM) {
+		const message = game.messages.get(messageId);
+		const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
+		const actor = flagData ? resolveActorFromSource(flagData) : null;
+		if (actor) actors.push(actor);
+	}
+	// TODO: Pull the info from the dialog
+	const gambitInfo = await renderDialog("gambit", {actors, quadrantNum} );
+	if (!gambitInfo) return null;
+
+
+
+	return [gambitInfo.gambit.name, gambitInfo.gambit.actorId, gambitInfo.gambit.itemId];
 }
 
 async function executeFeint(messageId, quadrantNum) {
@@ -480,5 +549,41 @@ async function executePersist(messageId, quadrantNum) {
 	} else if (type === "contest") {
 		createContestMessage();
 	}
+	return true;
+}
+
+export async function createGambit(actorId, gambit) {
+	const actor = game.actors.get(actorId);
+	await actor.createEmbeddedDocuments("Item", [{
+		name: gambit.name ?? "Gambit",
+		type: "gambit", // must match your system's registered item type key
+		img: gambit.img ?? "icons/svg/dice-target.svg",
+		system: {
+			luckMove: gambit.luckMove,
+			trigger: gambit.trigger
+		}
+	}]);
+}
+
+function revealGambit(actorId, itemId) {
+	const actor = game.actors.get(actorId)
+	const item = game.items.get(itemId);
+
+	const content = `
+		<section class="bad6-gambit-reveal">
+			<h2>Gambit Revealed!</h2>
+			<p><strong>${actor.name}</strong> reveals <strong>${item.name}</strong>.</p>
+			<hr>
+			<h3>Trigger</h3>
+			<p>${item.trigger}</p>
+		</section>
+	`
+	
+	ChatMessage.create({
+		speaker: {
+					alias: actor.name
+				}
+		, content
+	});
 	return true;
 }

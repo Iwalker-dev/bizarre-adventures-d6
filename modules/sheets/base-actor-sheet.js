@@ -144,9 +144,10 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 
 		if (actorType === "user") {
 			tabs.push(
-				{ id: "hit", label: "Hits", icon: "fas fa-burst" },
-				{ id: "item", label: "Items", icon: "fas fa-box" }
+				{ id: "item", label: "Items", icon: "fas fa-box" },
+				{ id: "hit", label: "Hits", icon: "fas fa-burst" }
 			);
+			if (game.user.isOwner || game.user.isGM) tabs.push({ id: "gambit", label: "Gambits", icon: "fas fa-clover" })
 		}
 
 		return tabs;
@@ -477,7 +478,7 @@ async _onDropActor(event) {
 		actor = game.actors.get(data.id) || null;
 	}
 	const droppedActor = game.actors.get(actor?.id) || actor;
-	// Only accept Actor drops (resolve by UUID or id)
+	// Only accept Actor drops (resolve by UUID or id) (TODO: Solve this triggering on every drag. Update for V15)
 	if (!droppedActor || droppedActor.documentName !== "Actor") {
 		ui.notifications.warn("You can only drop Actors here!");
 		return;
