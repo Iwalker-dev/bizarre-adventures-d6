@@ -456,5 +456,41 @@ export async function renderDialog(dialog, dialogData = {}) {
         });
     }
 
+    if (dialog === "burn") {
+        const initialValue = String(dialogData.value ?? "");
+        const inputName = "burn-value";
+        const content = `
+            <div class="form-group">
+                <label for="${inputName}">Value</label>
+                <input id="${inputName}" name="${inputName}" type="number" value="${initialValue}" placeholder="Enter value" />
+            </div>
+        `;
+
+        return await new Promise((resolve) => {
+            new Dialog({
+                title: `Change ${dialogData.type} Value`,
+                content,
+                buttons: {
+                    confirm: {
+                        label: "Confirm",
+                        callback: (html) => {
+                            const value = html.find(`input[name="${inputName}"]`).val()?.trim() ?? "";
+                            resolve(value);
+                        }
+                    },
+                    cancel: {
+                        label: "Cancel",
+                        callback: () => resolve(null)
+                    }
+                },
+                render: (html) => {
+                    html.find(`input[name="${inputName}"]`).focus();
+                },
+                close: () => resolve(null),
+                default: "confirm"
+            }).render(true);
+        });
+    }
+
     return null;
 }

@@ -260,6 +260,7 @@ export async function migrateWorld() {
 		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
 	}
+	// TODO: Migrate infinity stats
 
 	// — First ever world load —
 	const shouldWelcome = !game.settings.get("bizarre-adventures-d6", "welcomed");

@@ -1,3 +1,6 @@
+import { isDebugEnabled } from "../config.js";
+import { renderDialog } from "../dialog.js";
+
 function getRankTitle(starNumber) {
 	if (starNumber === 6) return "∞ / Unmeasurable";
 	return `Rank ${["E", "D", "C", "B", "A"][starNumber - 1] ?? starNumber}`;
@@ -41,7 +44,7 @@ function getSpecialsAtValue(specialStats, value) {
 	return specialStats.filter(s => Math.floor(s.value) === value);
 }
 
-async function showSpecialStatDialog(actor, statName, seed = null) {
+async function showSpecialStatDialog(actor, statName, seed = null) { //TODO: Move to dialog.js
 	const statData = actor.system.attributes.stats?.[statName] ?? {};
 	const current = normalizeSpecialStats(statData);
 	const options = current
@@ -145,7 +148,7 @@ function bindStatLabelControl($container, actor, statName, statData) {
 
 
 
-export function renderStars(html, actor) {
+export function renderStars(html, actor) { // TODO: Learning/Luck/Range are based on Ranks. infinite is 15 for them, not 6.
 	html.find(".stat-stars").each((_, container) => {
 		const $container = $(container);
 		const statKey = $container.data("stat");
@@ -163,7 +166,7 @@ export function renderStars(html, actor) {
 
 		const specialStats = isBurn ? [] : normalizeSpecialStats(statData);
 		const maxSpecial = specialStats.reduce((max, entry) => Math.max(max, Math.floor(entry.value)), 0);
-		const maxStars = Math.max(6, baseValue, maxSpecial);
+		const maxStars = 6; // Math.max(6, baseValue, maxSpecial);
 
 		$container.empty()
 			.toggleClass("infinite", baseValue === 6)
@@ -180,7 +183,8 @@ export function renderStars(html, actor) {
 			star.classList.add("stat-star");
 
 			// Determine symbol and styling
-			let symbol = (starNumber === 6 ? "✦" : "★");
+			const infValue = isBurn ? 15 : 6;
+			let symbol = (starNumber > 5 ? "✦" : "★");
 			let isFilled = hasBase;
 			let isSpecial = false;
 			let title = getRankTitle(starNumber);
@@ -209,10 +213,12 @@ export function renderStars(html, actor) {
 			star.title = title;
 
 			star.addEventListener("click", async () => {
-				const newValue = (baseValue === starNumber) ? starNumber - 1 : starNumber;
+				const targetValue = (baseValue === starNumber) ? starNumber - 1 : starNumber;
+				const newValue = (targetValue > 5 && isBurn) ? 15 : targetValue;
 				await actor.update({
 					[`system.attributes.stats.${statName}.${finalValueType}`]: newValue
 				});
+				if (isDebugEnabled()) ui.notifications.warn(`system.attributes.stats.${statName}.${finalValueType} is now ${newValue}`);
 			});
 
 			if (!isBurn) {
@@ -221,6 +227,26 @@ export function renderStars(html, actor) {
 					const existing = specialsAtValue[0] ?? { value: starNumber, label: "", key: "" };
 					await showSpecialStatDialog(actor, statName, existing);
 				});
+			} else {
+				if (starNumber == maxStars) {
+					// Allow setting the value when clicking
+					star.addEventListener("contextmenu", async (event) => {
+						event.preventDefault();
+						const currentValue = actor.system.attributes.stats[statName][finalValueType]
+						const input = await renderDialog("burn", {
+							value: currentValue,
+							type: finalValueType
+						});
+						if (!input) return;
+						const newValue = Number(input);
+						if(isDebugEnabled()) ui.notifications.warn(`Parsed Value: ${newValue}`);
+						if(Number.isInteger(newValue) && newValue <= 15 && newValue >= 0)
+									await actor.update({
+										[`system.attributes.stats.${statName}.${finalValueType}`]: newValue
+									});
+						else ui.notifications.error("Only Integers allowed. No changes made.");
+					});
+				}
 			}
 
 			$container[0].appendChild(star);

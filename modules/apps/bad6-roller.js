@@ -533,6 +533,7 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
         }       
         await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
         await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}Visibility`);
+        await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`);
         await rerenderMessage(message);
         await message.setFlag("bizarre-adventures-d6", "Locked", false);
         message = game.messages.get(messageId);
@@ -631,7 +632,10 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
 
     let hasGambit = false;
     if (gambit.luckMove) {
-        createGambit(actor.id, gambit); //TODO: Create this function in luck-moves.js
+        await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`, {
+            gambit: gambit,
+            actorId: actor.id
+        });
         hasGambit = true;
     }
 
@@ -644,6 +648,10 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
 
 export async function rollAll(messageId) {
     let message = game.messages.get(messageId);
+    const displayMessageId = message.getFlag("bizarre-adventures-d6", "displayId")
+    let displayMessage = game.messages.get(displayMessageId);
+
+    const type = displayMessage.getFlag("bizarre-adventures-d6", "type"); // Moved out of try block. if errors in resolution this may be why.
     if (!message) return;
     const locked = !await waitForUnlock(message);
     if (locked) {
@@ -655,16 +663,17 @@ export async function rollAll(messageId) {
     if (message) await rerenderMessage(message);
     try {
         message = game.messages.get(messageId);
-        const type = message.getFlag("bizarre-adventures-d6", "type");
+        // const type = message.getFlag("bizarre-adventures-d6", "type"); with source/display changes, this would always resolve to source.
         const order = type === "action" ? [1, 2] : [3, 4, 1, 2];
         const results = {};
 
         for (const i of order) {
-        const q = message.getFlag("bizarre-adventures-d6", `quadrant${i}`);
-        if (!q?.formula) {
-            ui.notifications.warn("All required quadrants must be prepared before resolving.");
-            return;
-        }
+            const q = message.getFlag("bizarre-adventures-d6", `quadrant${i}`);
+            if (!q?.formula) {
+                ui.notifications.warn("All required quadrants must be prepared before resolving.");
+                if (isDebugEnabled()) ui.notifications.error(`type: ${type} \nquadrant ${i} flag: ${q}`);
+                return;
+            }
         }
 
         for (let i = 0; i < order.length; i++) {
@@ -713,12 +722,16 @@ export async function rollAll(messageId) {
             });
         }
     } finally {
-    await rerenderMessage(game.messages.get(messageId));
-    await message.setFlag("bizarre-adventures-d6", `Locked`, false);
-    message = game.messages.get(messageId);
-    await rerenderMessage(message);
-    const displayMessage = game.messages.get(message.getFlag('bizarre-adventures-d6', 'displayId'));
-    await rerenderDisplayMessage(displayMessage);
+        await rerenderMessage(game.messages.get(messageId));
+        await message.setFlag("bizarre-adventures-d6", `Locked`, false);
+        message = game.messages.get(messageId);
+        await rerenderMessage(message);
+        const displayMessage = game.messages.get(message.getFlag('bizarre-adventures-d6', 'displayId'));
+        await rerenderDisplayMessage(displayMessage);
+        // Create all gambits
+        for (let i = 1; i <= (type === "action" ? 2 : 4); i++) {
+            const gambitData = message.getFlag("bizarre-adventures-d6", `quadrant${i}GambitData`);
+            if (gambitData?.gambit) createGambit(gambitData.actorId, gambitData.gambit);
+        }
     }
 }
-
