@@ -9,13 +9,15 @@
                     <textarea id="gambit-trigger" name="system.description" rows="4"></textarea>
                 </div>
             </div>
-            {{#each luckMoves}}
-                    <button class="gambit-option" 
-                        type="button" 
-                        data-stat="{{key}}">
-                        {{name}}
-                    </button>
-            {{/each}}
+            <div class="gambit-options">
+                {{#each luckMoves}}
+                        <button class="gambit-option" 
+                            type="button" 
+                            data-stat="{{key}}">
+                            {{name}}
+                        </button>
+                {{/each}}
+            </div>
 </div>
 
 <div class="quadrant-divider" style="border-top:1px solid #a1a1a1;"></div>

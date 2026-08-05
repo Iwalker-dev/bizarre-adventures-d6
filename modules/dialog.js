@@ -124,7 +124,7 @@ export async function renderDialog(dialog, dialogData = {}) {
                         callback: (html) => { 
                             const gambitName =  html.find("#gambit-name").val() || null;
                             const gambitTrigger =  html.find("#gambit-trigger").val()|| null;
-                            const gambitMove = html.find(".gambit-option").data("stat")|| null;
+                            const gambitMove = html.find(".gambit-option.selected").data("stat")|| null;
 
                             const selectedStat = html.find(".stat-option.selected").data("stat");
                             const selectedSourceUuid = html.find(".stat-option.selected").data("sourceUuid");

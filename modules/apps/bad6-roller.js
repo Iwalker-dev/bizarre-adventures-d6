@@ -321,28 +321,6 @@ export async function registerChatListeners() {
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
-            const button = event.currentTarget;
-            const quadrantNum = button.dataset.quadrant;
-            const displayMessageId = $(button).closest(".chat-message").data("messageId");
-            const message = game.messages.get(messageId);
-            const sourceMessageId = message.getFlag('bizarre-adventures-d6', 'sourceId');
-            if (isMessageLocked(message)) return false;
-            const [actionType, actionArg] = button.dataset.action.split("-", 2);
-            const isAllowed = canUserExecuteAction(messageId, actionType, quadrantNum, actionArg);
-            if (!isAllowed) {
-                ui.notifications.warn("You do not own the required actor(s) for this action.");
-                return false;
-            }
-                if (actionArg === "advantage") {
-                    // Left-click only; ignore right-click on the pair advantage control.
-                    break;
-                }
-                if (actionArg === "reckless") {
-                    // Left-click only; ignore right-click on the reckless control.
-                    break;
-                }
-                ui.notifications.warn("Unknown action for button: " + button.dataset.action);
-                break;
             return false;
         });
     /* TODO: Readd if breaks system, this may be the problem that causes unrendered messages to render
