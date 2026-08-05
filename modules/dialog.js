@@ -90,8 +90,8 @@ export async function renderDialog(dialog, dialogData = {}) {
 
                     confirmBtn[0]?.addEventListener("click", onConfirmAttemptCapture, true);
 
-                    html.find(".stat-option").on("click", function () {
-                        html.find(".stat-option").removeClass("selected");
+                    html.find(".gambit-option").on("click", function () {
+                        html.find(".gambit-option").removeClass("selected");
                         $(this).addClass("selected");
                         updateConfirmState();
                     });
@@ -138,7 +138,7 @@ export async function renderDialog(dialog, dialogData = {}) {
                                 return;
                             }
                             
-                            if(gambitMove || gambitTrigger || gambitName) {
+                            if (gambitMove || gambitTrigger || gambitName) {
                                 if (!gambitMove) {
                                     ui.notifications.warn("Incomplete Gambit: Gambit requires a luck move.");
                                     return;
@@ -161,7 +161,7 @@ export async function renderDialog(dialog, dialogData = {}) {
                                 gambit: {
                                     name: gambitName,
                                     trigger: gambitTrigger,
-                                    move: gambitMove
+                                    luckMove: gambitMove
                                 }
                             });
                         }
@@ -294,6 +294,11 @@ export async function renderDialog(dialog, dialogData = {}) {
                         $(this).addClass("selected");
                         renderCustomModifierChoices();
                         updateConfirmState();
+                    });
+
+                    html.find(".gambit-option").on("click", function () {
+                        html.find(".gambit-option").removeClass("selected");
+                        $(this).addClass("selected");
                     });
 
                     renderCustomModifierChoices();

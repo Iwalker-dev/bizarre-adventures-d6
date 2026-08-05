@@ -139,7 +139,7 @@ import { collectActorFormulaLines } from "../dice.js";
   			}
   		});
 
-  		// Item creation and deletion
+  		// Item creation
   		html.find("#create-item").click(() => {
   			this.actor.createEmbeddedDocuments("Item", [{
   				name: "New Item"
@@ -150,6 +150,7 @@ import { collectActorFormulaLines } from "../dice.js";
   				}
         }]);
   		});
+		// Item deletion
   		html.find("#item-items").on("click", ".delete-item", async ev => {
   			const id = $(ev.currentTarget).data("item-id");
   			await this.actor.deleteEmbeddedDocuments("Item", [id]);

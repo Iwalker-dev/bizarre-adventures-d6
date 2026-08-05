@@ -223,7 +223,7 @@
               {{#each actor.items}}
                 {{#if (eq this.type "gambit")}}
                   <li data-item-id="{{this.id}}">
-                    <span>{{this.name}} - Trigger: {{this.system.trigger}}, Move: {{this.system.move}}</span>
+                    <span>{{this.name}} - Trigger: {{this.system.trigger}} ({{this.system.luckMove}})</span>
                     <p class="item-notes">{{this.system.notes}}</p>
                     <i class="fas fa-trash delete-gambit" data-item-id="{{this.id}}"></i>
                   </li>

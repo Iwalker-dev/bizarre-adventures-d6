@@ -99,7 +99,7 @@ Hooks.once("init", async () => {
 	});
 	foundry.documents.collections.Items.registerSheet("bizarre-adventures-d6", GambitItemSheet, {
 		types: ["gambit"]
-		, makeDefault: false
+		, makeDefault: true
 	});
 });
 

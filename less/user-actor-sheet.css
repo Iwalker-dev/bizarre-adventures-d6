@@ -73,14 +73,22 @@
   background-color: black;
   color: white;
   border: 1px solid white;
-  padding: 5px 10px;
+  padding: 0;
   border-radius: 3px;
   cursor: pointer;
-  margin-left: 10px;
+  margin-left: auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
 }
 .delete-item:hover,
 .delete-hit:hover,
-.delete-gambit {
+.delete-gambit:hover {
   background-color: white;
   color: black;
 }
@@ -98,8 +106,7 @@
 }
 /* Center the icon both vertically and horizontally */
 #create-item,
-#create-hit,
-#create-gambit {
+#create-hit {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -113,16 +120,14 @@
 }
 /* Style the FontAwesome icon inside */
 #create-item i,
-#create-hit i,
-#create-gambit i {
+#create-hit i {
   font-size: 1.5em;
   color: var(--accent-light);
   transform: translateX(0.05em);
 }
 /* Hover effect */
 #create-item:hover i,
-#create-hit:hover i,
-#create-gambit:hover i {
+#create-hit:hover i {
   color: var(--accent-dark);
 }
 /* ────────────────────────── Input Fields in Hit Tab ────────────────────────── */
@@ -152,9 +157,14 @@
   padding: 10px;
   margin: 5px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
+}
+.scrollable-list li > span,
+.scrollable-list li > p {
+  min-width: 0;
 }
 .scrollable-list .item-entry {
   display: flex;
@@ -174,7 +184,15 @@
   word-wrap: break-word;
 }
 .scrollable-list i.fa-trash {
-  margin-left: 10px;
+  margin-left: auto;
   color: #ff6666;
   cursor: pointer;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
 }

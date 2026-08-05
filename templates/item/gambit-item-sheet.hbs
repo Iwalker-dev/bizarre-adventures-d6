@@ -1,22 +1,22 @@
-<form class="sheet hit-item-sheet" autocomplete="off">
+<form class="sheet gambit-item-sheet" autocomplete="off">
   <header class="sheet-header">
     <h1>{{item.name}}</h1>
   </header>
 
   <div class="sheet-body">
     <div class="form-group">
-      <label for="hit-name">Name:</label>
-      <input type="text" id="gambit-name" name="name" value="{{item.name}}" />
+      <label for="gambit-name">Name:</label>
+      <input type="text" id="gambit-name" name="name" value="{{item.name}}" readonly/>
     </div>
 
     <div class="form-group">
       <label for="gambit-trigger">Trigger:</label>
-      <input type="number" id="gambit-trigger" name="system.trigger" value="{{item.system.trigger}}" min="0" />
+      <input type="text" id="gambit-trigger" name="system.trigger" value="{{item.system.trigger}}" readonly/>
     </div>
 
     <div class="form-group">
       <label for="gambit-luckMove">Luck Move:</label>
-      <input type="number" id="gambit-luckMove" name="system.luckMove" value="{{item.system.luckMove}}" min="0" />
+      <input type="text" id="gambit-luckMove" name="system.luckMove" value="{{item.system.luckMove}}" readonly/>
     </div>
 
     <div class="form-group">

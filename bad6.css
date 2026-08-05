@@ -1350,14 +1350,22 @@ body {
   background-color: black;
   color: white;
   border: 1px solid white;
-  padding: 5px 10px;
+  padding: 0;
   border-radius: 3px;
   cursor: pointer;
-  margin-left: 10px;
+  margin-left: auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
 }
 .delete-item:hover,
 .delete-hit:hover,
-.delete-gambit {
+.delete-gambit:hover {
   background-color: white;
   color: black;
 }
@@ -1375,8 +1383,7 @@ body {
 }
 /* Center the icon both vertically and horizontally */
 #create-item,
-#create-hit,
-#create-gambit {
+#create-hit {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1390,16 +1397,14 @@ body {
 }
 /* Style the FontAwesome icon inside */
 #create-item i,
-#create-hit i,
-#create-gambit i {
+#create-hit i {
   font-size: 1.5em;
   color: var(--accent-light);
   transform: translateX(0.05em);
 }
 /* Hover effect */
 #create-item:hover i,
-#create-hit:hover i,
-#create-gambit:hover i {
+#create-hit:hover i {
   color: var(--accent-dark);
 }
 /* ────────────────────────── Input Fields in Hit Tab ────────────────────────── */
@@ -1429,9 +1434,14 @@ body {
   padding: 10px;
   margin: 5px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
+}
+.scrollable-list li > span,
+.scrollable-list li > p {
+  min-width: 0;
 }
 .scrollable-list .item-entry {
   display: flex;
@@ -1451,9 +1461,17 @@ body {
   word-wrap: break-word;
 }
 .scrollable-list i.fa-trash {
-  margin-left: 10px;
+  margin-left: auto;
   color: #ff6666;
   cursor: pointer;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
 }
 /* Hamon: rising sunset half-circles */
 .jojo-sheet.type-Hamon {
@@ -1515,6 +1533,28 @@ body {
   width: 100%;
 }
 .stat-selection-dialog button.stat-option {
+  flex: 1 1 0;
+  /* equal width fill */
+  min-width: 0;
+  /* allow shrinking */
+  max-width: none;
+  width: auto;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  box-sizing: border-box;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gambit-selection-dialog .gambit-options {
+  display: flex;
+  flex-wrap: nowrap;
+  /* force one row */
+  gap: 0.25rem;
+  width: 100%;
+}
+.gambit-selection-dialog button.gambit-option {
   flex: 1 1 0;
   /* equal width fill */
   min-width: 0;
@@ -1613,13 +1653,24 @@ body {
 .stat-selection-dialog .stat-option {
   transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
+.gambit-selection-dialog .gambit-option {
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
 .stat-selection-dialog .stat-option.selected {
   transform: translateY(1px);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   filter: brightness(0.95);
 }
-/* Optional: tactile press while clicking any stat button */
+.gambit-selection-dialog .gambit-option.selected {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  filter: brightness(0.95);
+}
+/* Tactile press while clicking any stat button */
 .stat-selection-dialog .stat-option:active {
+  transform: translateY(1px);
+}
+.gambit-selection-dialog .gambit-option:active {
   transform: translateY(1px);
 }
 .advantage-selection {

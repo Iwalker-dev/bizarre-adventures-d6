@@ -32,7 +32,7 @@ async function executeRollerAsGM(handler, ...args) {
 function withCurrentMessageMode(chatData = {}) {
     const data = foundry.utils.deepClone(chatData);
     const messageMode = String(game.settings.get("core", "messageMode") || "public");
-    ChatMessage.applyRollMode(data, messageMode);
+    ChatMessage.applyMode(data, messageMode);
     return data;
 }
 
@@ -630,7 +630,7 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
     }
 
     let hasGambit = false;
-    if(gambit) {
+    if (gambit.luckMove) {
         createGambit(actor.id, gambit); //TODO: Create this function in luck-moves.js
         hasGambit = true;
     }
