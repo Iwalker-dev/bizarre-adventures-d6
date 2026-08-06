@@ -470,15 +470,17 @@ async function executeGambit(messageId, quadrantNum, sender) { // TODO: Clarify 
 		const message = game.messages.get(messageId);
 		const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
 		const actor = flagData ? resolveActorFromSource(flagData) : null;
+		console.log(actor);
 		if (actor) actors.push(actor);
 	}
+	console.log(actors);
 	// TODO: Pull the info from the dialog
 	const gambitInfo = await renderDialog("gambit", {actors, quadrantNum} );
 	if (!gambitInfo) return null;
 
 
 
-	return [gambitInfo.gambit.name, gambitInfo.gambit.actorId, gambitInfo.gambit.itemId];
+	return [gambitInfo.gambit.move, gambitInfo.gambit.actorId, gambitInfo.gambit.itemId];
 }
 
 async function executeFeint(messageId, quadrantNum) {

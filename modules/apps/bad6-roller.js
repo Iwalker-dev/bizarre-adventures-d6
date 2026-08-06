@@ -728,17 +728,7 @@ export async function rollAll(messageId) {
         await rerenderMessage(message);
         const displayMessage = game.messages.get(message.getFlag('bizarre-adventures-d6', 'displayId'));
         await rerenderDisplayMessage(displayMessage);
-        /*
-                        case "luck":
-                    {
-                    const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
-                    if (!actorSources) return;
-                    const luckActors = chooseLuckSpenders(actorSources);
-                    await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
-                    }
-                    break;
-        */
-
+        
         // Create all gambits
         for (let i = 1; i <= (type === "action" ? 2 : 4); i++) {
             const gambitData = message.getFlag("bizarre-adventures-d6", `quadrant${i}GambitData`);

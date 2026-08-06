@@ -1,11 +1,51 @@
 import { actionLabels } from "./constants.js";
 import { getScope } from "./dice.js";
 import { LUCK_MOVES } from "./luck-moves.js";
+import { resolveActorFromSource } from "./apps/roller/actors.js";
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
 function capitalizeFirst(text) {
     const s = String(text ?? "").trim();
     return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+// TODO: Move to utils/actors
+function isActorLike(value) {
+    if (!value || typeof value !== "object") return false;
+    return value.documentName === "Actor"
+        || Object.prototype.hasOwnProperty.call(value, "items")
+        || Object.prototype.hasOwnProperty.call(value, "system")
+        || Object.prototype.hasOwnProperty.call(value, "type");
+}
+// TODO: Move to luck moves
+export function buildGambitDialogEntries(actorEntries = []) {
+    return (actorEntries ?? [])
+        .map((entry) => {
+            const resolvedActor = isActorLike(entry)
+                ? entry
+                : resolveActorFromSource({
+                    sourceUuid: typeof entry?.sourceUuid === "string" ? entry.sourceUuid : entry?.uuid,
+                    actorId: entry?.actorId || entry?.id || entry?._id
+                });
+
+            if (!resolvedActor) return null;
+
+            const actorId = resolvedActor?.id || entry?.actorId || entry?.id || null;
+            const sourceUuid = resolvedActor?.uuid || entry?.sourceUuid || entry?.uuid || null;
+            const name = resolvedActor?.name ?? entry?.name ?? "";
+            const items = (resolvedActor.items ?? []).filter((item) => item?.type === "gambit");
+
+            return {
+                actor: {
+                    ...resolvedActor,
+                    name,
+                    items
+                },
+                actorId,
+                sourceUuid,
+                name
+            };
+        })
+        .filter(Boolean);
 }
 
 export async function renderDialog(dialog, dialogData = {}) {
@@ -14,12 +54,11 @@ export async function renderDialog(dialog, dialogData = {}) {
         const luckMoves = Object.fromEntries(
                         Object.entries(LUCK_MOVES)
                     );
-        const gambitsByActor = Object.fromEntries(
-            dialogData.actors.map((actor) => [
-                actor.name,
-                (actor.items ?? []).filter((item) => item.type === "gambit")
-            ])
-        );
+        const gambitsByActor = buildGambitDialogEntries(dialogData.actors).map(({ actor, actorId, sourceUuid }) => ({
+            actor,
+            actorId,
+            sourceUuid
+        }));
         const content = await renderTemplateV1(
             "systems/bizarre-adventures-d6/templates/dialog/gambit.hbs",
             { gambitsByActor, luckMoves, quadrantNum: dialogData.quadrantNum }
@@ -33,18 +72,22 @@ export async function renderDialog(dialog, dialogData = {}) {
                         label: "Confirm",
                         callback: (html) => { 
 
-                            const selectedGambit = html.find(".gambit-option.selected").data("item");
+                            const selectedGambitName = html.find(".gambit-option.selected").data("gambitName") || null;
                             // const selectedSourceUuid = html.find(".gambit-option.selected").data("sourceUuid");
                             const selectedActorId = html.find(".gambit-option.selected").data("actorId");
                             const selectedItemId = html.find(".gambit-option.selected").data("itemId");
 
-                            if (!selectedGambit) {
+                            if (!selectedGambitName) {
                                 ui.notifications.warn("Pick a Gambit first.");
                                 return;
                             }
 
                             resolve({
-                                gambit: selectedGambit,
+                                gambit: {
+                                    name: selectedGambitName,
+                                    actorId: selectedActorId,
+                                    itemId: selectedItemId
+                                },
                                 // sourceUuid: selectedSourceUuid,
                                 itemId: selectedItemId,
                                 actorId: selectedActorId

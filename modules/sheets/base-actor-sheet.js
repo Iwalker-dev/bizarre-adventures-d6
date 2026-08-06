@@ -357,7 +357,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		$sheet.addClass(`type-${type}`);
 	}
 
-/*
+
 	renderStars(html) {
 		html.find(".stat-stars").each((_, container) => {
 			const statKey = container.dataset.stat;
@@ -393,7 +393,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			}
 		});
 	}
-*/
+
 	showBurnStat(statKey, valueType) {
 		// Style the buttons
 		const control = this.element.find(`.burn-control[data-stat="${statKey}"]`);

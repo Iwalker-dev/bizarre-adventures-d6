@@ -6,10 +6,11 @@
             {{#each actor.items}}
                 <button class="gambit-option" 
                     type="button" 
-                    data-item="{{this.id}}"
+                    data-item-id="{{this.id}}"
+                    data-gambit-name="{{this.name}}"
                     data-source-uuid="{{../sourceUuid}}"
                     data-actor-id="{{../actorId}}">
-                    {{value.name}}
+                    {{this.name}} ({{this.system.luckMove}})
                 </button>
             {{/each}}
         </div>
