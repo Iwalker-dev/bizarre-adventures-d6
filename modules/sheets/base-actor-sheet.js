@@ -1,4 +1,5 @@
 import { typeConfigs, isDebugEnabled } from "../config.js";
+import { renderStars } from "../objects/stat-star-render.js";
 
 export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 	static get defaultOptions() {
@@ -356,7 +357,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		$sheet.addClass(`type-${type}`);
 	}
 
-
+/*
 	renderStars(html) {
 		html.find(".stat-stars").each((_, container) => {
 			const statKey = container.dataset.stat;
@@ -374,7 +375,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 				const star = document.createElement("span");
 				star.classList.add("stat-star");
 				if (i <= value) star.classList.add("filled");
-				star.textContent = (i === 6 ? "✶" : "★");
+				star.textContent = (i === 6 ? "✶" : "★"); //TODO: This logic also applies to Original on initial load. It shouldn't.
 				star.title = (i === 6) ?
 					"∞ / Unmeasurable" :
 					`Rank ${["E", "D", "C", "B", "A"][i - 1]}`;
@@ -392,7 +393,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			}
 		});
 	}
-
+*/
 	showBurnStat(statKey, valueType) {
 		// Style the buttons
 		const control = this.element.find(`.burn-control[data-stat="${statKey}"]`);
@@ -408,7 +409,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		const $star = this.element.find(`.stat-stars[data-stat="${statKey}-${valueType}"]`);
 		if ($star.length) {
 			$star.show();
-			this.renderStars($star.parent()); // or pass $star if you customize renderStars
+			renderStars($star.parent(), this.actor);
 		}
 	}
 

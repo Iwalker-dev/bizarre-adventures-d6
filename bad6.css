@@ -1253,7 +1253,10 @@ body {
   color: var(--accent-color);
 }
 .jojo-sheet .stat-stars.infinite .stat-star {
-  color: crimson !important;
+  color: crimson;
+}
+.jojo-sheet .stat-star.gambit-reduced {
+  color: #ffffff !important;
 }
 .jojo-sheet .stat-stars.has-special {
   position: relative;

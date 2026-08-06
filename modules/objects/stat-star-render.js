@@ -1,5 +1,6 @@
 import { isDebugEnabled } from "../config.js";
 import { renderDialog } from "../dialog.js";
+import { LUCK_MOVES } from "../luck-moves.js";
 
 function getRankTitle(starNumber) {
 	if (starNumber === 6) return "∞ / Unmeasurable";
@@ -148,7 +149,7 @@ function bindStatLabelControl($container, actor, statName, statData) {
 
 
 
-export function renderStars(html, actor) { // TODO: Learning/Luck/Range are based on Ranks. infinite is 15 for them, not 6.
+export function renderStars(html, actor) {
 	html.find(".stat-stars").each((_, container) => {
 		const $container = $(container);
 		const statKey = $container.data("stat");
@@ -156,9 +157,28 @@ export function renderStars(html, actor) { // TODO: Learning/Luck/Range are base
 
 		const statData = actor.system.attributes.stats?.[statName];
 		if (!statData) return;
+		
 
 		const isBurn = statData.dtype === "Burn";
 		const finalValueType = isBurn ? valueType : "value";
+
+		let gambitTotalCost = 0;
+		if (isBurn) {
+			for (const item of actor.items ?? []) {
+				
+				if (item?.type !== "gambit") continue;
+				const gambitMove = item?.system?.luckMove;
+				if (isDebugEnabled()) console.log(`Found: ${item.name}. type: ${LUCK_MOVES[gambitMove].costType} vs ${finalValueType}`);
+				if (LUCK_MOVES[gambitMove].costType != finalValueType) continue;
+				const spentCost = Math.ceil(LUCK_MOVES[gambitMove].cost / 2);
+				if (isDebugEnabled()) console.log(`adding gambit "${item.name}"'s cost of ${spentCost}`)
+
+				if (gambitMove) {
+					gambitTotalCost += spentCost;
+					if (isDebugEnabled()) console.log(`Total Cost: ${gambitTotalCost}`);
+				}
+			}
+		}
 
 		let baseValue = Number(statData?.[finalValueType] ?? 0);
 		if (!Number.isFinite(baseValue)) baseValue = 0;
@@ -167,9 +187,10 @@ export function renderStars(html, actor) { // TODO: Learning/Luck/Range are base
 		const specialStats = isBurn ? [] : normalizeSpecialStats(statData);
 		const maxSpecial = specialStats.reduce((max, entry) => Math.max(max, Math.floor(entry.value)), 0);
 		const maxStars = 6; // Math.max(6, baseValue, maxSpecial);
+		const infValue = isBurn ? 15 : 6;
 
 		$container.empty()
-			.toggleClass("infinite", baseValue === 6)
+			.toggleClass("infinite", baseValue >= 6)
 			.toggleClass("has-special", specialStats.length > 0);
 
 		bindStatLabelControl($container, actor, statName, statData);
@@ -182,8 +203,14 @@ export function renderStars(html, actor) { // TODO: Learning/Luck/Range are base
 			const star = document.createElement("span");
 			star.classList.add("stat-star");
 
+			const spentUpperBound = Math.min(maxStars, baseValue + gambitTotalCost);
+			const isReducedStar = isBurn && !hasBase && starNumber <= spentUpperBound;
+			if (isReducedStar) {
+				star.classList.add("gambit-reduced");
+			}
+
 			// Determine symbol and styling
-			const infValue = isBurn ? 15 : 6;
+			
 			let symbol = (starNumber > 5 ? "✦" : "★");
 			let isFilled = hasBase;
 			let isSpecial = false;

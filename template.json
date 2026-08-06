@@ -220,7 +220,7 @@
             "gambit": {
                 "type": "gambit",
                 "trigger": "",
-                "luckmove": "",
+                "luckMove": "",
                 "notes": ""
             }
         }

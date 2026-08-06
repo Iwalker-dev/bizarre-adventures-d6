@@ -349,6 +349,9 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 		case "persist":
 			executed = await executePersist(messageId, quadrantNum);
 			break;
+		case "reveal":
+			executed = true;
+			break;
 		default:
 			ui.notifications.warn("Unknown move: " + moveType);
 			return;
