@@ -10,6 +10,7 @@ import { getPairAdvantage, getPairReckless, setPairAdvantage, setPairReckless, g
 import { getHitDCMeta, getActionDCMeta } from "./roller/roll-resolution.js";
 import { renderAction, renderContest, renderSource, rerenderMessage, rerenderDisplayMessage } from "./roller/display.js";
 import { waitForUnlock, updateQuadrant, recalculateQuadrantFormula, reevaluatePairRollResults, getPairUsedUniqueModifierIds } from "./roller/quadrants.js";
+import { shouldApplyVisibilityForAction, withCurrentMessageMode } from "./roller/chat.js";
 export { rerenderMessage, recalculateQuadrantFormula, reevaluatePairRollResults };
 
 // TODO: Calling a flag calls source message. Calling a Render also calls the Display message
@@ -27,13 +28,6 @@ async function executeRollerAsGM(handler, ...args) {
         return false;
     }
     return await socket.executeAsGM(handler, ...args);
-}
-
-function withCurrentMessageMode(chatData = {}) {
-    const data = foundry.utils.deepClone(chatData);
-    const messageMode = String(game.settings.get("core", "messageMode") || "public");
-    ChatMessage.applyMode(data, messageMode);
-    return data;
 }
 
 /**
@@ -107,11 +101,16 @@ export async function createActionMessage() {
 }
 
 export async function createContestMessage() {
+    const action = await createActionMessage();
+    const message = await dispatchUpdateToContest(action.id);
+    return message;
+    /* This was used before the message mode update.
     const message = await ChatMessage.create(withCurrentMessageMode({
         content: await renderContest()
     }));
     await message.setFlag("bizarre-adventures-d6", "type", "contest");
     return message;
+    */
 }
 
 export async function updateToContest(messageId) {
@@ -142,7 +141,7 @@ export async function registerChatListeners() {
         // First time Check
         const chatMessages = document.querySelectorAll(".chat-message[data-message-id]");
         // For GMs with debug off, hide the debug cards by removing the html.
-        if (game.user.isGM && !isDebugEnabled) {
+        if (game.user.isGM && !isDebugEnabled()) {
             const sourceMessages = game.messages.filter(message =>
                 message.visible && message.getFlag('bizarre-adventures-d6', 'type') == 'source'
             );
@@ -232,7 +231,11 @@ export async function registerChatListeners() {
             // For our roll messages, re-add client limitation, or hide message entirely if debug is off
             const type = message.getFlag('bizarre-adventures-d6', 'type');
             if (type == 'contest' || type == 'action') applyChatButtonPermissions(message, html)
-            else if (type == 'source' && !isDebugEnabled()) html.remove();
+            else if (type == 'source') {
+                const display = message.getFlag('bizarre-adventures-d6', 'displayId');
+
+                if (!isDebugEnabled()) html.remove();
+            }
         });
 
         $(document).on("click", ".chat-message .select-stat", async (event) => {
@@ -250,8 +253,16 @@ export async function registerChatListeners() {
                 ui.notifications.warn("You cannot execute this action.");
                 return;
             }
-            
-            switch (actionType) {
+
+            const shouldApplyVisibility = shouldApplyVisibilityForAction(actionType, actionArg);
+            if (shouldApplyVisibility) {
+                await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, {
+                    playerId: game.user.id,
+                    messageMode: game.settings.get("core", "messageMode")
+                });
+            }
+
+            switch (actionType) { //TODO: Standardize return values
                 case "prepare":
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
@@ -269,7 +280,8 @@ export async function registerChatListeners() {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return;
                     const luckActors = chooseLuckSpenders(actorSources);
-                    await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
+                    const shouldContinue = await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
+                    if (!shouldContinue) return;
                     }
                     break;
                 case "resolve":
@@ -294,11 +306,13 @@ export async function registerChatListeners() {
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
                     return;
             }
-            // The system only gets to this point if an action succeeded. TODO: THIS IS A LIE, ALL BUTTONS ALTER VISIBILITY
-            await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, { 
-                playerId: game.user.id,
-                messageMode: game.settings.get("core", "messageMode") 
-            });
+            if (!shouldApplyVisibility) {
+                // The system only gets to this point if an action succeeded. TODO: THIS IS A LIE, ALL BUTTONS ALTER VISIBILITY
+                await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, {
+                    playerId: game.user.id,
+                    messageMode: game.settings.get("core", "messageMode")
+                });
+            }
             const speaker = ChatMessage.getSpeaker();
             const isInCharacter = !!speaker.actor;
 

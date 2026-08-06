@@ -209,12 +209,14 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Setup System Discord
 ## [0.9.13.2] - 2026-7-15
 - Removed pre-allowed use in v15 (Won't allow publishing in such a state)
-## [0.9.13.5] - 2026-7-15
-- Reworked Privacy Settings to be based on messageMode. (Still need to remove depreciated code. Also need to assure changes apply to contests.)
-- Updating version semantics "0.9" is the doc version. "13.2" is the system version. Not intended, but seems like the least confusion solution
+## [0.9.14] - 2026-8-6
+- Reworked Privacy Settings to be based on messageMode.
+- Changing version semantics "0.9" is the doc version. "13.5" is the system version. Not intended, but seems like the least confusing solution
+- Gambits reworked to doc v0.9
+- Luck updated to use 15 at infinite value. Right clicking the 'infinite' star allows editing of the exact value.
 
 # What's left? (Ordered By Priority)
-- Update logic to system V0.9
+- Update logic to doc system V0.9
 - Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)
 - update RenderChatMessage hook to RenderChatMessageHTML before v16

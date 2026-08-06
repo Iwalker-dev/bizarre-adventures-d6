@@ -8,6 +8,7 @@ import { isDebugEnabled } from "../../config.js";
 import { resolveActorFromSource } from "./actors.js";
 import { getPairAdvantage, getPairFudgeBonus, getPairReckless } from "./pair-controls.js";
 import { getContestResultLabel } from "./roll-resolution.js";
+import { canViewerSeeQuadrant } from "./chat.js";
 
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
@@ -437,30 +438,11 @@ export async function rerenderDisplayMessage(message) {
         const sourceFlag = sourceMessage.getFlag("bizarre-adventures-d6", `quadrant${i}`) || null;
         const visibilityMode = visibility?.messageMode || null;
 
-        let shouldRender = false;
-        if (visibility) {
-            const isSelf = visibility.playerId === game.user.id;
-            const isGM = !!game.user.isGM;
-            switch (visibilityMode) {
-                case "public":
-                    shouldRender = true;
-                    break;
-                case "gm":
-                    shouldRender = isSelf || isGM;
-                    break;
-                case "blind":
-                    shouldRender = isGM;
-                    break;
-                case "self":
-                    shouldRender = isSelf;
-                    break;
-                case "ic":
-                    shouldRender = true;
-                default:
-                    shouldRender = false;
-                    break;
-            }
-        }
+        const shouldRender = canViewerSeeQuadrant({
+            visibility,
+            playerId: game.user.id,
+            isGM: !!game.user.isGM
+        });
 
         if (!sourceFlag) {
             // Nothing has happened in this quadrant yet.

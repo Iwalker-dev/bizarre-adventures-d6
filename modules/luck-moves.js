@@ -2,6 +2,7 @@ import { resetQuadrant, createActionMessage, createContestMessage, recalculateQu
 import { renderDialog } from "./dialog.js";
 import { getRollerSocket } from "./sockets.js";
 import { resolveActorFromSource } from "./apps/roller/actors.js";
+import { withCurrentMessageMode } from "./apps/roller/chat.js";
 
 function warnOwners(actor, warning) {
 	const socket = getRollerSocket();
@@ -399,10 +400,9 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 			}
 		}
 
-
-
 		// Update the message flags with the new data
 		await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, updateData);
+
 		if (moveType === "fudge") {
 			const quadrantNumber = Number(quadrantNum);
 			const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
@@ -417,12 +417,14 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 			}
 			await reevaluatePairRollResults(messageId, quadrantNum);
 		}
+
 		// Reveal and delete gambit document
 		if (isGambit) {
 			const isRevealed = revealGambit(gambitActor, gambitId);
 			if (isRevealed) gambitActor.deleteEmbeddedDocuments("gambit", [gambitId]);
 		}
 	}
+	return executed; // Used so visibility knows whether or not to trigger.
 }
 
 function getPairMulliganBonus(message, quadrantNum) {
@@ -534,6 +536,7 @@ async function executePersist(messageId, quadrantNum) {
 	const persistChatData = {
 		content: `<p><strong>Persist!</strong></p>`
 	};
+	/*
 	const rollMode = String(game.settings.get("core", "rollMode") || "publicroll");
 	if (typeof ChatMessage?.applyRollMode === "function") {
 		ChatMessage.applyRollMode(persistChatData, rollMode);
@@ -545,7 +548,8 @@ async function executePersist(messageId, quadrantNum) {
 	} else if (rollMode === "selfroll") {
 		persistChatData.whisper = game.user?.id ? [game.user.id] : [];
 	}
-	const newMessage = await ChatMessage.create(persistChatData);
+	*/
+	const newMessage = await ChatMessage.create(withCurrentMessageMode(persistChatData));
 	await message.setFlag("bizarre-adventures-d6", "Locked", true); // keep locked, original message should not be editable after persist
 	await rerenderMessage(message);
 	const type = message.getFlag("bizarre-adventures-d6", "type");
