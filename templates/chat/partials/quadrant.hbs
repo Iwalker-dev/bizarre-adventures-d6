@@ -1,5 +1,15 @@
-<div class="quadrant-context {{#if rolled}}is-rolled{{else if prepared}}is-prepared{{else}}is-pending{{/if}} {{winnerClass}}">
+<div class="quadrant-context {{#if rolled}}is-rolled{{else if prepared}}is-prepared{{else}}is-pending{{/if}} {{winnerClass}} {{#if visibilityMode}}visibility-{{visibilityMode}}{{/if}}">
   <div class="luck-chips">
+    {{#if hidden}}
+      {{#if hiddenLuckCount}}
+        <span class="luck-chip luck-chip--hidden luck-chip--active" data-tooltip="Something was spent here, but it's hidden from you">
+          <i class="fas fa-question"></i>
+          {{#if (isGreater hiddenLuckCount 1)}}
+            <span class="luck-chip-count">{{displayCount hiddenLuckCount}}</span>
+          {{/if}}
+        </span>
+      {{/if}}
+    {{else}}
     {{#if luckCounts.feint}}
       <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="Feint (-1 Temp): Edit your Action/Reaction after hearing the enemy's">
         <i class="fas fa-mask"></i>
@@ -51,9 +61,20 @@
         Custom
       </span>
     {{/if}}
+    {{/if}}
   </div>
 
   <div class="gambit-chips">
+  {{#if hidden}}
+    {{#if hiddenGambitCount}}
+      <span class="luck-chip luck-chip--hidden luck-chip--gambit" data-tooltip="A Gambit was spent here, but it's hidden from you">
+        <i class="fas fa-question"></i>
+        {{#if (isGreater hiddenGambitCount 1)}}
+          <span class="luck-chip-count">{{displayCount hiddenGambitCount}}</span>
+        {{/if}}
+      </span>
+    {{/if}}
+  {{else}}
   {{#if gambitCounts.feint}}
     <span class="luck-chip luck-chip--gambit" data-tooltip="Gambit Feint">
       <i class="fas fa-mask"></i>
@@ -94,23 +115,67 @@
       {{/if}}
     </span>
   {{/if}}
+  {{/if}}
 </div>
 
-    {{#if rolled}}
+    {{#if hidden}}
+      {{#if rolled}}
+        <div class="quadrant-rolled">
+          <div class="rolled-actor bad6-actor-name bad6-hidden-actor">{{actorName}}{{#if hasPlacedGambit}}<span class="quadrant-gambit-indicator" data-tooltip="Gambit set in Stat Select">G</span>{{/if}}</div>
+          <div class="bad6-roll-display bad6-hidden-roll" data-quadrant="{{quadrantNum}}">{{{rollHtml}}}</div>
+          <div class="quadrant-actor-divider"></div>
+          <div class="quadrant-buttons">
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-mulligan" data-tooltip="Right-Click to Gambit">Mulligan</button>
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-persist" data-tooltip="Right-Click to Gambit">Persist</button>
+            {{#if canFlashback}}
+              <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+            {{/if}}
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
+          </div>
+        </div>
+      {{else if prepared}}
+        <div class="quadrant-prepared">
+          <div class="prepared-label">
+            <div class="prepared-label-actor bad6-actor-name bad6-hidden-actor">{{actorName}}{{#if hasPlacedGambit}}<span class="quadrant-gambit-indicator" data-tooltip="Gambit set in Stat Select">G</span>{{/if}}</div>
+            <div class="quadrant-actor-divider"></div>
+            <div>Has Readied:</div>
+            <div class="prepared-label-stat">
+              <span class="prepared-stat-box bad6-hidden-stat">{{statLabel}}</span>
+            </div>
+          </div>
+          <div class="quadrant-buttons">
+            {{#if canFlashback}}
+              <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+            {{/if}}
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
+          </div>
+        </div>
+      {{else}}
+        <div class="quadrant-buttons">
+          {{#if canFlashback}}
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+          {{/if}}
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
+        </div>
+      {{/if}}
+    {{else if rolled}}
       <div class="quadrant-rolled">
-        <div class="rolled-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}</div>
+        <div class="rolled-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}{{#if hasPlacedGambit}}<span class="quadrant-gambit-indicator" data-tooltip="Gambit set in Stat Select">G</span>{{/if}}</div>
         <div class="bad6-roll-display" data-quadrant="{{quadrantNum}}">{{{rollHtml}}}</div>
         <div class="quadrant-actor-divider"></div>
         <div class="quadrant-buttons">
           <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-mulligan" data-tooltip="Right-Click to Gambit">Mulligan</button>
           <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-persist" data-tooltip="Right-Click to Gambit">Persist</button>
-          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+          {{#if canFlashback}}
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+          {{/if}}
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
         </div>
       </div>
     {{else if prepared}}
       <div class="quadrant-prepared">
         <div class="prepared-label">
-          <div class="prepared-label-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}</div>
+          <div class="prepared-label-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}{{#if hasPlacedGambit}}<span class="quadrant-gambit-indicator" data-tooltip="Gambit set in Stat Select">G</span>{{/if}}</div>
           <div class="quadrant-actor-divider"></div>
           <div>Has Readied:</div>
           <div class="prepared-label-stat">
@@ -127,7 +192,10 @@
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-feint" data-tooltip="Right-Click to Gambit">Feint</button>
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-fudge" data-tooltip="Right-Click to Gambit">Fudge</button>
           {{/if}}
-          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+          {{#if canFlashback}}
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+          {{/if}}
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
         </div>
       </div>
     {{else}}
@@ -136,7 +204,10 @@
         {{#if lock}}Locked...{{else}}Select Stat{{/if}}
       </button>
       <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+      <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
+
     </div>
     {{/if}}
   </div>
+
 

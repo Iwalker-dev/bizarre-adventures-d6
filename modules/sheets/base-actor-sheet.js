@@ -1,4 +1,5 @@
 import { typeConfigs, isDebugEnabled } from "../config.js";
+import { renderStars } from "../objects/stat-star-render.js";
 
 export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 	static get defaultOptions() {
@@ -144,9 +145,10 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 
 		if (actorType === "user") {
 			tabs.push(
-				{ id: "hit", label: "Hits", icon: "fas fa-burst" },
-				{ id: "item", label: "Items", icon: "fas fa-box" }
+				{ id: "item", label: "Items", icon: "fas fa-box" },
+				{ id: "hit", label: "Hits", icon: "fas fa-burst" }
 			);
+			if (game.user.isOwner || game.user.isGM) tabs.push({ id: "gambit", label: "Gambits", icon: "fas fa-clover" })
 		}
 
 		return tabs;
@@ -373,7 +375,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 				const star = document.createElement("span");
 				star.classList.add("stat-star");
 				if (i <= value) star.classList.add("filled");
-				star.textContent = (i === 6 ? "✶" : "★");
+				star.textContent = (i === 6 ? "✶" : "★"); //TODO: This logic also applies to Original on initial load. It shouldn't.
 				star.title = (i === 6) ?
 					"∞ / Unmeasurable" :
 					`Rank ${["E", "D", "C", "B", "A"][i - 1]}`;
@@ -407,7 +409,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 		const $star = this.element.find(`.stat-stars[data-stat="${statKey}-${valueType}"]`);
 		if ($star.length) {
 			$star.show();
-			this.renderStars($star.parent()); // or pass $star if you customize renderStars
+			renderStars($star.parent(), this.actor);
 		}
 	}
 
@@ -477,7 +479,7 @@ async _onDropActor(event) {
 		actor = game.actors.get(data.id) || null;
 	}
 	const droppedActor = game.actors.get(actor?.id) || actor;
-	// Only accept Actor drops (resolve by UUID or id)
+	// Only accept Actor drops (resolve by UUID or id) (TODO: Solve this triggering on every drag. Update for V15)
 	if (!droppedActor || droppedActor.documentName !== "Actor") {
 		ui.notifications.warn("You can only drop Actors here!");
 		return;

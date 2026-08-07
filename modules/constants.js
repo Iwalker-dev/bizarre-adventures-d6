@@ -1,10 +1,10 @@
 export const welcomeText = `
     <h2>Welcome to BAD6!</h2>
-    <h3>For V0.86</h3>
-    <h4>Not yet updated for V0.9</h4>
+    <h3>For Google Doc version V0.9</h3>
     <p> Controls: </p>
         <ul>
-            <li>🎲 Use the "D6 Roller" in token controls for actions. Double click for Contests.</li>
+            <li>🎲 Use the "D6 Roller" in <a href="https://foundryvtt.com/article/tokens/" target="_blank" rel="noopener noreferrer">token controls</a> for actions. Double click for Contests.</li>
+            <li>🎲❗ Note: Your messsage/<a href="https://foundryvtt.com/article/chat/" target="_blank" rel="noopener noreferrer">roll mode</a> when clicking a button decides who can see it!</li>
             <li>🎲 As a GM, your highlighted tokens are the roll's context.</li>
             <li>🎯 As a player your owned actors are the roll's context.</li>
             <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
@@ -14,12 +14,12 @@ export const welcomeText = `
         </ul>
         <p> This system is unfinished! Certain features are not yet implemented such as...</p>
         <ul>
-            <li> Learning Automation.</li>
+            <li> Learning Automation (Including advantages from Hamon).</li>
             <li> (View the changelog for longer list) </li>
         </ul>
     <p> Please report any problems, ideas, or comments to itpart on Discord as I try to handle them quickly. I would love to make this the perfect system with your help!
-    <p> Link to the Official Bizarre Adventures Discord: https://discordapp.com/invite/2QVASDt</p>
-    <p>	Link to the FoundryVTT System's Discord:  https://discord.gg/f6t3tGMgMD</p>`
+    <p> <a href="https://discordapp.com/invite/2QVASDt" target="_blank" rel="noopener noreferrer">Official Bizarre Adventures Discord</a></p>
+    <p>	<a href="https://discord.gg/f6t3tGMgMD" target="_blank" rel="noopener noreferrer">FoundryVTT System's Discord</a>  </p>`
 
 export const actionLabels = [ 
     {side:"action", quadrant: 1, label: "Action Setup"}

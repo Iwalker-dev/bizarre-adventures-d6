@@ -1,0 +1,18 @@
+<div class="gambit-selection-dialog">
+    <label>Choose a Gambit:</label>
+    {{#each gambitsByActor}}
+        <h4>{{actor.name}}</h4>
+        <div class="gambit-options">
+            {{#each actor.items}}
+                <button class="gambit-option" 
+                    type="button" 
+                    data-item-id="{{this.id}}"
+                    data-gambit-name="{{this.name}}"
+                    data-source-uuid="{{../sourceUuid}}"
+                    data-actor-id="{{../actorId}}">
+                    {{this.name}} ({{this.system.luckMove}})
+                </button>
+            {{/each}}
+        </div>
+    {{/each}}
+</div>

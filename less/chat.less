@@ -187,6 +187,23 @@
   border-color: #444;
 }
 
+// Mirror message mode colors
+.quadrant-context.visibility-public {
+  background: var(--color-emote-background, #ffffff);
+  border-color: var(--color-emote-border, #887c5d);
+}
+
+.quadrant-context.visibility-gm,
+.quadrant-context.visibility-self {
+  background: var(--color-whisper-background, #e8e8ef); 
+  border-color: var(--color-whisper-border, #545469);
+}
+
+.quadrant-context.visibility-blind {
+  background: var(--color-blind-background, #f5eaf5);
+  border-color: var(--color-blind-border, #6b476b);
+}
+
 .quadrant-context.is-winner {
   border-color: #2e7d32;
 }
@@ -219,6 +236,24 @@
   margin-top: 0.25rem;
   border-radius: 2px;
   background: rgba(0, 0, 0, 0.08);
+}
+
+.quadrant-gambit-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1em;
+  height: 1.1em;
+  margin-left: 0.35rem;
+  padding: 0 0.28em;
+  border-radius: 999px;
+  border: 1px solid #c89e33;
+  background: #2d2614;
+  color: #e0b84a;
+  font-size: 0.72em;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .quadrant-actor-divider {
@@ -351,4 +386,14 @@
 .luck-chip--custom {
   border-color: var(--accent-color);
   background: rgba(0, 0, 0, 0.08);
+}
+
+// Generic placeholder chip shown when a chip exists but its type is hidden from this viewer.
+.luck-chip--hidden {
+  border-color: #888;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.luck-chip--hidden > i {
+  color: #ccc;
 }

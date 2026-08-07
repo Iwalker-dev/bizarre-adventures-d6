@@ -26,6 +26,28 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.gambit-selection-dialog .gambit-options {
+  display: flex;
+  flex-wrap: nowrap;
+  /* force one row */
+  gap: 0.25rem;
+  width: 100%;
+}
+.gambit-selection-dialog button.gambit-option {
+  flex: 1 1 0;
+  /* equal width fill */
+  min-width: 0;
+  /* allow shrinking */
+  max-width: none;
+  width: auto;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  box-sizing: border-box;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .custom-modifier-dialog {
   margin-top: 0.35rem;
 }
@@ -45,6 +67,13 @@
 .custom-modifier-auto,
 .custom-modifier-option-row {
   font-size: 0.9em;
+}
+.custom-modifier-auto.is-unavailable,
+.custom-modifier-option-row.is-unavailable {
+  opacity: 0.55;
+}
+.custom-modifier-option-row.is-unavailable {
+  cursor: not-allowed;
 }
 .custom-modifier-option-row {
   display: block;
@@ -103,13 +132,24 @@
 .stat-selection-dialog .stat-option {
   transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
+.gambit-selection-dialog .gambit-option {
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
 .stat-selection-dialog .stat-option.selected {
   transform: translateY(1px);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   filter: brightness(0.95);
 }
-/* Optional: tactile press while clicking any stat button */
+.gambit-selection-dialog .gambit-option.selected {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  filter: brightness(0.95);
+}
+/* Tactile press while clicking any stat button */
 .stat-selection-dialog .stat-option:active {
+  transform: translateY(1px);
+}
+.gambit-selection-dialog .gambit-option:active {
   transform: translateY(1px);
 }
 .advantage-selection {

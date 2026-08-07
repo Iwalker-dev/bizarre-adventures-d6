@@ -61,16 +61,16 @@ export async function updateQuadrant(messageId
 
     if (!message) {
         ui.notifications.error("Could not find message to update with prepared roll.");
-        return;
+        return false;
     }
 
     const locked = !await waitForUnlock(message);
     if (locked) {
         ui.notifications.error("Message is still locked. Cannot update.");
-        return;
+        return false;
     }
 
-    if (!message) return;
+    if (!message) return false;
 
     await message.setFlag("bizarre-adventures-d6", `Locked`, true);
     message = game.messages.get(messageId);
@@ -121,6 +121,7 @@ export async function updateQuadrant(messageId
     await message.setFlag("bizarre-adventures-d6", `Locked`, false);
     message = game.messages.get(messageId);
     if (message) await rerenderMessage(message);
+    return true;
 }
 
 export async function recalculateQuadrantFormula(messageId, quadrantNum, { includeMulligan = false } = {}) {

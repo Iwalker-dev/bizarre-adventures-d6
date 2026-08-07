@@ -1,0 +1,28 @@
+<form class="sheet gambit-item-sheet" autocomplete="off">
+  <header class="sheet-header">
+    <h1>{{item.name}}</h1>
+  </header>
+
+  <div class="sheet-body">
+    <div class="form-group">
+      <label for="gambit-name">Name:</label>
+      <input type="text" id="gambit-name" name="name" value="{{item.name}}" readonly/>
+    </div>
+
+    <div class="form-group">
+      <label for="gambit-trigger">Trigger:</label>
+      <input type="text" id="gambit-trigger" name="system.trigger" value="{{item.system.trigger}}" readonly/>
+    </div>
+
+    <div class="form-group">
+      <label for="gambit-luckMove">Luck Move:</label>
+      <input type="text" id="gambit-luckMove" name="system.luckMove" value="{{item.system.luckMove}}" readonly/>
+    </div>
+
+    <div class="form-group">
+      <label for="gambit-notes">Notes:</label>
+      <textarea id="gambit-notes" name="system.notes" rows="4">{{item.system.notes}}</textarea>
+    </div>
+
+  </div>
+</form>
