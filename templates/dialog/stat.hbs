@@ -1,6 +1,29 @@
+<div class="gambit-selection-dialog">
+            <h5>Gambit</h5>
+            <div class="gambit-fields">
+                    <label for="gambit-name">Name:</label>
+                    <input type="text" id="gambit-name" name="name" value=""/>
+
+                <div class="form-group">
+                    <label for="gambit-trigger">Trigger:</label>
+                    <textarea id="gambit-trigger" name="system.description" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="gambit-options">
+                {{#each luckMoves}}
+                        <button class="gambit-option" 
+                            type="button" 
+                            data-stat="{{key}}">
+                            {{name}}
+                        </button>
+                {{/each}}
+            </div>
+</div>
+
 <div class="quadrant-divider" style="border-top:1px solid #a1a1a1;"></div>
 
 <div class="stat-selection-dialog">
+    <h5>Stat</h5>
     {{#each actors}}
             <h4>{{name}}</h4>
             <div class="stat-options">
@@ -21,7 +44,7 @@
 <div class="quadrant-divider" style="border-top:1px solid #a1a1a1;"></div>
 
 <div class="custom-modifier-dialog">
-    <h4>Custom</h4>
+    <h5>Custom Modifiers</h5>
     <div class="custom-modifier-list">
         <em>Select a stat to view custom modifiers.</em>
     </div>

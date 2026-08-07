@@ -11,8 +11,9 @@ import { migrateWorld } from "./modules/migration.js";
 import { UserSheet } from "./modules/sheets/user-actor-sheet.js";
 import { StandSheet } from "./modules/sheets/stand-actor-sheet.js";
 import { PowerSheet } from "./modules/sheets/power-actor-sheet.js";
-import { HitItemSheet } from "./modules/sheets/hit-item-sheet.js";
 import { DefaultItemSheet } from "./modules/sheets/default-item-sheet.js";
+import { HitItemSheet } from "./modules/sheets/hit-item-sheet.js";
+import { GambitItemSheet } from "./modules/sheets/gambit-item-sheet.js";
 
 
 
@@ -48,49 +49,6 @@ Hooks.once("init", async () => {
 		type: Boolean,
 		default: false
 	});
-	/*
-	game.settings.register("bizarre-adventures-d6", "formulaVisibilityRole", {
-		name: "Formula Visibility Role",
-		hint: "Minimum user role required to see roll formulas in BAD6 chat cards.",
-		scope: "world",
-		config: true,
-		type: Number,
-		choices: roleChoices,
-		default: CONST.USER_ROLES.GAMEMASTER,
-		onChange: refreshChatVisibility
-	});
-
-	game.settings.register("bizarre-adventures-d6", "formulaVisibilityOwnerOverride", {
-		name: "Formula Visibility Owner Override",
-		hint: "Allow actor owners to see roll formulas even if their user role is below the formula visibility requirement.",
-		scope: "world",
-		config: true,
-		type: Boolean,
-		default: true,
-		onChange: refreshChatVisibility
-	});
-
-	game.settings.register("bizarre-adventures-d6", "actorNameVisibilityRole", {
-		name: "Actor Name Visibility Role",
-		hint: "Minimum user role required to see actor names in BAD6 chat cards.",
-		scope: "world",
-		config: true,
-		type: Number,
-		choices: roleChoices,
-		default: CONST.USER_ROLES.PLAYER,
-		onChange: refreshChatVisibility
-	});
-
-	game.settings.register("bizarre-adventures-d6", "actorNameVisibilityOwnerOverride", {
-		name: "Actor Name Visibility Owner Override",
-		hint: "Allow actor owners to see actor names even if their user role is below the actor-name visibility requirement.",
-		scope: "world",
-		config: true,
-		type: Boolean,
-		default: true,
-		onChange: refreshChatVisibility
-	});
-	*/
 
 	game.system.migrateWorld = migrateWorld;
 
@@ -137,6 +95,10 @@ Hooks.once("init", async () => {
 	});
 	foundry.documents.collections.Items.registerSheet("bizarre-adventures-d6", DefaultItemSheet, {
 		types: ["item"]
+		, makeDefault: true
+	});
+	foundry.documents.collections.Items.registerSheet("bizarre-adventures-d6", GambitItemSheet, {
+		types: ["gambit"]
 		, makeDefault: true
 	});
 });

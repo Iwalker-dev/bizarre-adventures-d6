@@ -1,6 +1,8 @@
 import { resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless, setFlag } from "./apps/bad6-roller.js";
 import { updateQuadrant } from "./apps/roller/quadrants.js";
 import { executeLuckMove } from "./luck-moves.js";
+import { getRollableActorSources } from "./apps/roller/actors.js";
+import { withCurrentMessageMode } from "./apps/roller/chat.js";
 let rollerSocket = null;
 
 export function getRollerSocket() {
@@ -20,6 +22,7 @@ export function registerSockets() {
     rollerSocket.register("rollerSetPairReckless", socketSetPairReckless);
     rollerSocket.register("warnOwners", socketWarnOwners);
     rollerSocket.register("setFlag", socketSetFlag);
+    rollerSocket.register("getUserActors", socketGetUserActors);
 }
 
 export async function socketApplyPreparedQuadrant(messageId, quadrantNum, preparedData) {
@@ -82,10 +85,10 @@ export async function socketFlashbackRequest(requesterName, flashbackText) {
         }).render(true);
     });
     if (!approved) return false;
-    await ChatMessage.create({
-        content: `<div class="bad6-flashback-message"><strong>\u26a1 Flashback (${requesterName ?? "Unknown"})</strong><p>${flashbackText}</p></div>`,
+    await ChatMessage.create(withCurrentMessageMode({
+        content: `<div class="bad6-flashback-message"><strong>⚡ Flashback (${requesterName ?? "Unknown"})</strong><p>${flashbackText}</p></div>`,
         flags: { "bizarre-adventures-d6": { type: "flashback" } }
-    });
+    }));
     return true;
 }
 // Takes in the actor object and a string. Sends a warning if the current user owns the actor.
@@ -95,4 +98,8 @@ export async function socketWarnOwners(actor, warning) {
 
 export async function socketSetFlag(message, flag, value) {
     return await setFlag(message, flag, value)
+}
+
+export async function socketGetUserActors(sender) {
+    return getRollableActorSources(sender);
 }

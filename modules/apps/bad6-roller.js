@@ -1,6 +1,6 @@
 import { LUCK_MOVE_HINTS } from "../constants.js";
 import { renderDialog } from "../dialog.js";
-import { chooseLuckSpenders, executeLuckMove, trySpendLuck, LUCK_MOVES} from "../luck-moves.js";
+import { chooseLuckSpenders, executeLuckMove, trySpendLuck, createGambit, LUCK_MOVES} from "../luck-moves.js";
 import { isDebugEnabled } from "../config.js";
 import { createFormula, executeRoll, applyFormulaLines, collectActorFormulaLines } from "../dice.js";
 import { getRollerSocket } from "../sockets.js";
@@ -10,6 +10,7 @@ import { getPairAdvantage, getPairReckless, setPairAdvantage, setPairReckless, g
 import { getHitDCMeta, getActionDCMeta } from "./roller/roll-resolution.js";
 import { renderAction, renderContest, renderSource, rerenderMessage, rerenderDisplayMessage } from "./roller/display.js";
 import { waitForUnlock, updateQuadrant, recalculateQuadrantFormula, reevaluatePairRollResults, getPairUsedUniqueModifierIds } from "./roller/quadrants.js";
+import { shouldApplyVisibilityForAction, withCurrentMessageMode } from "./roller/chat.js";
 export { rerenderMessage, recalculateQuadrantFormula, reevaluatePairRollResults };
 
 // TODO: Calling a flag calls source message. Calling a Render also calls the Display message
@@ -27,13 +28,6 @@ async function executeRollerAsGM(handler, ...args) {
         return false;
     }
     return await socket.executeAsGM(handler, ...args);
-}
-
-function withCurrentMessageMode(chatData = {}) {
-    const data = foundry.utils.deepClone(chatData);
-    const messageMode = String(game.settings.get("core", "messageMode") || "public");
-    ChatMessage.applyRollMode(data, messageMode);
-    return data;
 }
 
 /**
@@ -107,11 +101,16 @@ export async function createActionMessage() {
 }
 
 export async function createContestMessage() {
+    const action = await createActionMessage();
+    const message = await dispatchUpdateToContest(action.id);
+    return message;
+    /* This was used before the message mode update.
     const message = await ChatMessage.create(withCurrentMessageMode({
         content: await renderContest()
     }));
     await message.setFlag("bizarre-adventures-d6", "type", "contest");
     return message;
+    */
 }
 
 export async function updateToContest(messageId) {
@@ -142,7 +141,7 @@ export async function registerChatListeners() {
         // First time Check
         const chatMessages = document.querySelectorAll(".chat-message[data-message-id]");
         // For GMs with debug off, hide the debug cards by removing the html.
-        if (game.user.isGM && !isDebugEnabled) {
+        if (game.user.isGM && !isDebugEnabled()) {
             const sourceMessages = game.messages.filter(message =>
                 message.visible && message.getFlag('bizarre-adventures-d6', 'type') == 'source'
             );
@@ -232,7 +231,11 @@ export async function registerChatListeners() {
             // For our roll messages, re-add client limitation, or hide message entirely if debug is off
             const type = message.getFlag('bizarre-adventures-d6', 'type');
             if (type == 'contest' || type == 'action') applyChatButtonPermissions(message, html)
-            else if (type == 'source' && !isDebugEnabled()) html.remove();
+            else if (type == 'source') {
+                const display = message.getFlag('bizarre-adventures-d6', 'displayId');
+
+                if (!isDebugEnabled()) html.remove();
+            }
         });
 
         $(document).on("click", ".chat-message .select-stat", async (event) => {
@@ -250,8 +253,16 @@ export async function registerChatListeners() {
                 ui.notifications.warn("You cannot execute this action.");
                 return;
             }
-            
-            switch (actionType) {
+
+            const shouldApplyVisibility = shouldApplyVisibilityForAction(actionType, actionArg);
+            if (shouldApplyVisibility) {
+                await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, {
+                    playerId: game.user.id,
+                    messageMode: game.settings.get("core", "messageMode")
+                });
+            }
+
+            switch (actionType) { //TODO: Standardize return values
                 case "prepare":
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
@@ -269,7 +280,8 @@ export async function registerChatListeners() {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return;
                     const luckActors = chooseLuckSpenders(actorSources);
-                    await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
+                    const shouldContinue = await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
+                    if (!shouldContinue) return;
                     }
                     break;
                 case "resolve":
@@ -294,18 +306,20 @@ export async function registerChatListeners() {
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
                     return;
             }
-            // The system only gets to this point if an action succeeded.
-            await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, { 
-                playerId: game.user.id,
-                messageMode: game.settings.get("core", "messageMode") 
-            });
+            if (!shouldApplyVisibility) {
+                // The system only gets to this point if an action succeeded. TODO: THIS IS A LIE, ALL BUTTONS ALTER VISIBILITY
+                await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, {
+                    playerId: game.user.id,
+                    messageMode: game.settings.get("core", "messageMode")
+                });
+            }
             const speaker = ChatMessage.getSpeaker();
             const isInCharacter = !!speaker.actor;
 
             sourceMessage = game.messages.get(sourceMessageId);
             const visibility = sourceMessage.getFlag('bizarre-adventures-d6', `quadrant${quadrantNum}Visibility`);
             const visibilityText = JSON.stringify(visibility);
-            ui.notifications.warn(`Visibility Flag: ${visibilityText}`);
+            if(isDebugEnabled()) ui.notifications.warn(`Visibility Flag: ${visibilityText}`);
             await rerenderDisplayMessage(message);
         });
 
@@ -321,41 +335,6 @@ export async function registerChatListeners() {
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
-            const button = event.currentTarget;
-            const quadrantNum = button.dataset.quadrant;
-            const displayMessageId = $(button).closest(".chat-message").data("messageId");
-            const message = game.messages.get(messageId);
-            const sourceMessageId = message.getFlag('bizarre-adventures-d6', 'sourceId');
-            if (isMessageLocked(message)) return false;
-            const [actionType, actionArg] = button.dataset.action.split("-", 2);
-            const isAllowed = canUserExecuteAction(messageId, actionType, quadrantNum, actionArg);
-            if (!isAllowed) {
-                ui.notifications.warn("You do not own the required actor(s) for this action.");
-                return false;
-            }
-            switch (actionType) {
-                case "luck":
-                    {
-                    const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
-                    if (!actorSources) return false;
-                    const luckActors = chooseLuckSpenders(actorSources);
-                    await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, true);
-                    }
-                    break;
-                case "set":
-                    if (actionArg === "advantage") {
-                        // Left-click only; ignore right-click on the pair advantage control.
-                        break;
-                    }
-                    if (actionArg === "reckless") {
-                        // Left-click only; ignore right-click on the reckless control.
-                        break;
-                    }
-                    ui.notifications.warn("Unknown action for button: " + button.dataset.action);
-                    break;
-                default:
-                    ui.notifications.warn("Unknown action for button: " + button.dataset.action);
-            }
             return false;
         });
     /* TODO: Readd if breaks system, this may be the problem that causes unrendered messages to render
@@ -477,6 +456,7 @@ export async function setFlag(message, flag, value) {
 async function prepareQuadrant(messageId, quadrantNum, actorSources) {
     const prepare = await renderStatSelectionDialog(messageId, quadrantNum, actorSources);
     if (!prepare) return false;
+
     const message = game.messages.get(messageId);
     const blockedUniqueLineIds = getPairUsedUniqueModifierIds(message, quadrantNum);
     const safeAdvantage = Number.isFinite(Number(prepare.advantage))
@@ -512,7 +492,7 @@ async function prepareQuadrant(messageId, quadrantNum, actorSources) {
         customLinesApplied: evaluated?.appliedLines || [],
         selectedModifierIds: prepare.selectedModifierIds || []
     };
-
+    // TODO: unnecessary?
     if (game.user.isGM) {
         const shouldContinue = await updateQuadrant(messageId, quadrantNum, preparedData);
         return shouldContinue;
@@ -521,6 +501,7 @@ async function prepareQuadrant(messageId, quadrantNum, actorSources) {
     const shouldContinue = await executeRollerAsGM("rollerApplyPreparedQuadrant", messageId, quadrantNum, preparedData);
     return shouldContinue;
 }
+
 export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
     let message = game.messages.get(messageId);
     const locked = !await waitForUnlock(message)
@@ -549,9 +530,24 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
                     }
                 }
             }
+            const spentGambits = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`)?.gambitSpenders || {};
+            for (const move in spentGambits) {
+                const moveData = LUCK_MOVES[move];
+                if (!moveData) continue;
+                if (moveData.costType === "gambit") continue;
+
+                const moveSpenders = spentGambits[move] || {};
+                for (const spender in moveSpenders) {
+                    const count = moveSpenders[spender] || 0;
+                    for (let i = 0; i < count; i++) {
+                        await trySpendLuck(spender, moveData.name, true, true);
+                    }
+                }
+            }
         }       
         await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
         await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}Visibility`);
+        await message.unsetFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`);
         await rerenderMessage(message);
         await message.setFlag("bizarre-adventures-d6", "Locked", false);
         message = game.messages.get(messageId);
@@ -607,7 +603,7 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
     const statDialogResult = await renderDialog('stat', { actors, quadrantNum });
     if (!statDialogResult) return;
 
-    const { stat, sourceUuid, actorId, selectedModifierIds = [] } = statDialogResult;
+    const { stat, sourceUuid, actorId, selectedModifierIds = [], gambit = null } = statDialogResult;
     if (!stat) return;
     if (!sourceUuid && !actorId) return;
 
@@ -648,7 +644,16 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
         }
     }
 
-    return { stat, sourceUuid, actorId, statValue, selectedSpecial, selectedModifierIds };
+    let hasGambit = false;
+    if (gambit.luckMove) {
+        await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`, {
+            gambit: gambit,
+            actorId: actor.id
+        });
+        hasGambit = true;
+    }
+
+    return { stat, sourceUuid, actorId, statValue, selectedSpecial, selectedModifierIds, hasGambit }; //TODO: add hasGambit logic to all who call this function
     
 };
 
@@ -657,6 +662,10 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
 
 export async function rollAll(messageId) {
     let message = game.messages.get(messageId);
+    const displayMessageId = message.getFlag("bizarre-adventures-d6", "displayId")
+    let displayMessage = game.messages.get(displayMessageId);
+
+    const type = displayMessage.getFlag("bizarre-adventures-d6", "type"); // Moved out of try block. if errors in resolution this may be why.
     if (!message) return;
     const locked = !await waitForUnlock(message);
     if (locked) {
@@ -668,16 +677,17 @@ export async function rollAll(messageId) {
     if (message) await rerenderMessage(message);
     try {
         message = game.messages.get(messageId);
-        const type = message.getFlag("bizarre-adventures-d6", "type");
+        // const type = message.getFlag("bizarre-adventures-d6", "type"); with source/display changes, this would always resolve to source.
         const order = type === "action" ? [1, 2] : [3, 4, 1, 2];
         const results = {};
 
         for (const i of order) {
-        const q = message.getFlag("bizarre-adventures-d6", `quadrant${i}`);
-        if (!q?.formula) {
-            ui.notifications.warn("All required quadrants must be prepared before resolving.");
-            return;
-        }
+            const q = message.getFlag("bizarre-adventures-d6", `quadrant${i}`);
+            if (!q?.formula) {
+                ui.notifications.warn("All required quadrants must be prepared before resolving.");
+                if (isDebugEnabled()) ui.notifications.error(`type: ${type} \nquadrant ${i} flag: ${q}`);
+                return;
+            }
         }
 
         for (let i = 0; i < order.length; i++) {
@@ -726,12 +736,17 @@ export async function rollAll(messageId) {
             });
         }
     } finally {
-    await rerenderMessage(game.messages.get(messageId));
-    await message.setFlag("bizarre-adventures-d6", `Locked`, false);
-    message = game.messages.get(messageId);
-    await rerenderMessage(message);
-    const displayMessage = game.messages.get(message.getFlag('bizarre-adventures-d6', 'displayId'));
-    await rerenderDisplayMessage(displayMessage);
+        await rerenderMessage(game.messages.get(messageId));
+        await message.setFlag("bizarre-adventures-d6", `Locked`, false);
+        message = game.messages.get(messageId);
+        await rerenderMessage(message);
+        const displayMessage = game.messages.get(message.getFlag('bizarre-adventures-d6', 'displayId'));
+        await rerenderDisplayMessage(displayMessage);
+        
+        // Create all gambits
+        for (let i = 1; i <= (type === "action" ? 2 : 4); i++) {
+            const gambitData = message.getFlag("bizarre-adventures-d6", `quadrant${i}GambitData`);
+            if (gambitData?.gambit) createGambit(gambitData.actorId, gambitData.gambit);
+        }
     }
 }
-

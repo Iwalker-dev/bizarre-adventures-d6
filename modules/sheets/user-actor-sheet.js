@@ -139,7 +139,7 @@ import { collectActorFormulaLines } from "../dice.js";
   			}
   		});
 
-  		// Item creation and deletion
+  		// Item creation
   		html.find("#create-item").click(() => {
   			this.actor.createEmbeddedDocuments("Item", [{
   				name: "New Item"
@@ -150,6 +150,7 @@ import { collectActorFormulaLines } from "../dice.js";
   				}
         }]);
   		});
+		// Item deletion
   		html.find("#item-items").on("click", ".delete-item", async ev => {
   			const id = $(ev.currentTarget).data("item-id");
   			await this.actor.deleteEmbeddedDocuments("Item", [id]);
@@ -199,6 +200,21 @@ import { collectActorFormulaLines } from "../dice.js";
   			const hit = this.actor.items.get(id);
   			if (hit) hit.sheet.render(true);
   		});
+
+		// Gambit Deletion
+		html.find("#gambit-items").on("click", ".delete-gambit", async ev => {
+  			const id = $(ev.currentTarget).data("item-id");
+  			await this.actor.deleteEmbeddedDocuments("Item", [id]);
+  			recalc();
+  		});
+		// Gambit Info Rendering
+  		html.find("#gambit-items").on("click", "li", ev => {
+  			if ($(ev.target).closest(".delete-gambit").length) return; // This box is below the delete button, but far larger
+  			const id = $(ev.currentTarget).data("item-id");
+  			const gambit = this.actor.items.get(id);
+  			if (gambit) gambit.sheet.render(true);
+  		});
+
 
 		// Prevent autosubmit from stealing focus while typing in special fields
 		// Marked in templates with `data-noautosubmit="true"`.

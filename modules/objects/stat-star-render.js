@@ -1,3 +1,7 @@
+import { isDebugEnabled } from "../config.js";
+import { renderDialog } from "../dialog.js";
+import { LUCK_MOVES } from "../luck-moves.js";
+
 function getRankTitle(starNumber) {
 	if (starNumber === 6) return "∞ / Unmeasurable";
 	return `Rank ${["E", "D", "C", "B", "A"][starNumber - 1] ?? starNumber}`;
@@ -41,7 +45,7 @@ function getSpecialsAtValue(specialStats, value) {
 	return specialStats.filter(s => Math.floor(s.value) === value);
 }
 
-async function showSpecialStatDialog(actor, statName, seed = null) {
+async function showSpecialStatDialog(actor, statName, seed = null) { //TODO: Move to dialog.js
 	const statData = actor.system.attributes.stats?.[statName] ?? {};
 	const current = normalizeSpecialStats(statData);
 	const options = current
@@ -153,9 +157,28 @@ export function renderStars(html, actor) {
 
 		const statData = actor.system.attributes.stats?.[statName];
 		if (!statData) return;
+		
 
 		const isBurn = statData.dtype === "Burn";
 		const finalValueType = isBurn ? valueType : "value";
+
+		let gambitTotalCost = 0;
+		if (isBurn) {
+			for (const item of actor.items ?? []) {
+				
+				if (item?.type !== "gambit") continue;
+				const gambitMove = item?.system?.luckMove;
+				if (isDebugEnabled()) console.log(`Found: ${item.name}. type: ${LUCK_MOVES[gambitMove].costType} vs ${finalValueType}`);
+				if (LUCK_MOVES[gambitMove].costType != finalValueType) continue;
+				const spentCost = Math.ceil(LUCK_MOVES[gambitMove].cost / 2);
+				if (isDebugEnabled()) console.log(`adding gambit "${item.name}"'s cost of ${spentCost}`)
+
+				if (gambitMove) {
+					gambitTotalCost += spentCost;
+					if (isDebugEnabled()) console.log(`Total Cost: ${gambitTotalCost}`);
+				}
+			}
+		}
 
 		let baseValue = Number(statData?.[finalValueType] ?? 0);
 		if (!Number.isFinite(baseValue)) baseValue = 0;
@@ -163,10 +186,11 @@ export function renderStars(html, actor) {
 
 		const specialStats = isBurn ? [] : normalizeSpecialStats(statData);
 		const maxSpecial = specialStats.reduce((max, entry) => Math.max(max, Math.floor(entry.value)), 0);
-		const maxStars = Math.max(6, baseValue, maxSpecial);
+		const maxStars = 6; // Math.max(6, baseValue, maxSpecial);
+		const infValue = isBurn ? 15 : 6;
 
 		$container.empty()
-			.toggleClass("infinite", baseValue === 6)
+			.toggleClass("infinite", baseValue >= 6)
 			.toggleClass("has-special", specialStats.length > 0);
 
 		bindStatLabelControl($container, actor, statName, statData);
@@ -179,8 +203,15 @@ export function renderStars(html, actor) {
 			const star = document.createElement("span");
 			star.classList.add("stat-star");
 
+			const spentUpperBound = Math.min(maxStars, baseValue + gambitTotalCost);
+			const isReducedStar = isBurn && !hasBase && starNumber <= spentUpperBound;
+			if (isReducedStar) {
+				star.classList.add("gambit-reduced");
+			}
+
 			// Determine symbol and styling
-			let symbol = (starNumber === 6 ? "✦" : "★");
+			
+			let symbol = (starNumber > 5 ? "✦" : "★");
 			let isFilled = hasBase;
 			let isSpecial = false;
 			let title = getRankTitle(starNumber);
@@ -209,10 +240,12 @@ export function renderStars(html, actor) {
 			star.title = title;
 
 			star.addEventListener("click", async () => {
-				const newValue = (baseValue === starNumber) ? starNumber - 1 : starNumber;
+				const targetValue = (baseValue === starNumber) ? starNumber - 1 : starNumber;
+				const newValue = (targetValue > 5 && isBurn) ? 15 : targetValue;
 				await actor.update({
 					[`system.attributes.stats.${statName}.${finalValueType}`]: newValue
 				});
+				if (isDebugEnabled()) ui.notifications.warn(`system.attributes.stats.${statName}.${finalValueType} is now ${newValue}`);
 			});
 
 			if (!isBurn) {
@@ -221,6 +254,26 @@ export function renderStars(html, actor) {
 					const existing = specialsAtValue[0] ?? { value: starNumber, label: "", key: "" };
 					await showSpecialStatDialog(actor, statName, existing);
 				});
+			} else {
+				if (starNumber == maxStars) {
+					// Allow setting the value when clicking
+					star.addEventListener("contextmenu", async (event) => {
+						event.preventDefault();
+						const currentValue = actor.system.attributes.stats[statName][finalValueType]
+						const input = await renderDialog("burn", {
+							value: currentValue,
+							type: finalValueType
+						});
+						if (!input) return;
+						const newValue = Number(input);
+						if(isDebugEnabled()) ui.notifications.warn(`Parsed Value: ${newValue}`);
+						if(Number.isInteger(newValue) && newValue <= 15 && newValue >= 0)
+									await actor.update({
+										[`system.attributes.stats.${statName}.${finalValueType}`]: newValue
+									});
+						else ui.notifications.error("Only Integers allowed. No changes made.");
+					});
+				}
 			}
 
 			$container[0].appendChild(star);

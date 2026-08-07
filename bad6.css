@@ -1253,7 +1253,10 @@ body {
   color: var(--accent-color);
 }
 .jojo-sheet .stat-stars.infinite .stat-star {
-  color: crimson !important;
+  color: crimson;
+}
+.jojo-sheet .stat-star.gambit-reduced {
+  color: #ffffff !important;
 }
 .jojo-sheet .stat-stars.has-special {
   position: relative;
@@ -1327,7 +1330,8 @@ body {
 }
 /* ────────────────────────── Shared Styles ────────────────────────── */
 .tab[data-tab="item"] li,
-.tab[data-tab="hit"] li {
+.tab[data-tab="hit"] li,
+.tab[data-tab="gambit"] li {
   background-color: rgba(0, 0, 0, 0.5);
   color: white;
   padding: 10px;
@@ -1339,21 +1343,32 @@ body {
   cursor: pointer;
 }
 .tab[data-tab="item"] li:hover,
-.tab[data-tab="hit"] li:hover {
+.tab[data-tab="hit"] li:hover,
+.tab[data-tab="gambit"] li:hover {
   background-color: var(--accent-dark);
 }
 .delete-item,
-.delete-hit {
+.delete-hit,
+.delete-gambit {
   background-color: black;
   color: white;
   border: 1px solid white;
-  padding: 5px 10px;
+  padding: 0;
   border-radius: 3px;
   cursor: pointer;
-  margin-left: 10px;
+  margin-left: auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
 }
 .delete-item:hover,
-.delete-hit:hover {
+.delete-hit:hover,
+.delete-gambit:hover {
   background-color: white;
   color: black;
 }
@@ -1362,7 +1377,8 @@ body {
 /* Hide their text and size them nicely */
 /* 1) Center the form wrappers under the tabs */
 .item-form,
-.hit-form {
+.hit-form,
+.gambit-form {
   display: flex;
   justify-content: center;
   margin: 0.75em 0;
@@ -1421,9 +1437,14 @@ body {
   padding: 10px;
   margin: 5px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
+}
+.scrollable-list li > span,
+.scrollable-list li > p {
+  min-width: 0;
 }
 .scrollable-list .item-entry {
   display: flex;
@@ -1443,9 +1464,17 @@ body {
   word-wrap: break-word;
 }
 .scrollable-list i.fa-trash {
-  margin-left: 10px;
+  margin-left: auto;
   color: #ff6666;
   cursor: pointer;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
 }
 /* Hamon: rising sunset half-circles */
 .jojo-sheet.type-Hamon {
@@ -1521,6 +1550,28 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.gambit-selection-dialog .gambit-options {
+  display: flex;
+  flex-wrap: nowrap;
+  /* force one row */
+  gap: 0.25rem;
+  width: 100%;
+}
+.gambit-selection-dialog button.gambit-option {
+  flex: 1 1 0;
+  /* equal width fill */
+  min-width: 0;
+  /* allow shrinking */
+  max-width: none;
+  width: auto;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  box-sizing: border-box;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .custom-modifier-dialog {
   margin-top: 0.35rem;
 }
@@ -1540,6 +1591,13 @@ body {
 .custom-modifier-auto,
 .custom-modifier-option-row {
   font-size: 0.9em;
+}
+.custom-modifier-auto.is-unavailable,
+.custom-modifier-option-row.is-unavailable {
+  opacity: 0.55;
+}
+.custom-modifier-option-row.is-unavailable {
+  cursor: not-allowed;
 }
 .custom-modifier-option-row {
   display: block;
@@ -1598,13 +1656,24 @@ body {
 .stat-selection-dialog .stat-option {
   transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
+.gambit-selection-dialog .gambit-option {
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
 .stat-selection-dialog .stat-option.selected {
   transform: translateY(1px);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   filter: brightness(0.95);
 }
-/* Optional: tactile press while clicking any stat button */
+.gambit-selection-dialog .gambit-option.selected {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  filter: brightness(0.95);
+}
+/* Tactile press while clicking any stat button */
 .stat-selection-dialog .stat-option:active {
+  transform: translateY(1px);
+}
+.gambit-selection-dialog .gambit-option:active {
   transform: translateY(1px);
 }
 .advantage-selection {
@@ -1742,13 +1811,6 @@ body {
   color: #4a300f;
   font-size: 0.85em;
   font-weight: 700;
-.custom-modifier-auto.is-unavailable,
-.custom-modifier-option-row.is-unavailable {
-  opacity: 0.55;
-}
-.custom-modifier-option-row.is-unavailable {
-  cursor: not-allowed;
-}
   white-space: nowrap;
   cursor: pointer;
 }
@@ -1839,7 +1901,7 @@ body {
   border-color: #444;
 }
 .quadrant-context.visibility-public {
-  background: var(--color-emote-background, #f3edde);
+  background: var(--color-emote-background, #ffffff);
   border-color: var(--color-emote-border, #887c5d);
 }
 .quadrant-context.visibility-gm,
@@ -1880,6 +1942,23 @@ body {
   margin-top: 0.25rem;
   border-radius: 2px;
   background: rgba(0, 0, 0, 0.08);
+}
+.quadrant-gambit-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1em;
+  height: 1.1em;
+  margin-left: 0.35rem;
+  padding: 0 0.28em;
+  border-radius: 999px;
+  border: 1px solid #c89e33;
+  background: #2d2614;
+  color: #e0b84a;
+  font-size: 0.72em;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
 }
 .quadrant-actor-divider {
   border-top: 1px solid rgba(0, 0, 0, 0.2);

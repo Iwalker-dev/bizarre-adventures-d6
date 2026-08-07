@@ -8,6 +8,7 @@ import { isDebugEnabled } from "../../config.js";
 import { resolveActorFromSource } from "./actors.js";
 import { getPairAdvantage, getPairFudgeBonus, getPairReckless } from "./pair-controls.js";
 import { getContestResultLabel } from "./roll-resolution.js";
+import { canViewerSeeQuadrant } from "./chat.js";
 
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
@@ -435,32 +436,15 @@ export async function rerenderDisplayMessage(message) {
     for (let i = 1; i <= count; i++) {
         const visibility = sourceMessage.getFlag("bizarre-adventures-d6", `quadrant${i}Visibility`) || null;
         const sourceFlag = sourceMessage.getFlag("bizarre-adventures-d6", `quadrant${i}`) || null;
+        const quadrantGambitData = sourceMessage.getFlag("bizarre-adventures-d6", `quadrant${i}GambitData`) || null;
+        const hasPlacedGambit = !!quadrantGambitData?.gambit?.luckMove;
         const visibilityMode = visibility?.messageMode || null;
 
-        let shouldRender = false;
-        if (visibility) {
-            const isSelf = visibility.playerId === game.user.id;
-            const isGM = !!game.user.isGM;
-            switch (visibilityMode) {
-                case "public":
-                    shouldRender = true;
-                    break;
-                case "gm":
-                    shouldRender = isSelf || isGM;
-                    break;
-                case "blind":
-                    shouldRender = isGM;
-                    break;
-                case "self":
-                    shouldRender = isSelf;
-                    break;
-                case "ic":
-                    shouldRender = true;
-                default:
-                    shouldRender = false;
-                    break;
-            }
-        }
+        const shouldRender = canViewerSeeQuadrant({
+            visibility,
+            playerId: game.user.id,
+            isGM: !!game.user.isGM
+        });
 
         if (!sourceFlag) {
             // Nothing has happened in this quadrant yet.
@@ -510,6 +494,7 @@ export async function rerenderDisplayMessage(message) {
                 hiddenGambitCount: gambitTotal,
                 canUnready: false,
                 canFlashback,
+                hasPlacedGambit: false,
                 lock: false
             };
             continue;
@@ -550,6 +535,7 @@ export async function rerenderDisplayMessage(message) {
                 mulligan: sourceFlag.gambitCounts?.mulligan || 0,
                 persist: sourceFlag.gambitCounts?.persist || 0
             },
+            hasPlacedGambit,
             rolled: !!sourceFlag.rolled,
             rollTotal: sourceFlag.rollTotal ?? null,
             rollHtml: sourceFlag.rollHtml || `<div class="dice-roll bad6-redacted-roll"><div class="dice-result"><div class="dice-formula">Hidden Formula</div><h4 class="dice-total">${sourceFlag.rollTotal ?? "?"}</h4></div></div>`,

@@ -259,6 +259,24 @@ export async function migrateWorld() {
 	if (updatingTo("0.9.14")) {
 		await game.settings.set("bizarre-adventures-d6", "welcomed", false);
 		ui.notifications.info("BAD6 Migration | Welcome message updated.");
+		// Migrate infinity stats
+		  for (const actor of game.actors.filter(a => a.type === "user")) {
+			const luck = actor.system?.attributes?.stats?.luck;
+			if (!luck || typeof luck !== "object") continue;
+
+			const updates = {};
+			for (const field of ["value", "temp", "perm", "original"]) {
+			const current = Number(luck[field]);
+			if (Number.isFinite(current) && current === 6) {
+				updates[`system.attributes.stats.luck.${field}`] = 15;
+			}
+			}
+
+			if (Object.keys(updates).length) {
+			await actor.update(updates);
+			}
+		}
+		console.log("BAD6 | Applied 0.9.14 migration (Updated infinity value for burn stats to 15.)");
 	}
 
 	// — First ever world load —
