@@ -1901,7 +1901,7 @@ body {
   border-color: #444;
 }
 .quadrant-context.visibility-public {
-  background: var(--color-emote-background, #f3edde);
+  background: var(--color-emote-background, #ffffff);
   border-color: var(--color-emote-border, #887c5d);
 }
 .quadrant-context.visibility-gm,
@@ -1942,6 +1942,23 @@ body {
   margin-top: 0.25rem;
   border-radius: 2px;
   background: rgba(0, 0, 0, 0.08);
+}
+.quadrant-gambit-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1em;
+  height: 1.1em;
+  margin-left: 0.35rem;
+  padding: 0 0.28em;
+  border-radius: 999px;
+  border: 1px solid #c89e33;
+  background: #2d2614;
+  color: #e0b84a;
+  font-size: 0.72em;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
 }
 .quadrant-actor-divider {
   border-top: 1px solid rgba(0, 0, 0, 0.2);

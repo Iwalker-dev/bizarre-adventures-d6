@@ -121,7 +121,7 @@
     {{#if hidden}}
       {{#if rolled}}
         <div class="quadrant-rolled">
-          <div class="rolled-actor bad6-actor-name bad6-hidden-actor">{{actorName}}</div>
+          <div class="rolled-actor bad6-actor-name bad6-hidden-actor">{{actorName}}{{#if hasPlacedGambit}}<span class="quadrant-gambit-indicator" data-tooltip="Gambit set in Stat Select">G</span>{{/if}}</div>
           <div class="bad6-roll-display bad6-hidden-roll" data-quadrant="{{quadrantNum}}">{{{rollHtml}}}</div>
           <div class="quadrant-actor-divider"></div>
           <div class="quadrant-buttons">
@@ -136,7 +136,7 @@
       {{else if prepared}}
         <div class="quadrant-prepared">
           <div class="prepared-label">
-            <div class="prepared-label-actor bad6-actor-name bad6-hidden-actor">{{actorName}}</div>
+            <div class="prepared-label-actor bad6-actor-name bad6-hidden-actor">{{actorName}}{{#if hasPlacedGambit}}<span class="quadrant-gambit-indicator" data-tooltip="Gambit set in Stat Select">G</span>{{/if}}</div>
             <div class="quadrant-actor-divider"></div>
             <div>Has Readied:</div>
             <div class="prepared-label-stat">
@@ -160,7 +160,7 @@
       {{/if}}
     {{else if rolled}}
       <div class="quadrant-rolled">
-        <div class="rolled-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}</div>
+        <div class="rolled-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}{{#if hasPlacedGambit}}<span class="quadrant-gambit-indicator" data-tooltip="Gambit set in Stat Select">G</span>{{/if}}</div>
         <div class="bad6-roll-display" data-quadrant="{{quadrantNum}}">{{{rollHtml}}}</div>
         <div class="quadrant-actor-divider"></div>
         <div class="quadrant-buttons">
@@ -175,7 +175,7 @@
     {{else if prepared}}
       <div class="quadrant-prepared">
         <div class="prepared-label">
-          <div class="prepared-label-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}</div>
+          <div class="prepared-label-actor bad6-actor-name" data-source-uuid="{{sourceUuid}}" data-actor-id="{{actorId}}" data-fallback="{{actorName}}">{{actorName}}{{#if hasPlacedGambit}}<span class="quadrant-gambit-indicator" data-tooltip="Gambit set in Stat Select">G</span>{{/if}}</div>
           <div class="quadrant-actor-divider"></div>
           <div>Has Readied:</div>
           <div class="prepared-label-stat">

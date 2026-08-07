@@ -1,5 +1,10 @@
 export function withCurrentMessageMode(chatData = {}) { // Consider moving to utils.js
     const data = foundry.utils.deepClone(chatData);
+    // Foundry's applyMode path may read speaker.actor for IC mode.
+    // Ensure speaker always exists to avoid undefined access.
+    if (!data.speaker || typeof data.speaker !== "object") {
+        data.speaker = ChatMessage.getSpeaker();
+    }
     const messageMode = String(game.settings.get("core", "messageMode") || "public");
     ChatMessage.applyMode(data, messageMode);
     return data;
