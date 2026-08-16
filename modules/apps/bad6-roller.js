@@ -256,7 +256,7 @@ export async function registerChatListeners() {
 
             const shouldApplyVisibility = shouldApplyVisibilityForAction(actionType, actionArg);
             if (shouldApplyVisibility) {
-                await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, {
+                await executeRollerAsGM("setFlag", sourceMessageId, `quadrant${quadrantNum}Visibility`, {
                     playerId: game.user.id,
                     messageMode: game.settings.get("core", "messageMode")
                 });
@@ -271,7 +271,7 @@ export async function registerChatListeners() {
                     if (!shouldContinue) return;
                     }
                     break;
-                case "unready":
+                case "unready": //TODO: Unready should unset visibility
                     const shouldContinue = await dispatchResetQuadrant(sourceMessageId, quadrantNum);
                     if (!shouldContinue) return;
                     break;
@@ -306,13 +306,11 @@ export async function registerChatListeners() {
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
                     return;
             }
-            if (!shouldApplyVisibility) {
-                // The system only gets to this point if an action succeeded. TODO: THIS IS A LIE, ALL BUTTONS ALTER VISIBILITY
-                await executeRollerAsGM("setFlag", sourceMessage, `quadrant${quadrantNum}Visibility`, {
-                    playerId: game.user.id,
-                    messageMode: game.settings.get("core", "messageMode")
-                });
-            }
+            // The system only gets to this point if an action succeeded. TODO: THIS IS A LIE, ALL BUTTONS ALTER VISIBILITY
+            await executeRollerAsGM("setFlag", sourceMessageId, `quadrant${quadrantNum}Visibility`, {
+                playerId: game.user.id,
+                messageMode: game.settings.get("core", "messageMode")
+            });
             const speaker = ChatMessage.getSpeaker();
             const isInCharacter = !!speaker.actor;
 
@@ -450,7 +448,7 @@ export async function applySetPairReckless(messageId, quadrantNum, reckless) {
 }
 // TODO: Standardize across system after optimizing
 export async function setFlag(message, flag, value) {
-    await message.setFlag('bizarre-adventures-d6', flag, value);
+    return await message.setFlag("bizarre-adventures-d6", flag, value);
 }
 
 async function prepareQuadrant(messageId, quadrantNum, actorSources) {
@@ -493,11 +491,12 @@ async function prepareQuadrant(messageId, quadrantNum, actorSources) {
         selectedModifierIds: prepare.selectedModifierIds || []
     };
     // TODO: unnecessary?
+    /*
     if (game.user.isGM) {
         const shouldContinue = await updateQuadrant(messageId, quadrantNum, preparedData);
         return shouldContinue;
     }
-
+    */
     const shouldContinue = await executeRollerAsGM("rollerApplyPreparedQuadrant", messageId, quadrantNum, preparedData);
     return shouldContinue;
 }
