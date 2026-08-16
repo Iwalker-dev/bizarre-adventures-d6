@@ -215,6 +215,10 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Gambits reworked to doc v0.9
 - Luck updated to use 15 at infinite value. Right clicking the 'infinite' star allows editing of the exact value.
 
+## [0.9.14.1] - 2026-8-15
+- Fixed bug with message mode update failing entire actions due to socket restrictions.
+- Updated hamon and cyborg descriptions
+
 # What's left? (Ordered By Priority)
 - Give Cyborg a more comfortable upgrade space
 - Switch to V2 framework before V15
