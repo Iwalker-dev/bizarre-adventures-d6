@@ -433,51 +433,42 @@ export const typeConfigs = {
         , "Learning (Learning)"
       ]
 			, description: `
-        <p><em><u>Hamon Warrior ⟳</u></em></p>
-        <p>An ancient <em>breathing technique</em>, Hamon is drawn from the User's vital energy.</p>
-        <p>A Hamon User must maintain a consistent <em>rhythm</em> of breathing to use Hamon.</p>
+          <p><u><em>Hamon Warrior</em></u> 🌊</p>
+          <p>An ancient <strong><em>breathing technique</em></strong>, Hamon is drawn from the User's vital energy.</p>
+          <p>A Hamon User must maintain a consistent <u>rhythm</u> of breathing to use Hamon.</p>
 
-        <p><em><u>Basic Abilities</u></em></p>
-        <p>
-          <u>Conduction</u> - Hamon travels very well through <em>liquids and organics</em>, like oil or flesh.
-          Hamon can have <em>positive/negative</em> charges, to attract or repel in physics-defying ways.
-          Users can also <em>infuse</em> objects with this life energy, acting like a charged battery.
-          The effects of infusion depend on the User's <u>Overdrive</u> and <u>Range</u>.
-          Hamon <em>disperses</em> over large areas; small points of contact are strongly <em>concentrated</em>.
-        </p>
+          <p><u><em>Basic Abilities</em></u></p>
+          <p><u><strong>Conduction</strong></u> - Hamon travels very well through <strong>liquids and organics</strong>, like oil or flesh.</p>
+          <p>Hamon can have <em>positive/negative</em> charges, to attract or repel in physics-defying ways.</p>
+          <p>Users can also <em>infuse</em> objects with this life energy, acting like a charged battery.</p>
+          <p>The effects of infusion depend on the User's <u>Overdrive</u> and <u>Range</u>.</p>
+          <p>Hamon <em>disperses</em> over large areas, small points of contact are strongly <em>concentrated</em>.</p>
 
-        <p>
-          <u>Sunlight Sendo</u> (<em>-X Temp Learning</em>) - Hamon's original usage is tuning the User's breath to the frequency of <em>sunlight</em>, to counter Pillar Men and Vampires.
-          Actions against the <em>undead</em> get <strong>+1 Advantage</strong> for each Learning rank burnt.
-        </p>
+          <p><u><strong>Sunlight Sendo</strong></u> (<strong>-X</strong> Temp Learning) - Tune User's breath to the frequency of <u>sunlight</u></p>
+          <p>Actions against the <strong><em>undead</em></strong> get <strong>+1 Advantage</strong> for each Learning rank burnt.</p>
+          <p>Advantage added by Sunlight Sendo can <strong>stack with other Advantage</strong> to a max of <strong>+5</strong>.</p>
 
-        <p>
-          <u>Hamon Healing</u> (<em>-X Temp</em>) - <u>Reduces Severity</u> of all physical Hits on the target.
-          The reduction is equal to the Learning burnt. If a Hit is scaled down to 0, it is removed.
-          As an <em>Action</em>, a Reaction can intervene.
-        </p>
+          <p><u><strong>Hamon Healing</strong></u> (<strong>-X</strong> Temp) - <u>Reduces Severity</u> of all applicable Hits on the target.</p>
+          <p>The reduction is equal to the Learning burnt. If a Hit is scaled down to 0, it is removed.</p>
+          <p>As an <u><em>Action</em></u>, a Reaction might intervene.</p>
 
-        <p>
-          <u>Rhythmic Breathing</u> (<em>Other</em>) - <strong>Regain 1 Temp Learning/Round</strong> while breath is focused.
-          Situations that <em>disrupt</em> the Hamon Warrior's flow will <strong>burn 1 Temp Learning/Round</strong>.
-          Ranks decreasing to 0 cuts off <u>all</u> Hamon Abilities (including Stats) until restored.
-        </p>
+          <p><u><strong>Rhythmic Breathing</strong></u> (Other) - <strong>Regain</strong> 1 Temp Learning/Round while breath is focused.</p>
+          <p>Situations that <u>disrupt</u> the Hamon Warrior's flow will <strong>burn</strong> 1 Temp Learning/Round.</p>
+          <p>Ranks decreasing to <strong>0</strong> cuts off <u>all</u> Hamon Abilities (including Stats) until restored.</p>
 
-        <p><em><u>Special Ability - Overdrives</u></em></p>
-        <p>
-          <u>Overdrives</u> are unique <em>techniques</em> related in some way to <em>vibrations</em> or <em>wavelength</em>.
-          This can range anywhere from sound waves, to water molecules, to string theory.
-          Overdrives are the equivalent of a Stand Ability, as are all other 'Special Abilities'.
-        </p>
+          <p><u><em>Special Ability - Overdrives</em></u></p>
+          <p><u><strong>Overdrives</strong></u> are unique <em>techniques</em> related in some way to <strong><em>vibrations</em></strong> or <strong><em>wavelength</em></strong>.</p>
+          <p>This can range anywhere from sound waves, to water molecules, to string theory.</p>
+          <p>Overdrives are the equivalent of a Stand Ability, as are all other 'Special Abilities'.</p>
 
-        <p><em><u>Stats</u></em></p>
-        <p>Stats are the <em>vigor</em> of a User's Hamon & Overdrive, applied directly to them.</p>
-        <p><strong>Power</strong> = The potency of Hamon, User's <em>strength</em>.</p>
-        <p><strong>Speed</strong> = The responsiveness of Hamon's effects, User's <em>agility</em>.</p>
-        <p><strong>Precision</strong> = The exactness of Hamon's output variation, User's <em>control</em>.</p>
-        <p><strong>Durability</strong> = The hardness given to infused objects, User's <em>defense</em>.</p>
-        <p><strong>Range</strong> = The conduction of the Hamon, from flesh-only to steel bars to the intangible.</p>
-        <p><strong>Learning</strong> = Lung capacity. Temporarily burnt when the Basic Abilities are used.</p>
+          <p><u><em>Stats</em></u></p>
+          <p>Stats are the <u>vigor</u> of a User's Hamon &amp; Overdrive, applied directly to them.</p>
+          <p><strong>Power</strong> = The <strong>potency</strong> of Hamon, User's <u>strength</u>.</p>
+          <p><strong>Speed</strong> = The <strong>responsiveness</strong> of Hamon's effects, User's <u>agility</u>.</p>
+          <p><strong>Precision</strong> = The <strong>exactness</strong> of Hamon's output variation, User's <u>control</u>.</p>
+          <p><strong>Durability</strong> = The <strong>hardness</strong> given to infused objects, User's <u>defense</u>.</p>
+          <p><strong>Range</strong> = The <strong>conduction</strong> of the Hamon, from flesh-only to steel bars to the intangible.</p>
+          <p><strong>Learning</strong> = <strong>Lung capacity</strong>. Temporarily burnt when the Basic Abilities are used.</p>
       `
 		}
 		, Vampire: {
@@ -732,49 +723,41 @@ export const typeConfigs = {
         , "Range (Range)"
         , "Durability (Durability)"
         , "Learning (Learning)"
-      ]
+      ] /*
+Cyborg 🤖\nA mechanized being, surpassing their limits with the power of science.\n\nSpecial Ability - Upgrades\nAn Upgrade is an enhancement, adding a tool or property to the Cyborg frame.\nA Cyborg starts with two Base Upgrades, each worth up to 3 Points.\nCyborgs can have up to five total Upgrades, including Experimental Upgrades.\n\nBasic Abilities\nExperiment (-3 Temp) Permanently add a new Upgrade to the Cyborg’s arsenal.\nThe maximum extent of an Experimental Upgrade is decided by the Cyborg’s Range.\nRetirement will permanently break one Experimental Upgrade of the Cyborg’s choice.\nDeath will break all Experimental Upgrades, but not Base Upgrades.\n\nTweak (-2 Temp) - Modify an existing Upgrade, increasing its point value by +1.\nTweaks can be burnt twice at once, to increase point value by +2.\nAny given Upgrade can have a maximum point value of 3.\nIf an Upgrade is already at 3 points, Tweak can modify it into a different 3-point ability.\n\nRebuild (-X Perm) - When a Cyborg dies, they can be restored better than ever.\nFor each permanent rank spent, add one Experiment or two Tweaks.\nFor each rank spent past the first, gain one point to increase a non-Learning Stat. \n\nStats\nThe improved prowess of the Cyborg. Applied directly to the User’s mechanical body.\nPower \u003d The strength of the Cyborg frame.\nSpeed \u003d The responsiveness of the Cyborg frame.\nDurability \u003d The reinforcement of the Cyborg frame.\nPrecision \u003d The Cyborg frame’s accuracy and senses.\nRange \u003d How advanced the Cyborg’s Experimental Upgrades are.\nLearning \u003d Resources. How quickly a Cyborg can surpass their limits.
+      */
 			, description: `
-      <p><em><u>Cyborg 🤖</u></em></p>
-      <p>A <em>mechanized being</em>, surpassing their limits with the <em>power of science</em>.</p>
+      <p><u><em>Cyborg 🤖</em></u></p>
+        <p>A <u>mechanized being</u>, surpassing their limits with the <strong><em>power of science.</em></strong></p>
 
-      <p><em><u>Special Ability - Upgrades</u></em></p>
-      <p>
-        An <u>Upgrade</u> is an enhancement, adding a tool or property to the Cyborg frame.
-      </p>
-      <p>
-        A Cyborg starts with <em>two Initial Upgrades</em>, each worth up to <strong>3 Points</strong>.
-        Cyborgs can have up to <strong>five total Upgrades</strong>, including <em>Experiments</em>.
-      </p>
-      <p>
-        When a Cyborg is <em>Retired</em>, one Upgrade of their choice is <em>permanently broken</em>.<br>
-        When a Cyborg dies, all Upgrades <strong>except one</strong> will break.
-      </p>
+      <p><u><em>Special Ability - Upgrades</em></u></p>
+        <p>An <u><strong>Upgrade</strong></u> is an enhancement, adding a <strong>tool</strong> or <strong>property</strong> to the Cyborg frame.</p>
+        <p>A Cyborg starts with <u>two</u> Base Upgrades, each worth up to <strong>3</strong> Points.</p>
+        <p>Cyborgs can have up to <u>five</u> total Upgrades, including Experimental Upgrades.</p>
 
-      <p><em><u>Basic Abilities</u></em></p>
-      <p>
-        <u>Experiment</u> (<em>-3 Temp</em>) - Permanently adds a new Upgrade to the Cyborg's arsenal.
-        The maximum extent of an Experiment is decided by the Cyborg's <em>Range</em>.
-      </p>
-      <p>
-        <u>Tweak</u> (<em>-2 Temp</em>) - Modify an existing Upgrade, increasing its point value by <strong>+1</strong>.
-        Tweaks can be burnt twice at once to increase point value by <strong>+2</strong>.
-        Any given Upgrade can have a maximum point value of <strong>3</strong>.
-        If an Upgrade is already at 3 points, Tweak can modify it into a different 3-point ability.
-      </p>
-      <p>
-        <u>Rebuild</u> (<em>-X Perm</em>) - When a Cyborg dies, they can be restored better than ever.
-        For each <em>permanent rank</em> spent, add <strong>one Experiment or two Tweaks</strong>.
-        For each rank spent <em>past the first</em>, gain <strong>one point</strong> to increase a non-Learning Stat.
-      </p>
+      <p><u><em>Basic Abilities</em></u></p>
+        <p><u><strong>Experiment</strong></u> (<strong>-3</strong> Temp) <strong>Permanently add</strong> a new <u><em>Upgrade</em></u> to the Cyborg's arsenal.</p>
+        <p>The <em>maximum extent</em> of an Experimental Upgrade is decided by the Cyborg's Range.</p>
+        <p><u>Retirement</u> will permanently <strong>break</strong> one Experimental Upgrade of the Cyborg's choice.</p>
+        <p><u>Death</u> will <strong>break</strong> all Experimental Upgrades, but not Base Upgrades.</p>
 
-      <p><em><u>Stats</u></em></p>
-      <p>The improved <em>prowess</em> of the Cyborg. Applied directly to the User's mechanical body.</p>
-      <p><strong>Power</strong> = The strength of the Cyborg frame.</p>
-      <p><strong>Speed</strong> = The responsiveness of the Cyborg frame.</p>
-      <p><strong>Durability</strong> = The reinforcement of the Cyborg frame.</p>
-      <p><strong>Precision</strong> = The Cyborg frame's accuracy and senses.</p>
-      <p><strong>Range</strong> = How advanced the Cyborg's Experiments are.</p>
-      <p><strong>Learning</strong> = Resources. How quickly a Cyborg can surpass their limits.</p>
+      <p><u><strong>Tweak</strong></u> (<strong>-2</strong> Temp) - <strong>Modify</strong> an existing <u><em>Upgrade</em></u>, increasing its point value by <strong>+1</strong>.</p>
+        <p><u><em>Tweaks</em></u> can be burnt twice at once, to increase point value by <strong>+2</strong>.</p>
+        <p>Any given Upgrade can have a maximum point value of <strong>3</strong>.</p>
+        <p>If an Upgrade is <em>already</em> at 3 points, <u><em>Tweak</em></u> can modify it into a <u>different</u> 3-point ability.</p>
+
+      <p><u><strong>Rebuild</strong></u> (<strong>-X</strong> Perm) - When a Cyborg <u>dies</u>, they can be <strong>restored</strong> better than ever.</p>
+        <p>For each permanent rank spent, add one <strong>Experiment</strong> or two <strong>Tweaks</strong>.</p>
+        <p>For each rank spent <em>past the first</em>, gain <strong>one point</strong> to increase a non-Learning Stat.</p>
+
+      <p><u><em>Stats</em></u></p>
+      <p>The <u>improved prowess</u> of the Cyborg. Applied directly to the User's mechanical body.</p>
+      <p><strong>Power</strong> = The <strong>strength</strong> of the Cyborg frame.</p>
+      <p><strong>Speed</strong> = The <strong>responsiveness</strong> of the Cyborg frame.</p>
+      <p><strong>Durability</strong> = The <strong>reinforcement</strong> of the Cyborg frame.</p>
+      <p><strong>Precision</strong> = The Cyborg frame's <strong>accuracy</strong> and <strong>senses</strong>.</p>
+      <p><strong>Range</strong> = How <strong>advanced</strong> the Cyborg's Experimental Upgrades are.</p>
+      <p><strong>Learning</strong> = <strong>Resources</strong>. How quickly a Cyborg can <strong>surpass their limits</strong>.</p>
     `
 		}
 		, Other: {

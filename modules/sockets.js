@@ -95,9 +95,10 @@ export async function socketFlashbackRequest(requesterName, flashbackText) {
 export async function socketWarnOwners(actor, warning) {
     if (actor.isOwner) ui.notifications.warn(warning);
 }
-
-export async function socketSetFlag(message, flag, value) {
-    return await setFlag(message, flag, value)
+// Socket sends the object, not the live document. This strips it of its functions, meaning DO NOT TRY TO CHANGE MESSAGEID TO MESSAGE OBJECT
+export async function socketSetFlag(messageId, flag, value) {
+    const message = game.messages.get(messageId);
+    return await setFlag(message, flag, value);
 }
 
 export async function socketGetUserActors(sender) {
