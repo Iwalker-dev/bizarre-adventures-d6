@@ -1,8 +1,10 @@
-import { resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless, setFlag } from "./apps/bad6-roller.js";
+import { resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless, setFlag, createActionMessage, createContestMessage } from "./apps/bad6-roller.js";
 import { updateQuadrant } from "./apps/roller/quadrants.js";
 import { executeLuckMove } from "./luck-moves.js";
 import { getRollableActorSources } from "./apps/roller/actors.js";
 import { withCurrentMessageMode } from "./apps/roller/chat.js";
+import { renderDialog } from "./dialog.js";
+import { applyChatButtonPermissions } from "./apps/roller/permissions.js";
 let rollerSocket = null;
 
 export function getRollerSocket() {
@@ -23,6 +25,12 @@ export function registerSockets() {
     rollerSocket.register("warnOwners", socketWarnOwners);
     rollerSocket.register("setFlag", socketSetFlag);
     rollerSocket.register("getUserActors", socketGetUserActors);
+    rollerSocket.register("createActionMessage", socketCreateActionMessage);
+    rollerSocket.register("createContestMessage", socketCreateContestMessage);
+    // rollerSocker.register("updateDisplay", socketUpdateDisplay);
+    // rollerSocket.register("applyChatButtonPermissions", socketApplyChatButtonPermissions);
+    rollerSocket.register("rerenderMessage", socketRerenderMessage);
+    rollerSocket.register("renderDialog", socketRenderDialog);
 }
 
 export async function socketApplyPreparedQuadrant(messageId, quadrantNum, preparedData) {
@@ -103,4 +111,35 @@ export async function socketSetFlag(messageId, flag, value) {
 
 export async function socketGetUserActors(sender) {
     return getRollableActorSources(sender);
+}
+
+export async function socketCreateActionMessage() {
+    return createActionMessage();
+}
+
+export async function socketCreateContestMessage() {
+    return createContestMessage();
+}
+/*
+export async function socketUpdateDisplay(messageId, html) {
+    const message = game.messages.get(messageId);
+    applyChatButtonPermissions(message, html);
+}
+*/
+/*
+export async function socketApplyChatButtonPermissions(messageId, html) {
+    console.log("[BAD6 Socket]", messageId, html);
+    const message = game.messages.get(messageId);
+    applyChatButtonPermissions(message, html);
+
+    rerenderMessage()
+}
+*/
+export async function socketRerenderMessage(messageId) {
+    const message = game.messages.get(messageId);
+    rerenderMessage(message);
+}
+
+export async function socketRenderDialog(dialog, args) {
+    return await renderDialog(dialog, args);
 }

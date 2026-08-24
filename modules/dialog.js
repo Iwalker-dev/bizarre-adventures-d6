@@ -74,6 +74,7 @@ export async function renderDialog(dialog, dialogData = {}) {
 
                             const selectedGambitName = html.find(".gambit-option.selected").data("gambitName") || null;
                             // const selectedSourceUuid = html.find(".gambit-option.selected").data("sourceUuid");
+                            const selectedGambitedMove =  html.find(".gambit-option.selected").data("gambitMove")
                             const selectedActorId = html.find(".gambit-option.selected").data("actorId");
                             const selectedItemId = html.find(".gambit-option.selected").data("itemId");
 
@@ -85,6 +86,7 @@ export async function renderDialog(dialog, dialogData = {}) {
                             resolve({
                                 gambit: {
                                     name: selectedGambitName,
+                                    move: selectedGambitedMove,
                                     actorId: selectedActorId,
                                     itemId: selectedItemId
                                 },
