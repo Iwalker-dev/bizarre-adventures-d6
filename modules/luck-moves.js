@@ -126,7 +126,7 @@ export function getLuckMoveExecutionContext(move, spenders, { isGambit = false, 
 	};
 }
 
-function canUseMove(move, actor, { costOverride = null } = {}) {
+export function canUseMove(move, actor, { costOverride = null } = {}) {
 	if (!actor) {
 		ui.notifications.warn("No valid actor available to spend Luck.");
 		return false;
@@ -196,7 +196,8 @@ export const LUCK_MOVES = {
 		costType: "gambit",
 		cost: 0,
 		timing: "anytime",
-		effect: "trigger"
+		effect: "trigger",
+		states: ["create", "execute"]
 	}
 };
 
@@ -239,14 +240,17 @@ export function chooseLuckSpenders(rollableActors) {
 		};
 		// Check if this actor has the highest of any luck value so far
 				if (!values[0] || luckStat.temp > values[0]) {
+					console.log(`highest temp: ${luckStat.temp} of ${actor.name}`)
 					values[0] = luckStat.temp;
 					spenders[0] = spenderRef;
 				}
 				if (!values[1] || luckStat.perm > values[1]) {
+					console.log(`highest perm: ${luckStat.perm} of ${actor.name}`)
 					values[1] = luckStat.perm;
 					spenders[1] = spenderRef;
 				}
 				if (!values[2] || luckStat.value > values[2]) {
+					console.log(`highest value: ${luckStat.value} of ${actor.name}`)
 					values[2] = luckStat.value;
 					spenders[2] = spenderRef;
 				}
@@ -255,8 +259,9 @@ export function chooseLuckSpenders(rollableActors) {
 	return spenders;
 }
 
-export async function trySpendLuck(actorId, action, isRefund = false, isGambit = false) { //TODO: Refund logic into own function?
+export async function trySpendLuck(actorId, action, isRefund = false, isGambit = false) { // TODO: Refund logic into own function?
 	const actor = resolveActorFromSpenderRef(actorId);
+	console.log(actor);
 	if (!actor) {
 		const displayRef = typeof actorId === "object" ? JSON.stringify(actorId) : String(actorId);
 		console.warn(`BAD6 | trySpendLuck: could not resolve luck spender "${displayRef}"`);
@@ -264,9 +269,10 @@ export async function trySpendLuck(actorId, action, isRefund = false, isGambit =
 		return false;
 	}
 	const luckStat = actor.system.attributes.stats.luck;
+	console.log(Object.values(LUCK_MOVES));
 	for (const move of Object.values(LUCK_MOVES)) {
-		if (move.name === action) {
-			const pool = move.costType === "perm" ? (luckStat.perm ?? 0) : (luckStat.temp ?? 0);
+		if (move.name === action || move.key === action) {
+			// const pool = move.costType === "perm" ? (luckStat.perm ?? 0) : (luckStat.temp ?? 0);
 			const gambitCost = isGambit ? Math.ceil(move.cost / 2) : null;
 			if (!isRefund && !canUseMove(move, actor, { costOverride: gambitCost })) {
 				return false;
@@ -288,10 +294,17 @@ export async function trySpendLuck(actorId, action, isRefund = false, isGambit =
 			}
 		}
 	}
+	// TODO: add create,execute,and reveal gambit logic
+	/*
+	If create
+		spend Math.ceil(move.cost / 2)
+	If reveal
+		refund Math.ceil(move.cost / 2)
+	*/
 
 }
 
-export async function executeLuckMove(messageId, spenders, quadrantNum, move, isGambit = false, sender = game.user.id) {
+export async function executeLuckMove(messageId, spenders, quadrantNum, move, gambitData = null, sender = game.user.id) {
 	let message = game.messages.get(messageId);
 	if (!message) return;
 	if (!LUCK_MOVES[move]) {
@@ -312,20 +325,40 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 	let moveType = LUCK_MOVES[move].key // May be edited by gambit
 	let gambitActor = null;
 	let gambitId = null; //item id
+	let isGambit = false;
+	let isRefund = false;
 
 	if (moveType == "gambit") {
-		const gambitResult = await executeGambit(messageId, quadrantNum, sender);
-		if (!gambitResult) return;
-		const [newMoveType, gambitActorId, newGambitId] = gambitResult;
-		moveType = newMoveType;
-		gambitActor = game.actors.get(gambitActorId);
-		gambitId = newGambitId; // TODO: change to this.gambitId once learned
-		isGambit = true; // TODO: Move logic so this is where isGambit is initialized
+		isGambit = true;
+		switch (gambitData?.state) { // TODO: Propogate state to actual gambit logic across system
+			case "create" : 
+				// gambitData.item
+				if (gambitData?.item) createGambit(gambitData.item.actorId, gambitData.item.gambit);
+				break;
+			case "execute" :
+				const gambitResult = await executeGambit(messageId, quadrantNum, sender);
+				if (!gambitResult) return;
+				const [newMoveType, gambitActorId, newGambitId] = gambitResult;
+				moveType = newMoveType;
+				gambitActor = game.actors.get(gambitActorId);
+				gambitId = newGambitId; // TODO: change to this.gambitId once learned
+				isRefund = true;
+				break;
+			/*
+			case "reveal" :
+				moveType = "reveal";
+				break; // logic runs during moveType
+			*/
+			default:
+				ui.notifications.error(`Unknown gambit state: ${gambitData.state}`);
+				return false;
+		}
+		
 	}
 
 	const context = getLuckMoveExecutionContext(moveType, spenders, { isGambit, checkCanUse: true });
 	if (!context.ok) {
-		ui.notifications.warn(context.reason);
+		if (move.type != "gambit") ui.notifications.warn(context.reason);
 		return;
 	}
 	const spender = context.spender;
@@ -360,7 +393,7 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 
 	// Save execution data in flags
 	if (executed) {
-		const spent = await trySpendLuck(spender, LUCK_MOVES[moveType].name, false, isGambit);
+		const spent = await trySpendLuck(spender, LUCK_MOVES[moveType].name, isRefund, isGambit);
 		if (!spent) return;
 
 		message = game.messages.get(messageId); // Refetch message to ensure we have the latest flags after move execution
@@ -418,7 +451,7 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, is
 			await reevaluatePairRollResults(messageId, quadrantNum);
 		}
 
-		// Reveal and delete gambit document
+		// Reveal and delete gambit document (After spending for it)
 		if (isGambit) {
 			const isRevealed = revealGambit(gambitActor, gambitId);
 			if (isRevealed) gambitActor.deleteEmbeddedDocuments("gambit", [gambitId]);
@@ -455,34 +488,6 @@ function getQuadrantAdvantage(message, quadrantNum) {
 	if (Number.isFinite(own)) return Math.max(0, Math.min(3, own));
 
 	return 0;
-}
-
-
-// Returns the executed luckMove
-async function executeGambit(messageId, quadrantNum, sender) { // TODO: Clarify in all contexts that sender is an id
-	// TODO: Generate actors from quadrant num. Use linked users and highlighted if GM, and owned users if player
-	const socket = getRollerSocket();
-	if (!socket) {
-				ui.notifications.error("Socket is not ready. Cannot execute player action.");
-				return null;
-	}
-	let actors = await socket.executeAsUser("getUserActors", sender, sender) // TODO: luck-moves.js currently runs in the context of the GM, not the user
-	const isGM = !!game.users.get(sender).isGM ?? null;
-	if (isGM) {
-		const message = game.messages.get(messageId);
-		const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
-		const actor = flagData ? resolveActorFromSource(flagData) : null;
-		console.log(actor);
-		if (actor) actors.push(actor);
-	}
-	console.log(actors);
-	// const gambitInfo = await renderDialog("gambit", {actors, quadrantNum} );
-	const gambitInfo = await executeRollerAsPlayer("renderDialog", sender, "gambit", {actors, quadrantNum} )
-	if (!gambitInfo) return null;
-	console.log(gambitInfo);
-
-
-	return [gambitInfo.gambit.move, gambitInfo.gambit.actorId, gambitInfo.gambit.itemId];
 }
 
 async function executeFeint(messageId, quadrantNum) {
@@ -561,7 +566,7 @@ async function executePersist(messageId, quadrantNum) {
 	return true;
 }
 
-export async function createGambit(actorId, gambit) { // ISOLATED FUNCTION: DOES NOT RUN THROUGH executeluckmove
+export async function createGambit(actorId, gambit) {
 	const actor = game.actors.get(actorId);
 	await actor.createEmbeddedDocuments("Item", [{
 		name: gambit.name ?? "Gambit",
@@ -574,8 +579,35 @@ export async function createGambit(actorId, gambit) { // ISOLATED FUNCTION: DOES
 	}]);
 }
 
-function revealGambit(actorId, itemId) {
-	const actor = game.actors.get(actorId)
+// Returns the executed luckMove
+async function executeGambit(messageId, quadrantNum, sender) { // TODO: Clarify in all contexts that sender is an id
+	// TODO: Generate actors from quadrant num. Use linked users and highlighted if GM, and owned users if player
+	const socket = getRollerSocket();
+	if (!socket) {
+				ui.notifications.error("Socket is not ready. Cannot execute player action.");
+				return null;
+	}
+	let actors = await socket.executeAsUser("getUserActors", sender, sender) // TODO: luck-moves.js currently runs in the context of the GM, not the user
+	const isGM = !!game.users.get(sender).isGM ?? null;
+	if (isGM) {
+		const message = game.messages.get(messageId);
+		const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
+		const actor = flagData ? resolveActorFromSource(flagData) : null;
+		console.log(actor);
+		if (actor) actors.push(actor);
+	}
+	// console.log(actors);
+	// const gambitInfo = await renderDialog("gambit", {actors, quadrantNum} );
+	const gambitInfo = await executeRollerAsPlayer("renderDialog", sender, "gambit", {actors, quadrantNum} )
+	if (!gambitInfo) return null;
+	// console.log(gambitInfo);
+
+
+	return [gambitInfo.gambit.move, gambitInfo.gambit.actorId, gambitInfo.gambit.itemId];
+}
+
+function revealGambit(actor, itemId) {
+
 	const item = game.items.get(itemId);
 
 	const content = `

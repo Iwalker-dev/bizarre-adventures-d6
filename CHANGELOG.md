@@ -219,7 +219,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Fixed bug with message mode update failing entire actions due to socket restrictions.
 - Updated hamon and cyborg descriptions
 
-## [0.9.14.2] - 2026-8-24
+## [0.9.14.3] - 2026-8-24
 - Gambit execution properly extracts the luck move
 - Gambit dialog request is returned to correct sender
 - It has been noted that game.messages.contents.at(-x) can expose any hidden message, overhaul of security considered
@@ -227,6 +227,10 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Removed access to the reckless button
 - Fixed advantage applying its visibility to first quadrant
 - Fixed gambits not checking if you could afford them
+- Fixed gambit dialog breaking due to async promise within confirmation dialog
+- Fixed being unable to unselect a gambit
+- Began standardized locations of gambit logic
+- Rough patch for gambit warning in getLuckMoveExecutionContext
 
 # What's left? (Ordered By Priority)
 - Setup tests to avoid unexpectedly causing things to stop functioning

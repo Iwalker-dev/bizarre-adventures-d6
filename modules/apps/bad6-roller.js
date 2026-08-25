@@ -410,12 +410,14 @@ async function dispatchResetQuadrant(messageId, quadrantNum, refundLuck = true) 
 
 async function dispatchLuckMove(messageId, spenders, quadrantNum, move, isGambit = false) {
     const sender = game.user.id;
+    /*
     if (game.user.isGM) {
         await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit, sender);
         const updatedMessage = game.messages.get(messageId);
         if (updatedMessage) await rerenderMessage(updatedMessage);
         return;
     }
+    */
     return await executeRollerAsGM("rollerExecuteLuckMove", messageId, spenders, quadrantNum, move, isGambit, sender);
 }
 
@@ -428,12 +430,12 @@ async function dispatchSetPairAdvantage(messageId, quadrantNum, advantage) {
     if (game.user.isGM) return await applySetPairAdvantage(messageId, quadrantNum, advantage);
     return await executeRollerAsGM("rollerSetPairAdvantage", messageId, quadrantNum, advantage);
 }
-
+/*
 async function dispatchSetPairReckless(messageId, quadrantNum, reckless) {
     if (game.user.isGM) return await applySetPairReckless(messageId, quadrantNum, reckless);
     return await executeRollerAsGM("rollerSetPairReckless", messageId, quadrantNum, reckless);
 }
-
+*/
 async function applyPairControlMutation(messageId, mutateFn) {
     let message = game.messages.get(messageId);
     if (!message) return;
@@ -570,7 +572,7 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
                 for (const spender in moveSpenders) {
                     const count = moveSpenders[spender] || 0;
                     for (let i = 0; i < count; i++) {
-                        await trySpendLuck(spender, moveData.name, true, true);
+                        await trySpendLuck(spender, moveData.name, true, true); // TODO: Confirm logic survived gambit change
                     }
                 }
             }
@@ -590,12 +592,13 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
 }
 
 async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
+    console.log("renderStatSelectionDialog");
     if (!actorSources.length) return;
     const quadrantNumber = Number(quadrantNum);
     const message = game.messages.get(messageId);
     const blockedUniqueLineIds = new Set(getPairUsedUniqueModifierIds(message, quadrantNum)); // Unique line is the same as Per-pair line
     void message; // pair advantage is set independently via the advantage control
-
+    console.log("message voided");
     // Create map of sources
     const actors = actorSources.map(source => {
         // Resolve actor from sourceUuid or actorId
@@ -628,18 +631,19 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
             stats: statsArray
         };
     }).filter(a => a);
-
+    console.log("actors filtered");
     // Create dialog
-    const statDialogResult = await renderDialog('stat', { actors, quadrantNum });
+    const statDialogResult = await renderDialog("stat", { actors, quadrantNum });
+    console.log(statDialogResult);
     if (!statDialogResult) return;
-
+    console.log("yea");
     const { stat, sourceUuid, actorId, selectedModifierIds = [], gambit = null } = statDialogResult;
     if (!stat) return;
     if (!sourceUuid && !actorId) return;
-
+    console.log("yea");
     const actor = resolveActorFromSource({ sourceUuid, actorId });
     if (!actor) return;
-
+    console.log("yea");
     const specialArray = Array.isArray(actor.system.attributes.stats?.[stat]?.special)
         ? actor.system.attributes.stats[stat].special
         : [];
@@ -653,7 +657,7 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
             length: specialArray.length
         });
     }
-
+    console.log("yea");
     if (specialArray.length > 0) {
         const specialWithStat = [stat, ...specialArray];
         const specialStat = await renderDialog("special", { specialArray: specialWithStat });
@@ -673,7 +677,7 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
         console.log(`No specials found for stat "${stat}"`);
         }
     }
-
+    console.log("success!!!!!!!!!!!!!!!!!!!!!!");
     let hasGambit = false;
     if (gambit.luckMove) {
         await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`, {
@@ -682,6 +686,8 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
         });
         hasGambit = true;
     }
+    console.log("success!!!!!!!!!!!!!!!!!!!!!!");
+    // console.log(message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`));
 
     return { stat, sourceUuid, actorId, statValue, selectedSpecial, selectedModifierIds, hasGambit }; //TODO: add hasGambit logic to all who call this function
     
@@ -775,8 +781,11 @@ export async function rollAll(messageId) {
         
         // Create all gambits
         for (let i = 1; i <= (type === "action" ? 2 : 4); i++) {
-            const gambitData = message.getFlag("bizarre-adventures-d6", `quadrant${i}GambitData`);
-            if (gambitData?.gambit) createGambit(gambitData.actorId, gambitData.gambit);
+            const gambitData = {
+                item: message.getFlag("bizarre-adventures-d6", `quadrant${i}GambitData`),
+                state: "create"
+            } 
+            if (gambitData?.item) executeLuckMove(messageId, gambitData.item.actorId, i, "gambit", gambitData); // TODO: Flashback gmabits and others that require senders have improper context
         }
     }
 }

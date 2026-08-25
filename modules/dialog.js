@@ -1,6 +1,6 @@
 import { actionLabels } from "./constants.js";
 import { getScope } from "./dice.js";
-import { chooseLuckSpenders, LUCK_MOVES, trySpendLuck } from "./luck-moves.js";
+import { chooseLuckSpenders, LUCK_MOVES, trySpendLuck, canUseMove } from "./luck-moves.js";
 import { getRollableActorSources, resolveActorFromSource } from "./apps/roller/actors.js";
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
@@ -137,8 +137,9 @@ export async function renderDialog(dialog, dialogData = {}) {
                         confirmBtn[0]?.addEventListener("click", onConfirmAttemptCapture, true);
 
                         html.find(".gambit-option").on("click", function () {
+                            const alreadySelected = $(this).hasClass("selected");
                             html.find(".gambit-option").removeClass("selected");
-                            $(this).addClass("selected");
+                            if (!alreadySelected) $(this).addClass("selected");
                             updateConfirmState();
                         });
 
@@ -161,16 +162,19 @@ export async function renderDialog(dialog, dialogData = {}) {
             );
 
             return await new Promise((resolve) => {
+                let selectedGambitMove = null;
+                let selectedGambitSpenderId = null;
+
                 new Dialog({
                     title: `Select Stat and Gambit for ${actionLabels[dialogData.quadrantNum - 1].label}`,
                     content,
                     buttons: {
                         confirm: {
                             label: "Confirm",
-                            callback: async (html) => { 
-                                const gambitName =  html.find("#gambit-name").val() || null;
-                                const gambitTrigger =  html.find("#gambit-trigger").val()|| null;
-                                const gambitMove = html.find(".gambit-option.selected").data("stat")|| null;
+                            callback: (html) => {
+                                const gambitName = html.find("#gambit-name").val() || null;
+                                const gambitTrigger = html.find("#gambit-trigger").val() || null;
+                                const gambitMove = html.find(".gambit-option.selected").data("stat") || null;
 
                                 const selectedStat = html.find(".stat-option.selected").data("stat");
                                 const selectedSourceUuid = html.find(".stat-option.selected").data("sourceUuid");
@@ -183,7 +187,7 @@ export async function renderDialog(dialog, dialogData = {}) {
                                     ui.notifications.warn("Pick a Stat first.");
                                     return;
                                 }
-                                
+
                                 if (gambitMove || gambitTrigger || gambitName) {
                                     if (!gambitMove) {
                                         ui.notifications.warn("Incomplete Gambit: Gambit requires a luck move.");
@@ -197,35 +201,13 @@ export async function renderDialog(dialog, dialogData = {}) {
                                         ui.notifications.warn("Incomplete Gambit: Gambit requires a name.");
                                         return;
                                     }
-                                    // TODO: Move luck spending to luckmoves.js
-                                    const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
-                                    const spenders = chooseLuckSpenders(actorSources); // 0 = temp, 1 = perm, 2 = value
-                                    const burnType = LUCK_MOVES[gambitMove].costType;
-                                    let spenderId = null;
-                                    switch (burnType) {
-                                        case "temp": {
-                                            spenderId = spenders[0];
-                                            break;
-                                        }
-                                        case "perm": {
-                                            spenderId = spenders[1];
-                                            break;
-                                        }
-                                        case "value": {
-                                            spenderId = spenders[2];
-                                            break;
-                                        }
-                                        default:
-                                            ui.notifications.error(`Unknown luck cost type: ${burnType}`);
-                                            return;
-                                            
-                                    }
-                                    const gambitSuccess = await trySpendLuck(spenderId, gambitMove);
-                                    console.log(gambitSuccess);
-                                    if (!gambitSuccess) {
-                                        ui.notifications.error(`Not enough ${burnType} luck`);
+                                    if (selectedGambitMove !== gambitMove || !selectedGambitSpenderId) {
+                                        ui.notifications.error("Reselect the Gambit's luck move.");
                                         return;
                                     }
+                                    // Not awaited: resolve() below must run synchronously, or Dialog#submit()'s
+                                    // immediate this.close() would settle this Promise with null first.
+                                    trySpendLuck(selectedGambitSpenderId, gambitMove);
                                 }
 
                                 resolve({
@@ -372,8 +354,28 @@ export async function renderDialog(dialog, dialogData = {}) {
                         });
 
                         html.find(".gambit-option").on("click", function () {
+                            const button = $(this);
+                            const alreadySelected = button.hasClass("selected");
                             html.find(".gambit-option").removeClass("selected");
-                            $(this).addClass("selected");
+                            selectedGambitMove = null;
+                            selectedGambitSpenderId = null;
+                            if (alreadySelected) return; // clicking the active move just deselects it
+
+                            const moveKey = button.data("stat");
+                            const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
+                            if (!actorSources) return;
+                            const spenders = chooseLuckSpenders(actorSources); // 0 = temp, 1 = perm, 2 = value
+                            const burnType = LUCK_MOVES[moveKey].costType;
+                            const spender = burnType === "temp" ? spenders[0]
+                                : burnType === "perm" ? spenders[1]
+                                : burnType === "value" ? spenders[2]
+                                : null;
+                            const actor = spender ? resolveActorFromSource(spender) : null;
+                            if (!canUseMove(LUCK_MOVES[moveKey], actor)) return; // canUseMove already warns
+
+                            selectedGambitMove = moveKey;
+                            selectedGambitSpenderId = spender.actorId;
+                            button.addClass("selected");
                         });
 
                         renderCustomModifierChoices();
@@ -438,7 +440,7 @@ export async function renderDialog(dialog, dialogData = {}) {
             });
         }
 
-        if (dialog === "special") {
+        case "special": {
             const specialArray = dialogData.specialArray;
             const baseStat = specialArray[0];
             const baseStatKey = typeof baseStat === "string" ? baseStat : baseStat.key;
