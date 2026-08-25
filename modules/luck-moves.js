@@ -561,11 +561,11 @@ async function executePersist(messageId, quadrantNum) {
 	return true;
 }
 
-export async function createGambit(actorId, gambit) {
+export async function createGambit(actorId, gambit) { // ISOLATED FUNCTION: DOES NOT RUN THROUGH executeluckmove
 	const actor = game.actors.get(actorId);
 	await actor.createEmbeddedDocuments("Item", [{
 		name: gambit.name ?? "Gambit",
-		type: "gambit", // must match your system's registered item type key
+		type: "gambit", // must match item type key
 		img: gambit.img ?? "icons/svg/dice-target.svg",
 		system: {
 			luckMove: gambit.luckMove,
