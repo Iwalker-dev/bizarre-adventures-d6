@@ -19,7 +19,7 @@ let rollerClickTimer = null;
 let lastActionMessageId = null;
 let lastActionMessageAt = 0;
 let chatListenersRegistered = false;
-const DOUBLE_CLICK_WINDOW_MS = 500;
+const DOUBLE_CLICK_WINDOW_MS = 600;
 
 async function executeRollerAsGM(handler, ...args) {
     const socket = getRollerSocket();
@@ -82,6 +82,13 @@ export function rollerControl() {
 }
 
 export async function createActionMessage() { 
+    if (!game.user.isGM) {
+        const socket = getRollerSocket();
+        const msg = await socket.executeAsGM("createActionMessage");
+        if (!msg) {
+            console.log.warn("No GM detected, certain functionality will fail.");
+        } else return msg;
+    }
     const displayMessage = await ChatMessage.create(withCurrentMessageMode({
         content: await renderAction()
     }));
@@ -92,8 +99,12 @@ export async function createActionMessage() {
         }
         , content: await renderSource()
     };
-    ChatMessage.applyMode(messageData, "gm");
-    const sourceMessage = await ChatMessage.create(messageData);
+    const sourceMessage = await ChatMessage.create({
+        speaker: { alias: "Debug Message" },
+        content: await renderSource(),
+        whisper: game.users.filter(u => u.isGM).map(u => u.id),
+        blind: true
+    });
     await sourceMessage.setFlag("bizarre-adventures-d6", "type", "source");
     await sourceMessage.setFlag("bizarre-adventures-d6", "displayId", displayMessage.id);
     await displayMessage.setFlag("bizarre-adventures-d6", "sourceId", sourceMessage.id);
@@ -101,6 +112,13 @@ export async function createActionMessage() {
 }
 
 export async function createContestMessage() {
+    if (!game.user.isGM) {
+        const socket = getRollerSocket();
+        const msg = await socket.executeAsGM("createContestMessage");
+        if (!msg) {
+            console.log.warn("No GM detected, certain functionality will fail.");
+        } else return msg;
+    }
     const action = await createActionMessage();
     const message = await dispatchUpdateToContest(action.id);
     return message;
@@ -211,18 +229,20 @@ export async function registerChatListeners() {
                 currentMessageCount: game.messages?.size ?? 0
             });
         }
-        // switched from renderChatMessage blind - unsure what context is
-        Hooks.on("renderChatMessageHTML", (message, html, context) => {
+
+        // switched from renderChatMessage. context includes entire message content and related info
+        Hooks.on("renderChatMessageHTML", async (message, html, context) => {
             if (isDebugEnabled()) {
                 const root = html?.[0] || html;
                 const actorNameNodes = root?.querySelectorAll?.(".bad6-actor-name")?.length ?? 0;
                 const rollNodes = root?.querySelectorAll?.(".bad6-roll-display[data-quadrant]")?.length ?? 0;
-                console.log("[BAD6][ChatDebug] renderChatMessage fired", {
+                console.log("[BAD6][ChatDebug] renderChatMessageHTML fired", {
                     messageId: message?.id,
                     type: message?.getFlag?.("bizarre-adventures-d6", "type") || null,
                     actorNameNodes,
                     rollNodes,
-                    locked: !!message?.getFlag?.("bizarre-adventures-d6", "Locked")
+                    locked: !!message?.getFlag?.("bizarre-adventures-d6", "Locked"),
+                    context
                 });
             }
             // TODO: Check if privacy related and remove if so
@@ -230,13 +250,20 @@ export async function registerChatListeners() {
             // applyClientRollVisibility(message, html);
             // For our roll messages, re-add client limitation, or hide message entirely if debug is off
             const type = message.getFlag('bizarre-adventures-d6', 'type');
-            if (type == 'contest' || type == 'action') applyChatButtonPermissions(message, html)
+            const socket = getRollerSocket();
+            if (type == 'contest' || type == 'action') {
+                applyChatButtonPermissions(message, html);
+            }
             else if (type == 'source') {
-                const display = message.getFlag('bizarre-adventures-d6', 'displayId');
-
+                const displayId = message.getFlag('bizarre-adventures-d6', 'displayId');
+                await socket.executeForEveryone("rerenderMessage", message.id); //rerender message expects source message
+                // socket.executeForOthers("updateDisplay", displayId)
                 if (!isDebugEnabled()) html.remove();
+
             }
         });
+
+
 
         $(document).on("click", ".chat-message .select-stat", async (event) => {
             event.preventDefault();
@@ -279,8 +306,9 @@ export async function registerChatListeners() {
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return;
-                    const luckActors = chooseLuckSpenders(actorSources);
-                    const shouldContinue = await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
+                    const luckActors = chooseLuckSpenders(actorSources); // TODO: Replace with user choice
+                    const shouldContinue = await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false); // TODO: Luck move must run with context of current user, then switch to GM as necessary
+                    // const shouldContinue = executeLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
                     if (!shouldContinue) return;
                     }
                     break;
@@ -293,13 +321,16 @@ export async function registerChatListeners() {
                         const newAdvantage = await renderDialog("advantage", { quadrantNum: Number(quadrantNum), currentAdvantage: pairAdvantage });
                         if (newAdvantage === null || newAdvantage === undefined) return; // TODO: confirm changing from break to return solves passing advantage even on fail
                         await dispatchSetPairAdvantage(sourceMessageId, Number(quadrantNum), newAdvantage);
+                        return;
                         break;
                     }
+                    /*
                     if (actionArg === "reckless") {
                         const currentReckless = getPairReckless(message, Number(quadrantNum));
                         await dispatchSetPairReckless(sourceMessageId, Number(quadrantNum), !currentReckless);
                         break;
                     }
+                    */
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
                     return;
                 default:

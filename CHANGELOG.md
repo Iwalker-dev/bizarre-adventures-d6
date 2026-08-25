@@ -219,6 +219,14 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Fixed bug with message mode update failing entire actions due to socket restrictions.
 - Updated hamon and cyborg descriptions
 
+## [0.9.14.2] - 2026-8-24
+- Gambit execution properly extracts the luck move
+- Gambit dialog request is returned to correct sender
+- It has been noted that game.messages.contents.at(-x) can expose any hidden message, overhaul of security considered
+- Small patch for error emitted by action on creation
+- Removed access to the reckless button
+- Fixed advantage applying its visibility to first quadrant
+
 # What's left? (Ordered By Priority)
 - Give Cyborg a more comfortable upgrade space
 - Switch to V2 framework before V15

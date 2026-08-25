@@ -476,10 +476,10 @@ async function executeGambit(messageId, quadrantNum, sender) { // TODO: Clarify 
 		if (actor) actors.push(actor);
 	}
 	console.log(actors);
-	// TODO: Pull the info from the dialog
-	const gambitInfo = await renderDialog("gambit", {actors, quadrantNum} );
+	// const gambitInfo = await renderDialog("gambit", {actors, quadrantNum} );
+	const gambitInfo = await executeRollerAsPlayer("renderDialog", sender, "gambit", {actors, quadrantNum} )
 	if (!gambitInfo) return null;
-
+	console.log(gambitInfo);
 
 
 	return [gambitInfo.gambit.move, gambitInfo.gambit.actorId, gambitInfo.gambit.itemId];

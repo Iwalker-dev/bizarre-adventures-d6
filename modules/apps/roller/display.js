@@ -9,6 +9,7 @@ import { resolveActorFromSource } from "./actors.js";
 import { getPairAdvantage, getPairFudgeBonus, getPairReckless } from "./pair-controls.js";
 import { getContestResultLabel } from "./roll-resolution.js";
 import { canViewerSeeQuadrant } from "./chat.js";
+import { getRollerSocket } from "../../sockets.js";
 
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
@@ -239,12 +240,15 @@ function logVisibilityDecision(type, { sourceUuid, actorId, actor, quadrant = nu
 // ---------------------------------------------------------------------------
 
 export async function rerenderMessage(message) {
+    if (!message) return;
+
     let type = message.getFlag("bizarre-adventures-d6", "type");
     let targetMessage = message; // What message gets rerendered with the action/contest template
     // if (type != "source") ui.notifications.error("AAAAAAAAAAAAAA");
     const displayId = message.getFlag("bizarre-adventures-d6", "displayId");
     const displayMessage = game.messages.get(displayId);
-    type = displayMessage.getFlag("bizarre-adventures-d6", "type");
+    type = displayMessage?.getFlag("bizarre-adventures-d6", "type");
+    if (!type) return; // action does not start with a type flag, this targets that.
     targetMessage = displayMessage;
 
     const quadrants = {};
@@ -386,16 +390,18 @@ export async function rerenderMessage(message) {
     });
     // Apply to the current message (Update based on template)
     // TODO: All rerenders should also recalculate permissions. This will require having something to calculate those permissions to begin with.
-    if (type == "action") {
-        const pairAdvantage = getPairAdvantage(message, 1) ?? 0;
-        await message.update({ content: await renderSource({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, pairAdvantage }) });
-    } else { // its a contest
-        const actionPairAdvantage = getPairAdvantage(message, 1) ?? 0;
-        const reactionPairAdvantage = getPairAdvantage(message, 3) ?? 0;
-        const reactionPairReckless = reactionReckless;
-        await message.update({ content: await renderSource({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, actionPairAdvantage, reactionPairAdvantage, reactionPairReckless }) });
+    // All users now run this function, not just GM
+    if (game.user.isGM) {
+        if (type == "action") {
+            const pairAdvantage = getPairAdvantage(message, 1) ?? 0;
+            await message.update({ content: await renderSource({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, pairAdvantage }) });
+        } else { // it's a contest
+            const actionPairAdvantage = getPairAdvantage(message, 1) ?? 0;
+            const reactionPairAdvantage = getPairAdvantage(message, 3) ?? 0;
+            const reactionPairReckless = reactionReckless;
+            await message.update({ content: await renderSource({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, actionPairAdvantage, reactionPairAdvantage, reactionPairReckless }) });
+        }
     }
-
     if (isDebugEnabled()) {
         const updatedMessage = game.messages.get(targetMessage.id) || targetMessage;
         const messageData = updatedMessage.toObject();
@@ -417,7 +423,7 @@ export async function rerenderMessage(message) {
             fullMessageData: messageData
         });
     }
-    // rerenderDisplayMessage(displayMessage);
+    rerenderDisplayMessage(displayMessage);
 }
 // TODO: Must calculate each quadrant's visiblity based on message flags
 export async function rerenderDisplayMessage(message) {
@@ -593,4 +599,6 @@ export async function rerenderDisplayMessage(message) {
         const reactionPairAdvantage = getPairAdvantage(sourceMessage, 3) ?? 0;
         contentNode.innerHTML = await renderContest({ quadrants, actionPairAdvantage, reactionPairAdvantage, reactionPairReckless: reactionReckless, isResolved, resolveLabel, resolveTooltip, resolveStateClass });
     }
+    // Hopefully forces updates on all clients
+    // if (game.user.isGM) await message.setFlag("bizarre-adventures-d6", "lastUpdate", Date.now());
 }
