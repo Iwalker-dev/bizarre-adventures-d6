@@ -19,7 +19,7 @@ let rollerClickTimer = null;
 let lastActionMessageId = null;
 let lastActionMessageAt = 0;
 let chatListenersRegistered = false;
-const DOUBLE_CLICK_WINDOW_MS = 500;
+const DOUBLE_CLICK_WINDOW_MS = 600;
 
 async function executeRollerAsGM(handler, ...args) {
     const socket = getRollerSocket();
@@ -82,6 +82,13 @@ export function rollerControl() {
 }
 
 export async function createActionMessage() { 
+    if (!game.user.isGM) {
+        const socket = getRollerSocket();
+        const msg = await socket.executeAsGM("createActionMessage");
+        if (!msg) {
+            console.log.warn("No GM detected, certain functionality will fail.");
+        } else return msg;
+    }
     const displayMessage = await ChatMessage.create(withCurrentMessageMode({
         content: await renderAction()
     }));
@@ -92,8 +99,12 @@ export async function createActionMessage() {
         }
         , content: await renderSource()
     };
-    ChatMessage.applyMode(messageData, "gm");
-    const sourceMessage = await ChatMessage.create(messageData);
+    const sourceMessage = await ChatMessage.create({
+        speaker: { alias: "Debug Message" },
+        content: await renderSource(),
+        whisper: game.users.filter(u => u.isGM).map(u => u.id),
+        blind: true
+    });
     await sourceMessage.setFlag("bizarre-adventures-d6", "type", "source");
     await sourceMessage.setFlag("bizarre-adventures-d6", "displayId", displayMessage.id);
     await displayMessage.setFlag("bizarre-adventures-d6", "sourceId", sourceMessage.id);
@@ -101,6 +112,13 @@ export async function createActionMessage() {
 }
 
 export async function createContestMessage() {
+    if (!game.user.isGM) {
+        const socket = getRollerSocket();
+        const msg = await socket.executeAsGM("createContestMessage");
+        if (!msg) {
+            console.log.warn("No GM detected, certain functionality will fail.");
+        } else return msg;
+    }
     const action = await createActionMessage();
     const message = await dispatchUpdateToContest(action.id);
     return message;
@@ -211,18 +229,20 @@ export async function registerChatListeners() {
                 currentMessageCount: game.messages?.size ?? 0
             });
         }
-        // switched from renderChatMessage blind - unsure what context is
-        Hooks.on("renderChatMessageHTML", (message, html, context) => {
+
+        // switched from renderChatMessage. context includes entire message content and related info
+        Hooks.on("renderChatMessageHTML", async (message, html, context) => {
             if (isDebugEnabled()) {
                 const root = html?.[0] || html;
                 const actorNameNodes = root?.querySelectorAll?.(".bad6-actor-name")?.length ?? 0;
                 const rollNodes = root?.querySelectorAll?.(".bad6-roll-display[data-quadrant]")?.length ?? 0;
-                console.log("[BAD6][ChatDebug] renderChatMessage fired", {
+                console.log("[BAD6][ChatDebug] renderChatMessageHTML fired", {
                     messageId: message?.id,
                     type: message?.getFlag?.("bizarre-adventures-d6", "type") || null,
                     actorNameNodes,
                     rollNodes,
-                    locked: !!message?.getFlag?.("bizarre-adventures-d6", "Locked")
+                    locked: !!message?.getFlag?.("bizarre-adventures-d6", "Locked"),
+                    context
                 });
             }
             // TODO: Check if privacy related and remove if so
@@ -230,13 +250,20 @@ export async function registerChatListeners() {
             // applyClientRollVisibility(message, html);
             // For our roll messages, re-add client limitation, or hide message entirely if debug is off
             const type = message.getFlag('bizarre-adventures-d6', 'type');
-            if (type == 'contest' || type == 'action') applyChatButtonPermissions(message, html)
+            const socket = getRollerSocket();
+            if (type == 'contest' || type == 'action') {
+                applyChatButtonPermissions(message, html);
+            }
             else if (type == 'source') {
-                const display = message.getFlag('bizarre-adventures-d6', 'displayId');
-
+                const displayId = message.getFlag('bizarre-adventures-d6', 'displayId');
+                await socket.executeForEveryone("rerenderMessage", message.id); //rerender message expects source message
+                // socket.executeForOthers("updateDisplay", displayId)
                 if (!isDebugEnabled()) html.remove();
+
             }
         });
+
+
 
         $(document).on("click", ".chat-message .select-stat", async (event) => {
             event.preventDefault();
@@ -279,8 +306,9 @@ export async function registerChatListeners() {
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return;
-                    const luckActors = chooseLuckSpenders(actorSources);
-                    const shouldContinue = await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
+                    const luckActors = chooseLuckSpenders(actorSources); // TODO: Replace with user choice
+                    const shouldContinue = await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false); // TODO: Luck move must run with context of current user, then switch to GM as necessary
+                    // const shouldContinue = executeLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
                     if (!shouldContinue) return;
                     }
                     break;
@@ -293,13 +321,16 @@ export async function registerChatListeners() {
                         const newAdvantage = await renderDialog("advantage", { quadrantNum: Number(quadrantNum), currentAdvantage: pairAdvantage });
                         if (newAdvantage === null || newAdvantage === undefined) return; // TODO: confirm changing from break to return solves passing advantage even on fail
                         await dispatchSetPairAdvantage(sourceMessageId, Number(quadrantNum), newAdvantage);
+                        return;
                         break;
                     }
+                    /*
                     if (actionArg === "reckless") {
                         const currentReckless = getPairReckless(message, Number(quadrantNum));
                         await dispatchSetPairReckless(sourceMessageId, Number(quadrantNum), !currentReckless);
                         break;
                     }
+                    */
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
                     return;
                 default:
@@ -379,12 +410,14 @@ async function dispatchResetQuadrant(messageId, quadrantNum, refundLuck = true) 
 
 async function dispatchLuckMove(messageId, spenders, quadrantNum, move, isGambit = false) {
     const sender = game.user.id;
+    /*
     if (game.user.isGM) {
         await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit, sender);
         const updatedMessage = game.messages.get(messageId);
         if (updatedMessage) await rerenderMessage(updatedMessage);
         return;
     }
+    */
     return await executeRollerAsGM("rollerExecuteLuckMove", messageId, spenders, quadrantNum, move, isGambit, sender);
 }
 
@@ -397,12 +430,12 @@ async function dispatchSetPairAdvantage(messageId, quadrantNum, advantage) {
     if (game.user.isGM) return await applySetPairAdvantage(messageId, quadrantNum, advantage);
     return await executeRollerAsGM("rollerSetPairAdvantage", messageId, quadrantNum, advantage);
 }
-
+/*
 async function dispatchSetPairReckless(messageId, quadrantNum, reckless) {
     if (game.user.isGM) return await applySetPairReckless(messageId, quadrantNum, reckless);
     return await executeRollerAsGM("rollerSetPairReckless", messageId, quadrantNum, reckless);
 }
-
+*/
 async function applyPairControlMutation(messageId, mutateFn) {
     let message = game.messages.get(messageId);
     if (!message) return;
@@ -539,7 +572,7 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
                 for (const spender in moveSpenders) {
                     const count = moveSpenders[spender] || 0;
                     for (let i = 0; i < count; i++) {
-                        await trySpendLuck(spender, moveData.name, true, true);
+                        await trySpendLuck(spender, moveData.name, true, true); // TODO: Confirm logic survived gambit change
                     }
                 }
             }
@@ -559,12 +592,13 @@ export async function resetQuadrant(messageId, quadrantNum, refundLuck = true) {
 }
 
 async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
+    console.log("renderStatSelectionDialog");
     if (!actorSources.length) return;
     const quadrantNumber = Number(quadrantNum);
     const message = game.messages.get(messageId);
     const blockedUniqueLineIds = new Set(getPairUsedUniqueModifierIds(message, quadrantNum)); // Unique line is the same as Per-pair line
     void message; // pair advantage is set independently via the advantage control
-
+    console.log("message voided");
     // Create map of sources
     const actors = actorSources.map(source => {
         // Resolve actor from sourceUuid or actorId
@@ -597,18 +631,19 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
             stats: statsArray
         };
     }).filter(a => a);
-
+    console.log("actors filtered");
     // Create dialog
-    const statDialogResult = await renderDialog('stat', { actors, quadrantNum });
+    const statDialogResult = await renderDialog("stat", { actors, quadrantNum });
+    console.log(statDialogResult);
     if (!statDialogResult) return;
-
+    console.log("yea");
     const { stat, sourceUuid, actorId, selectedModifierIds = [], gambit = null } = statDialogResult;
     if (!stat) return;
     if (!sourceUuid && !actorId) return;
-
+    console.log("yea");
     const actor = resolveActorFromSource({ sourceUuid, actorId });
     if (!actor) return;
-
+    console.log("yea");
     const specialArray = Array.isArray(actor.system.attributes.stats?.[stat]?.special)
         ? actor.system.attributes.stats[stat].special
         : [];
@@ -622,7 +657,7 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
             length: specialArray.length
         });
     }
-
+    console.log("yea");
     if (specialArray.length > 0) {
         const specialWithStat = [stat, ...specialArray];
         const specialStat = await renderDialog("special", { specialArray: specialWithStat });
@@ -642,7 +677,7 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
         console.log(`No specials found for stat "${stat}"`);
         }
     }
-
+    console.log("success!!!!!!!!!!!!!!!!!!!!!!");
     let hasGambit = false;
     if (gambit.luckMove) {
         await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`, {
@@ -651,6 +686,8 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
         });
         hasGambit = true;
     }
+    console.log("success!!!!!!!!!!!!!!!!!!!!!!");
+    // console.log(message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`));
 
     return { stat, sourceUuid, actorId, statValue, selectedSpecial, selectedModifierIds, hasGambit }; //TODO: add hasGambit logic to all who call this function
     
@@ -744,8 +781,11 @@ export async function rollAll(messageId) {
         
         // Create all gambits
         for (let i = 1; i <= (type === "action" ? 2 : 4); i++) {
-            const gambitData = message.getFlag("bizarre-adventures-d6", `quadrant${i}GambitData`);
-            if (gambitData?.gambit) createGambit(gambitData.actorId, gambitData.gambit);
+            const gambitData = {
+                item: message.getFlag("bizarre-adventures-d6", `quadrant${i}GambitData`),
+                state: "create"
+            } 
+            if (gambitData?.item) executeLuckMove(messageId, gambitData.item.actorId, i, "gambit", gambitData); // TODO: Flashback gmabits and others that require senders have improper context
         }
     }
 }
