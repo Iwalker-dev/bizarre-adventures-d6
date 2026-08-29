@@ -232,6 +232,9 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Began standardized locations of gambit logic
 - Rough patch for gambit warning in getLuckMoveExecutionContext
 
+## [0.9.14.4] - 2026-8-24
+- Added small warning when running on foundry versions below v14
+
 # What's left? (Ordered By Priority)
 - Setup tests to avoid unexpectedly causing things to stop functioning
 - 

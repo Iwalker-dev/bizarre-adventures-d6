@@ -47,6 +47,11 @@ export function rollerControl() {
 			, button: true
 			, order: 50
 				, onChange: async () => {
+                    // Placeholder while v13 functionality doesnt exist
+                    if (game.release.generation >= 14) {
+                        ui.notifications.error("This button doesn't currently work on versions of Foundry beneath V14.");
+                        return;
+                    }
                     // If you very recently created an action
 					if (rollerClickTimer) {
 						clearTimeout(rollerClickTimer);
@@ -89,6 +94,7 @@ export async function createActionMessage() {
             console.log.warn("No GM detected, certain functionality will fail.");
         } else return msg;
     }
+
     const displayMessage = await ChatMessage.create(withCurrentMessageMode({
         content: await renderAction()
     }));
