@@ -241,7 +241,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Give Cyborg a more comfortable upgrade space
 - Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)
-- update RenderChatMessage hook to RenderChatMessageHTML before v16
+- Setup basic legacy support
 - Create different backgrounds for all user types
 - Add custom images for default user and stand type actors
 - Resolve gated by permissions

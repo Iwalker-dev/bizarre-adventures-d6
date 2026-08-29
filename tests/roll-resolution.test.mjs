@@ -241,3 +241,9 @@ describe('reevaluateStoredRoll', () => {
         assert.equal(result.total, 1);   // discarded 6 is excluded
     });
 });
+
+// ---------------------------------------------------------------------------
+// reevaluateStoredRoll
+// ---------------------------------------------------------------------------
+
+
