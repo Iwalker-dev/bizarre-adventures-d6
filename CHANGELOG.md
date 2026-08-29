@@ -232,13 +232,16 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Began standardized locations of gambit logic
 - Rough patch for gambit warning in getLuckMoveExecutionContext
 
+## [0.9.14.5] - 2026-8-24
+- Added small warning when running on foundry versions below v14
+
 # What's left? (Ordered By Priority)
 - Setup tests to avoid unexpectedly causing things to stop functioning
 - 
 - Give Cyborg a more comfortable upgrade space
 - Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)
-- update RenderChatMessage hook to RenderChatMessageHTML before v16
+- Setup basic legacy support
 - Create different backgrounds for all user types
 - Add custom images for default user and stand type actors
 - Resolve gated by permissions
