@@ -48,7 +48,7 @@ export function rollerControl() {
 			, order: 50
 				, onChange: async () => {
                     // Placeholder while v13 functionality doesnt exist
-                    if (game.release.generation >= 14) {
+                    if (game.release.generation < 14) {
                         ui.notifications.error("This button doesn't currently work on versions of Foundry beneath V14.");
                         return;
                     }
