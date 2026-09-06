@@ -237,7 +237,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 
 # What's left? (Ordered By Priority)
 - Setup tests to avoid unexpectedly causing things to stop functioning
-- 
+- Hit application automation
 - Give Cyborg a more comfortable upgrade space
 - Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)
