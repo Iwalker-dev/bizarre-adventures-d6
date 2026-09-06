@@ -235,6 +235,12 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 ## [0.9.14.5] - 2026-8-24
 - Added small warning when running on foundry versions below v14
 
+## [0.9.14.7] - 2026-9-5
+- merge template.json
+- remove some pieces of reckless reactions
+- add difference table chips in contests
+- simplified chat templates
+
 # What's left? (Ordered By Priority)
 - Setup tests to avoid unexpectedly causing things to stop functioning
 - Hit application automation
