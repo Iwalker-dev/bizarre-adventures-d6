@@ -1771,25 +1771,21 @@ body {
   margin: 0.5rem 0;
   border-radius: 4px;
 }
-/*
 .pair-advantage-control {
   display: flex;
   justify-content: center;
 }
-*/
-.action-class .action-header {
+.pair-control-row {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 6px;
 }
-/*
 .pair-reckless-control {
   display: flex;
   justify-content: center;
 }
-*/
 .pair-advantage-btn {
   display: inline-flex !important;
   width: auto !important;
@@ -1804,7 +1800,6 @@ body {
   border-radius: 999px !important;
   padding: 0.15rem 0.55rem !important;
 }
-/*
 .pair-reckless-btn {
   display: inline-flex;
   align-items: center;
@@ -1819,14 +1814,12 @@ body {
   white-space: nowrap;
   cursor: pointer;
 }
-
 .pair-reckless-btn.is-active {
   border-color: #c53a2f;
   background: rgba(197, 58, 47, 0.2);
   color: #661810;
 }
-*/
-.quadrant-header {
+.action-header {
   font-weight: bold;
   margin-bottom: 4px;
 }
@@ -1865,12 +1858,12 @@ body {
   min-width: 9rem;
   justify-content: center;
 }
-.contest-resolve .select-stat.is-disabled,
-.contest-resolve .difference-chip.is-disabled {
+.contest-resolve .select-stat.is-disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.2rem 0.9rem;
+  min-width: 9rem;
+  padding: 0.35rem 0.9rem;
   border: 1px solid var(--accent-color);
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.08);
@@ -1879,10 +1872,6 @@ body {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-}
-.contest-resolve .difference-chip.is-disabled {
-  flex: 0 0 auto;
-  white-space: nowrap;
 }
 .contest-resolve .select-stat.is-disabled.is-victory-action,
 .contest-resolve .select-stat.is-disabled.is-victory-reaction {
@@ -1912,7 +1901,7 @@ body {
   border-color: #444;
 }
 .quadrant-context.visibility-public {
-  background: var(--color-emote-background, #f8f8f8);
+  background: var(--color-emote-background, #ffffff);
   border-color: var(--color-emote-border, #887c5d);
 }
 .quadrant-context.visibility-gm,
@@ -2008,8 +1997,7 @@ body {
   gap: 0.25rem;
   margin-top: 0.15rem;
 }
-.quadrant-buttons .select-stat,
-.quadrant-buttons .dc-chip {
+.quadrant-buttons .select-stat {
   display: inline-flex;
   align-items: center;
   justify-content: center;
