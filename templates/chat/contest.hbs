@@ -1,16 +1,15 @@
 <div class="contest-class">
     {{#with actionSide}}
-        {{> action-card showResolve=false luckTooltips=../luckTooltips}}
+        {{> action-card showResolve=false}}
     {{/with}}
     <div style="border-top:2px solid #555;"></div>
     {{#with reactionSide}}
-        {{> action-card showResolve=false luckTooltips=../luckTooltips}}
+        {{> action-card showResolve=false}}
     {{/with}}
     {{#if (getProperty actionSide "quadrants.0.allPrepared")}}
         {{#if isResolved}}
             <div class="contest-resolve">
                 <span class="select-stat is-disabled {{resolveStateClass}}" data-tooltip="{{resolveTooltip}}">{{resolveLabel}}</span>
-                <span class="difference-chip is-disabled {{resolveStateClass}}" data-tooltip="{{differenceInfo}}">{{differenceStars}}</span>
             </div>
         {{else}}
             <div class="contest-resolve">
