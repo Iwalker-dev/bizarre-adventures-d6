@@ -11,7 +11,7 @@
       {{/if}}
     {{else}}
     {{#if luckCounts.feint}}
-      <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="Feint (-1 Temp): Edit your Action/Reaction after hearing the enemy's">
+      <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="{{luckTooltips.feint}}">
         <i class="fas fa-mask"></i>
         {{#if (isGreater luckCounts.feint 1)}}
           <span class="luck-chip-count">{{displayCount luckCounts.feint}}</span>
@@ -20,7 +20,7 @@
     {{/if}}
 
     {{#if luckCounts.fudge}}
-      <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="Fudge (-2 Temp) - Add a free Advantage, pre-roll.">
+      <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="{{luckTooltips.fudge}}">
         <i class="fas fa-clover"></i>
         {{#if (isGreater luckCounts.fudge 1)}}
           <span class="luck-chip-count">{{displayCount luckCounts.fudge}}</span>
@@ -29,7 +29,7 @@
     {{/if}}
 
     {{#if luckCounts.flashback}}
-      <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="Flashback (-3 Temp) - The Narrator ‘forgot’ a detail you choose and retcons it in.">
+      <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="{{luckTooltips.flashback}}">
         <i class="fas fa-arrow-rotate-right"></i>
         {{#if (isGreater luckCounts.flashback 1)}}
           <span class="luck-chip-count">{{displayCount luckCounts.flashback}}</span>
@@ -38,7 +38,7 @@
     {{/if}}
 
     {{#if luckCounts.mulligan}}
-      <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="Mulligan (-4 Temp) - Add a free Advantage, post-roll.">
+      <span class="luck-chip luck-chip--temp luck-chip--active" data-tooltip="{{luckTooltips.mulligan}}">
         <i class="fas fa-arrow-rotate-right"></i>
         {{#if (isGreater luckCounts.mulligan 1)}}
           <span class="luck-chip-count">{{displayCount luckCounts.mulligan}}</span>
@@ -47,7 +47,7 @@
     {{/if}}
 
     {{#if luckCounts.persist}}
-      <span class="luck-chip luck-chip--perm luck-chip--active" data-tooltip="Persist (-2 Perm) - Try another Action/Reaction after a failed one post-roll, as if it tied.">
+      <span class="luck-chip luck-chip--perm luck-chip--active" data-tooltip="{{luckTooltips.persist}}">
         <i class="fas fa-fire"></i>
         {{#if (isGreater luckCounts.persist 1)}}
           <span class="luck-chip-count">{{displayCount luckCounts.persist}}</span>
@@ -125,12 +125,12 @@
           <div class="bad6-roll-display bad6-hidden-roll" data-quadrant="{{quadrantNum}}">{{{rollHtml}}}</div>
           <div class="quadrant-actor-divider"></div>
           <div class="quadrant-buttons">
-            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-mulligan" data-tooltip="Right-Click to Gambit">Mulligan</button>
-            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-persist" data-tooltip="Right-Click to Gambit">Persist</button>
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-mulligan" data-tooltip="{{luckTooltips.mulligan}}">Mulligan</button>
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-persist" data-tooltip="{{luckTooltips.persist}}">Persist</button>
             {{#if canFlashback}}
-              <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+              <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="{{luckTooltips.flashback}}">Flashback</button>
             {{/if}}
-            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Trigger">Gambit</button>
           </div>
         </div>
       {{else if prepared}}
@@ -145,7 +145,7 @@
           </div>
           <div class="quadrant-buttons">
             {{#if canFlashback}}
-              <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+              <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="{{luckTooltips.flashback}}">Flashback</button>
             {{/if}}
             <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
           </div>
@@ -153,7 +153,7 @@
       {{else}}
         <div class="quadrant-buttons">
           {{#if canFlashback}}
-            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="{{luckTooltips.flashback}}">Flashback</button>
           {{/if}}
           <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
         </div>
@@ -164,10 +164,10 @@
         <div class="bad6-roll-display" data-quadrant="{{quadrantNum}}">{{{rollHtml}}}</div>
         <div class="quadrant-actor-divider"></div>
         <div class="quadrant-buttons">
-          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-mulligan" data-tooltip="Right-Click to Gambit">Mulligan</button>
-          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-persist" data-tooltip="Right-Click to Gambit">Persist</button>
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-mulligan" data-tooltip="{{luckTooltips.mulligan}}">Mulligan</button>
+          <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-persist" data-tooltip="{{luckTooltips.persist}}">Persist</button>
           {{#if canFlashback}}
-            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="{{luckTooltips.flashback}}">Flashback</button>
           {{/if}}
           <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
         </div>
@@ -189,11 +189,11 @@
         <div class="quadrant-buttons">
           <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="unready" data-tooltip="Refunds spent luck and resets quadrant">Unready</button>
           {{#if allPrepared}}
-            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-feint" data-tooltip="Right-Click to Gambit">Feint</button>
-            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-fudge" data-tooltip="Right-Click to Gambit">Fudge</button>
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-feint" data-tooltip="{{luckTooltips.feint}}">Feint</button>
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-fudge" data-tooltip="{{luckTooltips.fudge}}">Fudge</button>
           {{/if}}
           {{#if canFlashback}}
-            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+            <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="{{luckTooltips.flashback}}">Flashback</button>
           {{/if}}
           <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
         </div>
@@ -203,7 +203,7 @@
       <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="prepare" {{#if lock}}disabled{{/if}}>
         {{#if lock}}Locked...{{else}}Select Stat{{/if}}
       </button>
-      <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="Right-Click to Gambit">Flashback</button>
+      <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-flashback" data-tooltip="{{luckTooltips.flashback}}">Flashback</button>
       <button class="select-stat" data-quadrant="{{quadrantNum}}" data-action="luck-gambit" data-tooltip="Execute a Set Trap">Gambit</button>
 
     </div>
