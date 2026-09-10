@@ -568,12 +568,19 @@ export async function rerenderDisplayMessage(message) {
     const differenceLevel = differenceNumber > 0
         ? Math.min(3, differenceNumber)
         : Math.max(0, differenceNumber);
+    const differenceInfoRaw = `${differenceType[differenceLevel]}\n
+        ${differenceResult[differenceLevel]}\n
+        "${differenceExample[differenceLevel]}"`;
+    // Safety precaution to avoid HTML insertion in the future
+    // <br> allows line break within tooltip
+    const differenceInfo = foundry.utils
+        .escapeHTML(differenceInfoRaw)
+        .replace(/\r?\n/g, "<br>");
     const difference = {
         value: differenceNumber,
         action: {
             type: differenceType[differenceLevel],
-            // <br> allows line break within tooltip
-            info: `${differenceType[differenceLevel]}<br>${differenceResult[differenceLevel]}<br>"${differenceExample[differenceLevel]}"`,
+            info: differenceInfo,
             stars: differenceStars[differenceLevel]
         },
         reaction: {
