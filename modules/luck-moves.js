@@ -213,6 +213,7 @@ export function chooseLuckSpenders(rollableActors) {
 				doc = fromUuidSync(source.sourceUuid);
 			} catch (_err) {
 				// May throw for embedded token-actor UUIDs; fall through to actorId fallback
+				ui.notifications.warn("Actor couldn't be referenced by UUID, falling back to actorId");
 			}
 			if (doc?.documentName === "Actor") actor = doc;
 			else if (doc?.actor) actor = doc.actor;
@@ -228,7 +229,7 @@ export function chooseLuckSpenders(rollableActors) {
             .map(([key, stat]) => ({
                 key,
                 name: stat.label || key
-                ,value: stat.value ?? 0
+                ,value: stat.original ?? 0
 				,temp: stat.temp ?? 0
 				,perm: stat.perm ?? 0
         }));

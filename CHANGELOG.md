@@ -240,6 +240,8 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - remove some pieces of reckless reactions
 - add difference table chips in contests
 - simplified chat templates
+- Fixed unready not resetting visibility
+- Fixed Flashback setting visibility even on fail
 
 # What's left? (Ordered By Priority)
 - Setup tests to avoid unexpectedly causing things to stop functioning

@@ -174,7 +174,7 @@ export async function registerChatListeners() {
                 el?.remove();
             });
         };
-        // TODO: For Everyone, compute what roll messages should render.
+        // For Everyone, compute what roll messages should render.
         const displayMessages = game.messages.filter(message =>
                 message.visible && 
                 (message.getFlag('bizarre-adventures-d6', 'type') == 'action' ||
@@ -251,9 +251,6 @@ export async function registerChatListeners() {
                     context
                 });
             }
-            // TODO: Check if privacy related and remove if so
-            // applyClientActorLabels(html);
-            // applyClientRollVisibility(message, html);
             // For our roll messages, re-add client limitation, or hide message entirely if debug is off
             const type = message.getFlag('bizarre-adventures-d6', 'type');
             const socket = getRollerSocket();
@@ -286,7 +283,7 @@ export async function registerChatListeners() {
                 ui.notifications.warn("You cannot execute this action.");
                 return;
             }
-
+            /*
             const shouldApplyVisibility = shouldApplyVisibilityForAction(actionType, actionArg);
             if (shouldApplyVisibility) {
                 await executeRollerAsGM("setFlag", sourceMessageId, `quadrant${quadrantNum}Visibility`, {
@@ -294,7 +291,7 @@ export async function registerChatListeners() {
                     messageMode: game.settings.get("core", "messageMode")
                 });
             }
-
+            */
             switch (actionType) { //TODO: Standardize return values
                 case "prepare":
                     {
@@ -307,7 +304,11 @@ export async function registerChatListeners() {
                 case "unready": //TODO: Unready should unset visibility
                     const shouldContinue = await dispatchResetQuadrant(sourceMessageId, quadrantNum);
                     if (!shouldContinue) return;
-                    break;
+                    await executeRollerAsGM("setFlag", sourceMessageId, `quadrant${quadrantNum}Visibility`, {
+                        playerId: null,
+                        messageMode: null
+                    });
+                    return;
                 case "luck":
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
@@ -337,12 +338,11 @@ export async function registerChatListeners() {
                         break;
                     }
                     */
-                    ui.notifications.warn("Unknown action for button: " + button.dataset.action);
-                    return;
                 default:
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
                     return;
             }
+            ui.notifications.error("i made it");
             // The system only gets to this point if an action succeeded. TODO: THIS IS A LIE, ALL BUTTONS ALTER VISIBILITY
             await executeRollerAsGM("setFlag", sourceMessageId, `quadrant${quadrantNum}Visibility`, {
                 playerId: game.user.id,
