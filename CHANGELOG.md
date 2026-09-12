@@ -235,9 +235,30 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 ## [0.9.14.5] - 2026-8-24
 - Added small warning when running on foundry versions below v14
 
+## [0.9.15] - 2026-9-5
+- merge template.json
+- remove some pieces of reckless reactions
+- add difference table chips in contests
+- simplified chat templates
+- Fixed unready not resetting visibility
+- Fixed Flashback setting visibility even on fail
+- Overhauled luckmoves.js to use activator context instead of assumed GM context when possible
+- Upped minimum version to avoid isues (large feature changes)
+- Fixed gambit reveal pulling information from the world (game) rather than the actor
+- Allowed gambit reveal and luck execution to handle more actor and item data types.
+- Fixed gambit chips having no CSS and biegn unreadable
+- Fixed persist still reading source message instead of display message
+- Fixed locked messages not displaying (wasn't yet updated to source/display logic)
+- Commented out test error left for specific user issue debugging
+- Other issues fixed
+- Begun reversion to single label per pair rolls
+
+
 # What's left? (Ordered By Priority)
+- Add button to chat message to make the roll message latest. Add option to automatically do so on update.
+- Make Advantage visually distinct when locked / Make selected button obvious while dialog is active
 - Setup tests to avoid unexpectedly causing things to stop functioning
-- 
+- Hit application automation
 - Give Cyborg a more comfortable upgrade space
 - Switch to V2 framework before V15
 - Implement Learning automation (Once added will set the system to 1.0.0)

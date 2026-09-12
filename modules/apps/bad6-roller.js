@@ -86,25 +86,30 @@ export function rollerControl() {
 	});
 }
 
-export async function createActionMessage() { 
+export async function createActionMessage(alias = game.user.name) { 
     if (!game.user.isGM) {
         const socket = getRollerSocket();
-        const msg = await socket.executeAsGM("createActionMessage");
+        const msg = await socket.executeAsGM("createActionMessage", game.user.name);
         if (!msg) {
             console.log.warn("No GM detected, certain functionality will fail.");
         } else return msg;
     }
 
     const displayMessage = await ChatMessage.create(withCurrentMessageMode({
-        content: await renderAction()
+        content: await renderAction(),
+        speaker: {
+            alias
+        }
     }));
     await displayMessage.setFlag("bizarre-adventures-d6", "type", "action");
+    /*
     const messageData = {
         speaker: {
             alias: "Debug Message"
         }
         , content: await renderSource()
     };
+    */
     const sourceMessage = await ChatMessage.create({
         speaker: { alias: "Debug Message" },
         content: await renderSource(),
@@ -117,15 +122,15 @@ export async function createActionMessage() {
     return displayMessage;
 }
 
-export async function createContestMessage() {
+export async function createContestMessage(alias = game.user.name) {
     if (!game.user.isGM) {
         const socket = getRollerSocket();
-        const msg = await socket.executeAsGM("createContestMessage");
+        const msg = await socket.executeAsGM("createContestMessage", game.user.name);
         if (!msg) {
             console.log.warn("No GM detected, certain functionality will fail.");
         } else return msg;
     }
-    const action = await createActionMessage();
+    const action = await createActionMessage(alias);
     const message = await dispatchUpdateToContest(action.id);
     return message;
     /* This was used before the message mode update.
@@ -174,7 +179,7 @@ export async function registerChatListeners() {
                 el?.remove();
             });
         };
-        // TODO: For Everyone, compute what roll messages should render.
+        // For Everyone, compute what roll messages should render.
         const displayMessages = game.messages.filter(message =>
                 message.visible && 
                 (message.getFlag('bizarre-adventures-d6', 'type') == 'action' ||
@@ -251,9 +256,6 @@ export async function registerChatListeners() {
                     context
                 });
             }
-            // TODO: Check if privacy related and remove if so
-            // applyClientActorLabels(html);
-            // applyClientRollVisibility(message, html);
             // For our roll messages, re-add client limitation, or hide message entirely if debug is off
             const type = message.getFlag('bizarre-adventures-d6', 'type');
             const socket = getRollerSocket();
@@ -286,7 +288,7 @@ export async function registerChatListeners() {
                 ui.notifications.warn("You cannot execute this action.");
                 return;
             }
-
+            /*
             const shouldApplyVisibility = shouldApplyVisibilityForAction(actionType, actionArg);
             if (shouldApplyVisibility) {
                 await executeRollerAsGM("setFlag", sourceMessageId, `quadrant${quadrantNum}Visibility`, {
@@ -294,7 +296,7 @@ export async function registerChatListeners() {
                     messageMode: game.settings.get("core", "messageMode")
                 });
             }
-
+            */
             switch (actionType) { //TODO: Standardize return values
                 case "prepare":
                     {
@@ -307,14 +309,19 @@ export async function registerChatListeners() {
                 case "unready": //TODO: Unready should unset visibility
                     const shouldContinue = await dispatchResetQuadrant(sourceMessageId, quadrantNum);
                     if (!shouldContinue) return;
-                    break;
+                    await executeRollerAsGM("setFlag", sourceMessageId, `quadrant${quadrantNum}Visibility`, {
+                        playerId: null,
+                        messageMode: null
+                    });
+                    return;
                 case "luck":
                     {
                     const actorSources = getRollableActorSources({ warnOnFail: true, hardStopOnFail: true });
                     if (!actorSources) return;
                     const luckActors = chooseLuckSpenders(actorSources); // TODO: Replace with user choice
-                    const shouldContinue = await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false); // TODO: Luck move must run with context of current user, then switch to GM as necessary
-                    // const shouldContinue = executeLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false);
+                    const availableGambit = { state: "execute" };
+                    // const shouldContinue = await dispatchLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, false); // TODO: Luck move must run with context of current user, then switch to GM as necessary (This is the pre-TODO version)
+                    const shouldContinue = await executeLuckMove(sourceMessageId, luckActors, quadrantNum, actionArg, availableGambit);
                     if (!shouldContinue) return;
                     }
                     break;
@@ -337,13 +344,11 @@ export async function registerChatListeners() {
                         break;
                     }
                     */
-                    ui.notifications.warn("Unknown action for button: " + button.dataset.action);
-                    return;
                 default:
                     ui.notifications.warn("Unknown action for button: " + button.dataset.action);
                     return;
             }
-            // The system only gets to this point if an action succeeded. TODO: THIS IS A LIE, ALL BUTTONS ALTER VISIBILITY
+            // The system only gets to this point if an action succeeded.
             await executeRollerAsGM("setFlag", sourceMessageId, `quadrant${quadrantNum}Visibility`, {
                 playerId: game.user.id,
                 messageMode: game.settings.get("core", "messageMode")
@@ -413,20 +418,12 @@ async function dispatchResetQuadrant(messageId, quadrantNum, refundLuck = true) 
     if (game.user.isGM) return await resetQuadrant(messageId, quadrantNum, refundLuck);
     return await executeRollerAsGM("rollerResetQuadrant", messageId, quadrantNum, refundLuck);
 }
-
+/*
 async function dispatchLuckMove(messageId, spenders, quadrantNum, move, isGambit = false) {
     const sender = game.user.id;
-    /*
-    if (game.user.isGM) {
-        await executeLuckMove(messageId, spenders, quadrantNum, move, isGambit, sender);
-        const updatedMessage = game.messages.get(messageId);
-        if (updatedMessage) await rerenderMessage(updatedMessage);
-        return;
-    }
-    */
     return await executeRollerAsGM("rollerExecuteLuckMove", messageId, spenders, quadrantNum, move, isGambit, sender);
 }
-
+*/
 async function dispatchRollAll(messageId) {
     if (game.user.isGM) return await rollAll(messageId);
     return await executeRollerAsGM("rollerRollAll", messageId);
@@ -642,14 +639,11 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
     const statDialogResult = await renderDialog("stat", { actors, quadrantNum });
     console.log(statDialogResult);
     if (!statDialogResult) return;
-    console.log("yea");
     const { stat, sourceUuid, actorId, selectedModifierIds = [], gambit = null } = statDialogResult;
     if (!stat) return;
     if (!sourceUuid && !actorId) return;
-    console.log("yea");
     const actor = resolveActorFromSource({ sourceUuid, actorId });
     if (!actor) return;
-    console.log("yea");
     const specialArray = Array.isArray(actor.system.attributes.stats?.[stat]?.special)
         ? actor.system.attributes.stats[stat].special
         : [];
@@ -663,7 +657,6 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
             length: specialArray.length
         });
     }
-    console.log("yea");
     if (specialArray.length > 0) {
         const specialWithStat = [stat, ...specialArray];
         const specialStat = await renderDialog("special", { specialArray: specialWithStat });
@@ -683,16 +676,14 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
         console.log(`No specials found for stat "${stat}"`);
         }
     }
-    console.log("success!!!!!!!!!!!!!!!!!!!!!!");
     let hasGambit = false;
     if (gambit.luckMove) {
-        await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`, {
+        await executeRollerAsGM("setFlag", messageId, `quadrant${quadrantNum}GambitData`, {
             gambit: gambit,
             actorId: actor.id
         });
         hasGambit = true;
     }
-    console.log("success!!!!!!!!!!!!!!!!!!!!!!");
     // console.log(message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}GambitData`));
 
     return { stat, sourceUuid, actorId, statValue, selectedSpecial, selectedModifierIds, hasGambit }; //TODO: add hasGambit logic to all who call this function

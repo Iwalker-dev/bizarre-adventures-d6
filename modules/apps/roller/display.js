@@ -2,7 +2,7 @@
  * Display helpers — template rendering, client-side DOM patching, and rerenderMessage.
  */
 
-import { actionLabels } from "../../constants.js";
+import { actionLabels, luckTooltips, differenceType, differenceResult, differenceExample, differenceStars } from "../../constants.js";
 import { isDebugEnabled } from "../../config.js";
 // import { canViewActorFormula, canViewActorName, HIDDEN_ACTOR_NAME } from "../../utils.js";
 import { resolveActorFromSource } from "./actors.js";
@@ -10,6 +10,7 @@ import { getPairAdvantage, getPairFudgeBonus, getPairReckless } from "./pair-con
 import { getContestResultLabel } from "./roll-resolution.js";
 import { canViewerSeeQuadrant } from "./chat.js";
 import { getRollerSocket } from "../../sockets.js";
+import { applyChatButtonPermissions } from "./permissions.js";
 
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
@@ -31,7 +32,8 @@ export async function renderAction(data = {}) {
 
     return await renderTemplateV1(
         "systems/bizarre-adventures-d6/templates/chat/action.hbs",
-        { quadrants, pairAdvantage, pairReckless, showReckless, pairQuadrantNum, showResolve: true, isResolved: !!data.isResolved, resolveLabel: data.resolveLabel ?? "Resolve", resolveTooltip: data.resolveTooltip ?? "", resolveStateClass: data.resolveStateClass ?? "" }
+        // pairReckless, showReckless,
+        { quadrants, pairAdvantage, pairQuadrantNum, showResolve: true, isResolved: !!data.isResolved, resolveLabel: data.resolveLabel ?? "Resolve", resolveTooltip: data.resolveTooltip ?? "", resolveStateClass: data.resolveStateClass ?? "", luckTooltips }
     );
 }
 
@@ -39,7 +41,7 @@ export async function renderContest(data = {}) {
     const quadrants = data.quadrants || {}; // object map by quadrant number
     const actionPairAdvantage = data.actionPairAdvantage ?? 0;
     const reactionPairAdvantage = data.reactionPairAdvantage ?? 0;
-    const reactionPairReckless = !!data.reactionPairReckless;
+    // const reactionPairReckless = !!data.reactionPairReckless;
 
     return await renderTemplateV1(
         "systems/bizarre-adventures-d6/templates/chat/contest.hbs",
@@ -52,7 +54,9 @@ export async function renderContest(data = {}) {
                 pairAdvantage: actionPairAdvantage,
                 pairReckless: false,
                 showReckless: false,
-                pairQuadrantNum: 1
+                pairQuadrantNum: 1,
+                differenceStars: data.difference?.action.stars ?? null,
+                differenceInfo: data.difference?.action.info ?? null
             },
             reactionSide: {
                 quadrants: [
@@ -60,14 +64,21 @@ export async function renderContest(data = {}) {
                     quadrants[4] || { quadrantNum: 4, label: actionLabels[3].label, prepared: false, isResolved: false }
                 ],
                 pairAdvantage: reactionPairAdvantage,
-                pairReckless: reactionPairReckless,
+                // pairReckless: reactionPairReckless,
                 showReckless: true,
-                pairQuadrantNum: 3
+                pairQuadrantNum: 3,
+                differenceStars: data.difference?.reaction.stars ?? null,
+                differenceInfo: data.difference?.reaction.info ?? null
             },
             isResolved: !!data.isResolved,
             resolveLabel: data.resolveLabel ?? "Resolve",
             resolveTooltip: data.resolveTooltip ?? "",
-            resolveStateClass: data.resolveStateClass ?? ""
+            resolveStateClass: data.resolveStateClass ?? "",
+            luckTooltips,
+            // Optimize by instead calling from action
+            differenceStars: data.difference?.action.stars ?? null,
+            differenceInfo: data.difference?.action.info ?? null
+
         }
     );
 }
@@ -107,10 +118,11 @@ export async function renderSource(data = {}) {
     if (data.reactionPairAdvantage !== undefined) {
         summaryLines.push(`Reaction Advantage: ${data.reactionPairAdvantage}`);
     }
+    /*
     if (data.reactionPairReckless !== undefined) {
         summaryLines.push(`Reaction Reckless: ${data.reactionPairReckless ? "yes" : "no"}`);
     }
-
+    */
     return summaryLines.join("\n").trim();
 }
 
@@ -398,8 +410,9 @@ export async function rerenderMessage(message) {
         } else { // it's a contest
             const actionPairAdvantage = getPairAdvantage(message, 1) ?? 0;
             const reactionPairAdvantage = getPairAdvantage(message, 3) ?? 0;
-            const reactionPairReckless = reactionReckless;
-            await message.update({ content: await renderSource({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, actionPairAdvantage, reactionPairAdvantage, reactionPairReckless }) });
+            // const reactionPairReckless = reactionReckless;
+            // reactionPairReckless
+            await message.update({ content: await renderSource({ quadrants, isResolved, resolveLabel, resolveTooltip, resolveStateClass, actionPairAdvantage, reactionPairAdvantage }) });
         }
     }
     if (isDebugEnabled()) {
@@ -451,9 +464,8 @@ export async function rerenderDisplayMessage(message) {
             playerId: game.user.id,
             isGM: !!game.user.isGM
         });
-
+        // Nothing has happened in this quadrant yet.
         if (!sourceFlag) {
-            // Nothing has happened in this quadrant yet.
             allPrepared = false;
             quadrants[i] = {
                 quadrantNum: i,
@@ -465,10 +477,9 @@ export async function rerenderDisplayMessage(message) {
             };
             continue;
         }
-
+        // Something exists in this quadrant, but this viewer isn't permitted to see it.
         if (!shouldRender) {
-            // Something exists in this quadrant, but this viewer isn't permitted to see it.
-            // Only reveal that something happened and how much (chip counts) — never the real content.
+            // Only reveal that something happened and how much (chip counts). Never the real content.
             const isPrepared = !!sourceFlag.formula;
             const isRolled = !!sourceFlag.rolled;
             if (!isPrepared) allPrepared = false;
@@ -504,8 +515,8 @@ export async function rerenderDisplayMessage(message) {
                 lock: false
             };
             continue;
-        }
-
+        } // Could be changed to an if/else statement
+        // Something exists in this quadrant
         const actor = resolveActorFromSource(sourceFlag);
         const canFlashback = game.user.isGM || !actor || !!actor?.isOwner;
         quadrants[i] = {
@@ -553,13 +564,38 @@ export async function rerenderDisplayMessage(message) {
     const result = sourceMessage.getFlag("bizarre-adventures-d6", "result") || {};
     const required = type === "action" ? [1, 2] : [1, 2, 3, 4];
     const isResolved = required.every((index) => !!sourceMessage.getFlag("bizarre-adventures-d6", `quadrant${index}`)?.rolled);
-    const difference = Number(result.difference);
-    const winnerSide = Number.isFinite(difference)
-        ? (difference > 0 ? "action" : (difference < 0 ? "reaction" : "tie"))
+    // 3 to -3 for the Difference Table
+    const differenceNumber = Number(result.difference); // Is not protected if value is invalid
+    const differenceLevel = differenceNumber > 0
+        ? Math.min(3, differenceNumber)
+        : Math.max(0, differenceNumber);
+    const differenceInfoRaw = `${differenceType[differenceLevel]}\n
+        ${differenceResult[differenceLevel]}\n
+        "${differenceExample[differenceLevel]}"`;
+    // Safety precaution to avoid HTML insertion in the future
+    // <br> allows line break within tooltip
+    const differenceInfo = foundry.utils
+        .escapeHTML(differenceInfoRaw)
+        .replace(/\r?\n/g, "<br>");
+    const difference = {
+        value: differenceNumber,
+        action: {
+            type: differenceType[differenceLevel],
+            info: differenceInfo,
+            stars: differenceStars[differenceLevel]
+        },
+        reaction: {
+            type: differenceType[-differenceLevel],
+            info: `${differenceType[-differenceLevel]}<br>${differenceResult[-differenceLevel]}<br>"${differenceExample[-differenceLevel]}"`,
+            stars: differenceStars[-differenceLevel]
+        }
+    }
+    const winnerSide = Number.isFinite(difference.value)
+        ? (difference.value > 0 ? "action" : (difference.value < 0 ? "reaction" : "tie"))
         : null;
     const reactionReckless = getPairReckless(sourceMessage, 3);
     const resolveLabel = type === "contest"
-        ? getContestResultLabel(result.label ?? "Resolve", difference, winnerSide, { reactionReckless })
+        ? getContestResultLabel(result.label ?? "Resolve", difference.value, winnerSide, { reactionReckless })
         : (result.label ?? "Resolve");
     const resolveTooltip = result.flavor ?? "";
     const resolveStateClass = type === "contest"
@@ -594,11 +630,13 @@ export async function rerenderDisplayMessage(message) {
     if (type === "action") {
         const pairAdvantage = getPairAdvantage(sourceMessage, 1) ?? 0;
         contentNode.innerHTML = await renderAction({ quadrants, pairAdvantage, isResolved, resolveLabel, resolveTooltip, resolveStateClass });
-    } else {
+    } else { // Is a contest
         const actionPairAdvantage = getPairAdvantage(sourceMessage, 1) ?? 0;
         const reactionPairAdvantage = getPairAdvantage(sourceMessage, 3) ?? 0;
-        contentNode.innerHTML = await renderContest({ quadrants, actionPairAdvantage, reactionPairAdvantage, reactionPairReckless: reactionReckless, isResolved, resolveLabel, resolveTooltip, resolveStateClass });
+        // reactionPairReckless: reactionReckless,
+        contentNode.innerHTML = await renderContest({ quadrants, actionPairAdvantage, reactionPairAdvantage, difference, isResolved, resolveLabel, resolveTooltip, resolveStateClass });
     }
+    applyChatButtonPermissions(message, card);
     // Hopefully forces updates on all clients
     // if (game.user.isGM) await message.setFlag("bizarre-adventures-d6", "lastUpdate", Date.now());
 }
