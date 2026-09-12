@@ -24,7 +24,10 @@ export function canUserResolveMessage(message) {
 }
 
 export function isMessageLocked(message) {
-    return !!message?.getFlag("bizarre-adventures-d6", "Locked");
+    if (!message) return false;
+    const sourceId = message.getFlag("bizarre-adventures-d6", "sourceId");
+    const sourceMessage = sourceId ? game.messages.get(sourceId) : message;
+    return !!sourceMessage?.getFlag("bizarre-adventures-d6", "Locked") || !!message?.getFlag("bizarre-adventures-d6", "Locked");
 }
 
 export function isMessageResolved(message) {

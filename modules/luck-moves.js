@@ -1,7 +1,7 @@
 import { resetQuadrant, createActionMessage, createContestMessage, recalculateQuadrantFormula, reevaluatePairRollResults, rerenderMessage } from "./apps/bad6-roller.js";
 import { renderDialog } from "./dialog.js";
 import { getRollerSocket } from "./sockets.js";
-import { resolveActorFromSource } from "./apps/roller/actors.js";
+import { getRollableActorSources, resolveActorFromSource } from "./apps/roller/actors.js";
 import { withCurrentMessageMode } from "./apps/roller/chat.js";
 
 function warnOwners(actor, warning) {
@@ -21,7 +21,7 @@ async function executeRollerAsGM(handler, ...args) {
 	}
 	return await socket.executeAsGM(handler, ...args);
 }
-
+/* Hopefully depreciated after context switch
 async function executeRollerAsPlayer(handler, userId, ...args) {
 	const socket = getRollerSocket();
 	if (!socket) {
@@ -30,7 +30,7 @@ async function executeRollerAsPlayer(handler, userId, ...args) {
 	}
 	return await socket.executeAsUser(handler, userId,  ...args);
 }
-
+*/
 function resolveActorFromSpenderRef(spenderRef) {
 	if (!spenderRef) return null;
 
@@ -83,8 +83,8 @@ export function getLuckMoveExecutionContext(move, spenders, { isGambit = false, 
 	if (!moveData) {
 		return { ok: false, reason: "Unknown move: " + move };
 	}
-	if (moveData.costType === "gambit") {
-		return { ok: false, reason: "Gambit must resolve a target move before spending context is built." };
+	if (moveData.costType === "gambit") { // Gambit must resolve a target move before spending context is built.
+		return { ok: false, reason: "" };
 	}
 
 	const spenderList = Array.isArray(spenders) ? spenders : [];
@@ -136,8 +136,8 @@ export function canUseMove(move, actor, { costOverride = null } = {}) {
 	const requiredCost = Number.isFinite(costOverride) ? costOverride : move.cost;
 	if (pool < requiredCost) {
 		const warning = `${actor.name} doesn't have enough luck for ${move.name}.`
-		ui.notifications.warn(warning);
-		warnOwners(actor, warning);
+		console.log(warning);
+		// warnOwners(actor, warning);
 		return false;
 	}
 	return true;
@@ -270,12 +270,13 @@ export async function trySpendLuck(actorId, action, isRefund = false, isGambit =
 		return false;
 	}
 	const luckStat = actor.system.attributes.stats.luck;
-	console.log(Object.values(LUCK_MOVES));
+	// console.log(Object.values(LUCK_MOVES));
 	for (const move of Object.values(LUCK_MOVES)) {
 		if (move.name === action || move.key === action) {
 			// const pool = move.costType === "perm" ? (luckStat.perm ?? 0) : (luckStat.temp ?? 0);
 			const gambitCost = isGambit ? Math.ceil(move.cost / 2) : null;
 			if (!isRefund && !canUseMove(move, actor, { costOverride: gambitCost })) {
+				ui.notifications.warn(`${actor.name} doesn't have enough luck for ${move.name}.`);
 				return false;
 			}
 			const cost = isGambit ? Math.ceil(move.cost / 2) : move.cost;
@@ -295,14 +296,6 @@ export async function trySpendLuck(actorId, action, isRefund = false, isGambit =
 			}
 		}
 	}
-	// TODO: add create,execute,and reveal gambit logic
-	/*
-	If create
-		spend Math.ceil(move.cost / 2)
-	If reveal
-		refund Math.ceil(move.cost / 2)
-	*/
-
 }
 
 export async function executeLuckMove(messageId, spenders, quadrantNum, move, gambitData = null, sender = game.user.id) {
@@ -357,12 +350,12 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, ga
 		
 	}
 
-	const context = getLuckMoveExecutionContext(moveType, spenders, { isGambit, checkCanUse: true });
+	const context = getLuckMoveExecutionContext(moveType, spenders, { isGambit, checkCanUse: !isRefund });
 	if (!context.ok) {
 		if (move.type != "gambit") ui.notifications.warn(context.reason);
 		return;
 	}
-	const spender = context.spender;
+	const spenderId = context.spender;
 	const spenderKey = context.spenderKey;
 	const spenderActorName = context.spenderActor?.name;
 
@@ -391,8 +384,9 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, ga
 			ui.notifications.warn("Unknown move: " + moveType);
 			return;
 	}
-
+	if (executed) executeRollerAsGM("resolveExecuteLuckMove", messageId, spenderId, quadrantNum, moveType, isRefund, isGambit, spenderKey, gambitActor, gambitId, existing);
 	// Save execution data in flags
+	/*
 	if (executed) {
 		const spent = await trySpendLuck(spender, LUCK_MOVES[moveType].name, isRefund, isGambit);
 		if (!spent) return;
@@ -455,9 +449,10 @@ export async function executeLuckMove(messageId, spenders, quadrantNum, move, ga
 		// Reveal and delete gambit document (After spending for it)
 		if (isGambit) {
 			const isRevealed = revealGambit(gambitActor, gambitId);
-			if (isRevealed) gambitActor.deleteEmbeddedDocuments("gambit", [gambitId]);
+			if (isRevealed) await gambitActor.deleteEmbeddedDocuments("Item", [gambitId]);
 		}
 	}
+		*/
 	return executed; // Used so visibility knows whether or not to trigger.
 }
 
@@ -492,8 +487,8 @@ function getQuadrantAdvantage(message, quadrantNum) {
 }
 
 async function executeFeint(messageId, quadrantNum) {
-	// Reset quadrant except for luck. Feint count is incremented by 1.
-	await resetQuadrant(messageId, quadrantNum, false);
+	// Reset quadrant except for luck. Feint count is incremented by 1 by executeLuckMove.
+	await executeRollerAsGM("rollerResetQuadrant", messageId, quadrantNum, false);
 	return true;
 }
 
@@ -515,7 +510,18 @@ async function executeFudge(messageId, quadrantNum) {
 }
 
 async function executeFlashback(messageId, quadrantNum, sender, spenderActorName) {
-	const flashbackText = await executeRollerAsPlayer("rollerFlashbackCreate", sender);
+	const flashbackText = await new Promise((resolve) => {
+        // TODO: Move to dialog.js
+		new Dialog({
+			title: "Flashback",
+			content: `<p>Describe the retcon you want to make:</p><textarea id="flashback-input" rows="4" style="width: 100%;"></textarea>`,
+			buttons: {
+				ok: { label: "Send to GM", callback: (html) => resolve(html.find("#flashback-input").val().trim()) },
+				cancel: { label: "Cancel", callback: () => resolve(null) }
+			},
+			close: () => resolve(null)
+		}).render(true);
+	});
 	if (!flashbackText) return false;
 	const requesterName = `${game.users.get(sender)?.name ?? "A player"} (Spent by ${spenderActorName ?? "Unknown"})`;
 	return await executeRollerAsGM("rollerFlashbackRequest", requesterName, flashbackText);
@@ -542,27 +548,17 @@ async function executePersist(messageId, quadrantNum) {
 	const persistChatData = {
 		content: `<p><strong>Persist!</strong></p>`
 	};
-	/*
-	const rollMode = String(game.settings.get("core", "rollMode") || "publicroll");
-	if (typeof ChatMessage?.applyRollMode === "function") {
-		ChatMessage.applyRollMode(persistChatData, rollMode);
-	} else if (rollMode === "gmroll") {
-		persistChatData.whisper = ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
-	} else if (rollMode === "blindroll") {
-		persistChatData.whisper = ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
-		persistChatData.blind = true;
-	} else if (rollMode === "selfroll") {
-		persistChatData.whisper = game.user?.id ? [game.user.id] : [];
-	}
-	*/
 	const newMessage = await ChatMessage.create(withCurrentMessageMode(persistChatData));
-	await message.setFlag("bizarre-adventures-d6", "Locked", true); // keep locked, original message should not be editable after persist
+	await executeRollerAsGM("setFlag", messageId, "Locked", true); // keep locked, original message should not be editable after persist
 	await rerenderMessage(message);
-	const type = message.getFlag("bizarre-adventures-d6", "type");
+	await new Promise((resolve) => setTimeout(resolve, 1000)); // Make persist more obvious
+	const displayMessage = game.messages.get(message.getFlag("bizarre-adventures-d6", "displayId"));
+	const type = displayMessage.getFlag("bizarre-adventures-d6", "type");
 	if (type === "action") {
-		createActionMessage();
+		console.log(type);
+		await createActionMessage();
 	} else if (type === "contest") {
-		createContestMessage();
+		await createContestMessage();
 	}
 	return true;
 }
@@ -581,25 +577,31 @@ export async function createGambit(actorId, gambit) {
 }
 
 // Returns the executed luckMove
-async function executeGambit(messageId, quadrantNum, sender) { // TODO: Clarify in all contexts that sender is an id
+async function executeGambit(messageId, quadrantNum) { // TODO: Remove senderId as it's purpose is depreciated after luckmove context swap
 	// TODO: Generate actors from quadrant num. Use linked users and highlighted if GM, and owned users if player
 	const socket = getRollerSocket();
 	if (!socket) {
 				ui.notifications.error("Socket is not ready. Cannot execute player action.");
 				return null;
 	}
-	let actors = await socket.executeAsUser("getUserActors", sender, sender) // TODO: luck-moves.js currently runs in the context of the GM, not the user
-	const isGM = !!game.users.get(sender).isGM ?? null;
-	if (isGM) {
+	// let actors = await socket.executeAsUser("getUserActors", senderId, senderId)
+	// const isGM = !!game.users.get(senderId).isGM ?? null;
+	let actors = getRollableActorSources(game.user.id);
+	if (game.user.isGM) {
 		const message = game.messages.get(messageId);
 		const flagData = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`);
 		const actor = flagData ? resolveActorFromSource(flagData) : null;
 		console.log(actor);
-		if (actor) actors.push(actor);
+		// Deduplicate step
+		// "=>" shorthand for funtion
+		// ".some" returns true the moment a single actor matches
+		if (actor && !actors.some(source => source.sourceUuid === actor.uuid || source.actorId === actor.id)) {
+			actors.push({ sourceUuid: actor.uuid, actorId: actor.id, name: actor.name });
+		}
 	}
 	// console.log(actors);
 	// const gambitInfo = await renderDialog("gambit", {actors, quadrantNum} );
-	const gambitInfo = await executeRollerAsPlayer("renderDialog", sender, "gambit", {actors, quadrantNum} )
+	const gambitInfo = await renderDialog("gambit", {actors, quadrantNum});
 	if (!gambitInfo) return null;
 	// console.log(gambitInfo);
 
@@ -607,25 +609,27 @@ async function executeGambit(messageId, quadrantNum, sender) { // TODO: Clarify 
 	return [gambitInfo.gambit.move, gambitInfo.gambit.actorId, gambitInfo.gambit.itemId];
 }
 
-function revealGambit(actor, itemId) {
+export function revealGambit(actor, itemId) {
+	if (!actor || !itemId) return false;
+	const item = actor.items.get(itemId);
+	if (!item) return false;
 
-	const item = game.items.get(itemId);
-
+	const triggerText = item.system?.trigger ?? item.trigger ?? "";
 	const content = `
 		<section class="bad6-gambit-reveal">
 			<h2>Gambit Revealed!</h2>
 			<p><strong>${actor.name}</strong> reveals <strong>${item.name}</strong>.</p>
 			<hr>
 			<h3>Trigger</h3>
-			<p>${item.trigger}</p>
+			<p>${triggerText}</p>
 		</section>
-	`
+	`;
 	
 	ChatMessage.create({
 		speaker: {
-					alias: actor.name
-				}
-		, content
+			alias: actor.name
+		},
+		content
 	});
 	return true;
 }

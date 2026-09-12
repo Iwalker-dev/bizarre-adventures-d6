@@ -10,6 +10,7 @@ import { getPairAdvantage, getPairFudgeBonus, getPairReckless } from "./pair-con
 import { getContestResultLabel } from "./roll-resolution.js";
 import { canViewerSeeQuadrant } from "./chat.js";
 import { getRollerSocket } from "../../sockets.js";
+import { applyChatButtonPermissions } from "./permissions.js";
 
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
@@ -635,6 +636,7 @@ export async function rerenderDisplayMessage(message) {
         // reactionPairReckless: reactionReckless,
         contentNode.innerHTML = await renderContest({ quadrants, actionPairAdvantage, reactionPairAdvantage, difference, isResolved, resolveLabel, resolveTooltip, resolveStateClass });
     }
+    applyChatButtonPermissions(message, card);
     // Hopefully forces updates on all clients
     // if (game.user.isGM) await message.setFlag("bizarre-adventures-d6", "lastUpdate", Date.now());
 }
