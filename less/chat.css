@@ -285,7 +285,8 @@
   line-height: 1;
   letter-spacing: 0;
 }
-.luck-chips {
+.luck-chips,
+.gambit-chips {
   display: flex;
   flex-wrap: nowrap;
   gap: 2px;
@@ -293,7 +294,8 @@
   padding: 2px 0;
   overflow-x: auto;
 }
-.luck-chips .luck-chip {
+.luck-chips .luck-chip,
+.gambit-chips .luck-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -304,16 +306,19 @@
   white-space: nowrap;
   position: relative;
 }
-.luck-chips .luck-chip:hover {
+.luck-chips .luck-chip:hover,
+.gambit-chips .luck-chip:hover {
   background: #2a2a2a;
   border-color: #888;
   color: #ddd;
 }
-.luck-chips .luck-chip .luck-chip i {
+.luck-chips .luck-chip i,
+.gambit-chips .luck-chip i {
   font-size: 0.7rem;
   line-height: 1;
 }
-.luck-chips .luck-chip .luck-chip-count {
+.luck-chips .luck-chip .luck-chip-count,
+.gambit-chips .luck-chip .luck-chip-count {
   position: absolute;
   right: -3px;
   bottom: -3px;
@@ -326,14 +331,6 @@
   text-align: center;
   background: #555;
   color: #fff;
-}
-.gambit-chips {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 2px;
-  margin: 0 0 4px 0;
-  padding: 2px 0;
-  overflow-x: auto;
 }
 .luck-chip--gambit {
   border: 1px solid #e0b84a;

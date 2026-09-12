@@ -2,7 +2,7 @@
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
   "description": "A core system for the Bizarre Adventures D6 system.",
-  "version": "0.9.14.7",
+  "version": "0.9.15",
   "authors": [
     {
       "name": "LONYO",
@@ -12,7 +12,7 @@
     }
   ],
   "compatibility": {
-    "minimum": "13",
+    "minimum": "14",
     "verified": "14",
     "maximum": "14"
   },

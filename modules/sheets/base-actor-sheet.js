@@ -31,7 +31,7 @@ export class BaseActorSheet extends foundry.appv1.sheets.ActorSheet {
 			if (update.img) {
 				if (isDebugEnabled()) {
 					console.warn(`[Actor Image Update] Explicit image change for actor "${actor.name}" (${actor.id}): ${actor.img} → ${update.img}`);
-					console.error("BaseActorSheet | preUpdateActor | image update detected, skipping type default");
+					// console.error("BaseActorSheet | preUpdateActor | image update detected, skipping type default");
 				}
 				return;
 			}

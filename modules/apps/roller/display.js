@@ -10,6 +10,7 @@ import { getPairAdvantage, getPairFudgeBonus, getPairReckless } from "./pair-con
 import { getContestResultLabel } from "./roll-resolution.js";
 import { canViewerSeeQuadrant } from "./chat.js";
 import { getRollerSocket } from "../../sockets.js";
+import { applyChatButtonPermissions } from "./permissions.js";
 
 const renderTemplateV1 = foundry.applications.handlebars.renderTemplate;
 
@@ -568,12 +569,19 @@ export async function rerenderDisplayMessage(message) {
     const differenceLevel = differenceNumber > 0
         ? Math.min(3, differenceNumber)
         : Math.max(0, differenceNumber);
+    const differenceInfoRaw = `${differenceType[differenceLevel]}\n
+        ${differenceResult[differenceLevel]}\n
+        "${differenceExample[differenceLevel]}"`;
+    // Safety precaution to avoid HTML insertion in the future
+    // <br> allows line break within tooltip
+    const differenceInfo = foundry.utils
+        .escapeHTML(differenceInfoRaw)
+        .replace(/\r?\n/g, "<br>");
     const difference = {
         value: differenceNumber,
         action: {
             type: differenceType[differenceLevel],
-            // <br> allows line break within tooltip
-            info: `${differenceType[differenceLevel]}<br>${differenceResult[differenceLevel]}<br>"${differenceExample[differenceLevel]}"`,
+            info: differenceInfo,
             stars: differenceStars[differenceLevel]
         },
         reaction: {
@@ -628,6 +636,7 @@ export async function rerenderDisplayMessage(message) {
         // reactionPairReckless: reactionReckless,
         contentNode.innerHTML = await renderContest({ quadrants, actionPairAdvantage, reactionPairAdvantage, difference, isResolved, resolveLabel, resolveTooltip, resolveStateClass });
     }
+    applyChatButtonPermissions(message, card);
     // Hopefully forces updates on all clients
     // if (game.user.isGM) await message.setFlag("bizarre-adventures-d6", "lastUpdate", Date.now());
 }
