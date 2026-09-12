@@ -1,6 +1,6 @@
-import { resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless, setFlag, createActionMessage, createContestMessage } from "./apps/bad6-roller.js";
+import { resetQuadrant, rerenderMessage, rollAll, updateToContest, applySetPairAdvantage, applySetPairReckless, setFlag, createActionMessage, createContestMessage, recalculateQuadrantFormula, reevaluatePairRollResults } from "./apps/bad6-roller.js";
 import { updateQuadrant } from "./apps/roller/quadrants.js";
-import { executeLuckMove } from "./luck-moves.js";
+import { executeLuckMove, trySpendLuck, LUCK_MOVES, revealGambit } from "./luck-moves.js";
 import { getRollableActorSources } from "./apps/roller/actors.js";
 import { withCurrentMessageMode } from "./apps/roller/chat.js";
 import { renderDialog } from "./dialog.js";
@@ -18,7 +18,7 @@ export function registerSockets() {
     rollerSocket.register("rollerExecuteLuckMove", socketExecuteLuckMove);
     rollerSocket.register("rollerRollAll", socketRollAll);
     rollerSocket.register("rollerUpdateToContest", socketUpdateToContest);
-    rollerSocket.register("rollerFlashbackCreate", socketFlashbackCreate);
+    // rollerSocket.register("rollerFlashbackCreate", socketFlashbackCreate);
     rollerSocket.register("rollerFlashbackRequest", socketFlashbackRequest);
     rollerSocket.register("rollerSetPairAdvantage", socketSetPairAdvantage);
     rollerSocket.register("rollerSetPairReckless", socketSetPairReckless);
@@ -31,6 +31,7 @@ export function registerSockets() {
     // rollerSocket.register("applyChatButtonPermissions", socketApplyChatButtonPermissions);
     rollerSocket.register("rerenderMessage", socketRerenderMessage);
     rollerSocket.register("renderDialog", socketRenderDialog);
+    rollerSocket.register("resolveExecuteLuckMove", socketresolveExecuteLuckMove);
 }
 
 export async function socketApplyPreparedQuadrant(messageId, quadrantNum, preparedData) {
@@ -64,6 +65,7 @@ export async function socketSetPairAdvantage(messageId, quadrantNum, advantage) 
 export async function socketSetPairReckless(messageId, quadrantNum, reckless) {
     return await applySetPairReckless(messageId, quadrantNum, reckless);
 }
+/*
 export async function socketFlashbackCreate(requesterName) {
 	const flashbackText = await new Promise((resolve) => {
         // TODO: Move to dialog.js
@@ -79,6 +81,7 @@ export async function socketFlashbackCreate(requesterName) {
 	});
     return flashbackText;
 }
+    */
 export async function socketFlashbackRequest(requesterName, flashbackText) {
     const approved = await new Promise((resolve) => {
         // TODO: Move to dialog.js
@@ -113,12 +116,12 @@ export async function socketGetUserActors(sender) {
     return getRollableActorSources(sender);
 }
 
-export async function socketCreateActionMessage() {
-    return createActionMessage();
+export async function socketCreateActionMessage(senderName) {
+    return createActionMessage(senderName);
 }
 
-export async function socketCreateContestMessage() {
-    return createContestMessage();
+export async function socketCreateContestMessage(alias) {
+    return createContestMessage(alias);
 }
 /*
 export async function socketUpdateDisplay(messageId, html) {
@@ -142,4 +145,70 @@ export async function socketRerenderMessage(messageId) {
 
 export async function socketRenderDialog(dialog, args) {
     return await renderDialog(dialog, args);
+}
+
+export async function socketresolveExecuteLuckMove(messageId, spender, quadrantNum, moveType, isRefund, isGambit, spenderKey, gambitActor, gambitId, existing) {
+    const spent = await trySpendLuck(spender, LUCK_MOVES[moveType].name, isRefund, isGambit);
+		if (!spent) return;
+
+		const message = game.messages.get(messageId); // Refetch message to ensure we have the latest flags after move execution
+		// Prepare existing data
+		const countType = isGambit ? "gambitCounts" : "luckCounts";
+		const latest = message.getFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`) || {};
+		const lastLuckSpenders = latest.luckSpenders || existing.luckSpenders || {};
+		const lastLuckMoveSpenders = lastLuckSpenders[moveType] || {};
+		const lastGambitSpenders = latest.gambitSpenders || existing.gambitSpenders || {};
+		const lastGambitMoveSpenders = lastGambitSpenders[moveType] || {};
+
+		// Create the update data
+		const updateData = {
+			...latest,
+			luckCounts: { ...(latest.luckCounts || existing.luckCounts || {}) },
+			gambitCounts: { ...(latest.gambitCounts || existing.gambitCounts || {}) }
+		};
+		// luckSpenders are default cost. gambitSpenders are half cost.
+		updateData[countType][moveType] = (updateData[countType][moveType] || 0) + 1;
+		if (spenderKey) {
+			if (!isGambit) {
+				updateData.luckSpenders = {
+					...lastLuckSpenders,
+					[moveType]: {
+						...lastLuckMoveSpenders,
+						[spenderKey]: (lastLuckMoveSpenders[spenderKey] || 0) + 1
+					}
+				};
+			} else {
+				updateData.gambitSpenders = {
+					...lastGambitSpenders,
+					[moveType]: {
+						...lastGambitMoveSpenders,
+						[spenderKey]: (lastGambitMoveSpenders[spenderKey] || 0) + 1
+					}
+				};
+			}
+		}
+
+		// Update the message flags with the new data
+		await message.setFlag("bizarre-adventures-d6", `quadrant${quadrantNum}`, updateData);
+
+		if (moveType === "fudge") {
+			const quadrantNumber = Number(quadrantNum);
+			const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
+			for (const pairQuadrant of pairQuadrants) {
+				await recalculateQuadrantFormula(messageId, pairQuadrant);
+			}
+		} else if (moveType === "mulligan") {
+			const quadrantNumber = Number(quadrantNum);
+			const pairQuadrants = (quadrantNumber === 1 || quadrantNumber === 2) ? [1, 2] : [3, 4];
+			for (const pairQuadrant of pairQuadrants) {
+				await recalculateQuadrantFormula(messageId, pairQuadrant, { includeMulligan: true });
+			}
+			await reevaluatePairRollResults(messageId, quadrantNum);
+		}
+
+		// Reveal and delete gambit document (After spending for it)
+		if (isGambit) {
+			const isRevealed = revealGambit(gambitActor, gambitId);
+			if (isRevealed) gambitActor.deleteEmbeddedDocuments("gambit", [gambitId]);
+		}
 }

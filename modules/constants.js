@@ -22,10 +22,10 @@ export const welcomeText = `
     <p>	<a href="https://discord.gg/f6t3tGMgMD" target="_blank" rel="noopener noreferrer">FoundryVTT System's Discord</a>  </p>`
 
 export const actionLabels = [ 
-    {side:"action", quadrant: 1, label: "Action Setup"}
-    , {side:"action", quadrant: 2, label: "Action"}
-    , {side:"reaction", quadrant: 3, label: "Reaction Setup"}
-    , {side:"reaction", quadrant: 4, label: "Reaction"}
+    {side:"action", quadrant: 1, label: "Action"}
+    , {side:"action", quadrant: 2, label: ""}
+    , {side:"reaction", quadrant: 3, label: "Reaction"}
+    , {side:"reaction", quadrant: 4, label: ""}
 ]
 
 export const LUCK_MOVE_HINTS = {

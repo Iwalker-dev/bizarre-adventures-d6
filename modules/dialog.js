@@ -156,17 +156,18 @@ export async function renderDialog(dialog, dialogData = {}) {
             const luckMoves = Object.fromEntries( //TODO: Add logic to fail luck buttons you cannot use. Base this off of highlighted token for gm, and owned actors for player.
                                     Object.entries(LUCK_MOVES).filter(([key]) => key !== "gambit") // Cannot save a gambit with a gambit
                                 );
+            const allowGambit = dialogData.quadrantNum % 2 !== 0 ? true : false; // Only the first of each pair can make a gambit
             const content = await renderTemplateV1(
                 "systems/bizarre-adventures-d6/templates/dialog/stat.hbs",
-                { actors: dialogData.actors, quadrantNum: dialogData.quadrantNum, currentAdvantage: dialogData.currentAdvantage, luckMoves }
+                { actors: dialogData.actors, quadrantNum: dialogData.quadrantNum, currentAdvantage: dialogData.currentAdvantage, luckMoves, canGambit: allowGambit }
             );
-
             return await new Promise((resolve) => {
                 let selectedGambitMove = null;
                 let selectedGambitSpenderId = null;
-
+                const labelNum = dialogData.quadrantNum % 2 === 0 ? dialogData.quadrantNum - 2 : dialogData.quadrantNum - 1; // TODO: Fix quadrant logic entirely. This is temporary to make sure nothing breaks.
+                // Used to be `Prepare ${actionLabels[dialogData.quadrantNum - 1].label}`
                 new Dialog({
-                    title: `Select Stat and Gambit for ${actionLabels[dialogData.quadrantNum - 1].label}`,
+                    title: `Prepare ${actionLabels[labelNum].label}`,
                     content,
                     buttons: {
                         confirm: {
@@ -371,8 +372,10 @@ export async function renderDialog(dialog, dialogData = {}) {
                                 : burnType === "value" ? spenders[2]
                                 : null;
                             const actor = spender ? resolveActorFromSource(spender) : null;
-                            if (!canUseMove(LUCK_MOVES[moveKey], actor)) return; // canUseMove already warns
-
+                            if (!canUseMove(LUCK_MOVES[moveKey], actor)) {
+                                ui.notifications.warn(`${actor.name} doesn't have enough luck for ${LUCK_MOVES[moveKey].name}.`);
+                                return;
+                            }
                             selectedGambitMove = moveKey;
                             selectedGambitSpenderId = spender.actorId;
                             button.addClass("selected");
