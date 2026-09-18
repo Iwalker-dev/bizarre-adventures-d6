@@ -281,7 +281,7 @@ export async function migrateWorld() {
 
 	// — First ever world load —
 	const shouldWelcome = !game.settings.get("bizarre-adventures-d6", "welcomed");
-	if (shouldWelcome) {
+	if (shouldWelcome) { // Remember, migration is only run by GM
 		ChatMessage.create({
 			user: game.user.id
 			, speaker: {

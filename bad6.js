@@ -19,8 +19,8 @@ import { GambitItemSheet } from "./modules/sheets/gambit-item-sheet.js";
 
 
 Hooks.once("init", async () => {
-	const refreshChatVisibility = () => ui.chat?.render(true);
-	const roleChoices = getVisibilityRoleChoices();
+	// const refreshChatVisibility = () => ui.chat?.render(true);
+	// m,const roleChoices = getVisibilityRoleChoices();
 	
 	// Register settings first, before any code that might use them
 	game.settings.register("bizarre-adventures-d6", "systemMigrationVersion", {
@@ -29,7 +29,7 @@ Hooks.once("init", async () => {
 		scope: "world",
 		config: false,
 		type: String,
-		default: "0.9.9"
+		default: "0.9.15"
 	});
 
 	game.settings.register("bizarre-adventures-d6", "welcomed", {
@@ -49,9 +49,35 @@ Hooks.once("init", async () => {
 		type: Boolean,
 		default: false
 	});
+	// Welcomed can also be used but may require setting to client, and may conflict with migration.js also editing the value
+	game.settings.register("bizarre-adventures-d6", "clickedRoller", {
+		name: "Clicked Roller",
+		hint: "Tracks whether the roller has ever been clicked by this client",
+		scope: "client",
+		config: true,
+		type: Boolean,
+		default: false
+	});
+
+	game.settings.register("bizarre-adventures-d6", "rollerIconChoice", {
+		name: "Roller Icon Type",
+		hint: "Change Roller Icon",
+		scope: "client",
+		config: true,
+		type: String,
+		choices: {
+			"": "System Decision",
+			"bad6-menace-icon": "Menace Symbol",
+			"fas fa-dice-d6": "Dice"
+		},
+		default: "",
+		requiresReload: true
+	});
+
+
 
 	game.system.migrateWorld = migrateWorld;
-
+	
 	if (isDebugEnabled()) {
 		console.log("BAD6 Core System is Initializing");
 		Hooks.on("renderActorSheet", (app) => {

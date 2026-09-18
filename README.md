@@ -38,7 +38,7 @@ Random Character Generator (Would require a resource)
 
 **Use Info**
 
-(Updated March 12, 2026)
+(Updated September 18th, 2026)
 
 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue.
 
@@ -48,9 +48,10 @@ Roller - Click the button in token controls. Double click for a contest
 - GM: May select from their highlighted actors.
 - Player: Can select from their owned actors.
 - Dice So Nice animations are supported. Other modifications can be made on request.
+- Visibility of roll decided by roll mode. In character currently doesnt have special logic
 
 Luck - Feint/Fudge are pre-roll. Mulligan/Persist are after.
-- Fudge affects the current roll and the immediately following roll.
+- Fudge affects the current pair. This roll and the immediately following roll.
 
 Actor Sheets - Navigate the tabs to fill in or view information related to your actor's type. Use your Foundry color to alter the color of your own sheets for all viewers.
 
@@ -58,7 +59,7 @@ Power Sheet - For all non-stand abilities.
 Stand Sheet - For all stand abilities.
 User Sheet - For all user types.
 
-I have attempted to make it capable of automatically updating sheets from the Worldbuilding version to this system. Remember to backup your files before trying this:
+I have attempted to make it capable of automatically updating sheets from the Worldbuilding version to this system. Remember to backup your files before trying this, as it currently WILL delete the original actors:
 
 1) Navigate to your user data folder (doable by right clicking the foundry application)
 2) Enter data, then worlds, then click the folder of the world you're changing (note the name by default is based on the ORIGINAL name of the world)
@@ -69,3 +70,5 @@ I have attempted to make it capable of automatically updating sheets from the Wo
 Alternatively, import the actor then reload the game.
 
 Remember, if you have any questions, comments, ideas, etc. let itpart know on Discord!
+
+Kanji developed by Aaesos (Requested to have no additional identification)
