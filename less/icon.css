@@ -1,0 +1,53 @@
+.bad6-menace-icon {
+  position: relative;
+}
+@keyframes bad6-earthquake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-0.35px, 0.2px);
+  }
+  20% {
+    transform: translate(0.25px, -0.3px);
+  }
+  30% {
+    transform: translate(-0.2px, 0.35px);
+  }
+  40% {
+    transform: translate(0.35px, 0.15px);
+  }
+  50% {
+    transform: translate(-0.3px, -0.25px);
+  }
+  60% {
+    transform: translate(0.2px, -0.35px);
+  }
+  70% {
+    transform: translate(-0.35px, 0.25px);
+  }
+  80% {
+    transform: translate(0.3px, -0.15px);
+  }
+  90% {
+    transform: translate(-0.15px, 0.2px);
+  }
+}
+.bad6-menace-icon::before {
+  animation: bad6-earthquake 0.45s steps(2, jump-none) infinite;
+  transform-origin: center;
+}
+.bad6-menace-icon::before {
+  content: "";
+  display: block;
+  width: 1.35em;
+  height: 1.35em;
+  background-color: currentColor;
+  -webkit-mask: url("assets/icons/roller/menace-symbol.svg") center / contain no-repeat;
+  mask: url("assets/icons/roller/menace-symbol.svg") center / contain no-repeat;
+  -webkit-mask-size: 125%;
+  mask-size: 125%;
+  transform-origin: center;
+  animation: bad6-earthquake 1s ease-in-out infinite;
+}

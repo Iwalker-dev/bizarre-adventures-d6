@@ -30,6 +30,21 @@ async function executeRollerAsGM(handler, ...args) {
     return await socket.executeAsGM(handler, ...args);
 }
 
+function decideRollerIcon() {
+    const iconChoice = game.settings?.get("bizarre-adventures-d6", "rollerIconChoice") ?? null;
+    const onDefault = game.settings?.get("bizarre-adventures-d6", "clickedRoller") ?? null;
+
+    if (iconChoice) {
+        return iconChoice;
+    }
+    // Only relevant if the user hasn't picked a icon
+    if(!onDefault) {
+        return "bad6-menace-icon";
+    } else {
+        return "fas fa-dice-d6";
+    }
+}
+
 /**
  * Register the scene control button for the D6 Roller.
  * @returns {void}
@@ -41,8 +56,8 @@ export function rollerControl() {
 
 			tokenControls.tools["rollerButton"] = {
 			name: "rollerButton"
-			, title: "D6 Roller"
-			, icon: "fas fa-dice-d6" // TODO: Default to menacing symbol, however allow the setting to change it to Aaesos' menacing kanji
+			, title: "BAD6 Roller"
+			, icon: decideRollerIcon()
 			, visible: true
 			, button: true
 			, order: 50
@@ -51,6 +66,11 @@ export function rollerControl() {
                     if (game.release.generation < 14) {
                         ui.notifications.error("This button doesn't currently work on versions of Foundry beneath V14.");
                         return;
+                    }
+                    // Was clicked, change back to dice
+                    if (!game.settings?.get("bizarre-adventures-d6", "clickedRoller")) {
+                        await game.settings?.set("bizarre-adventures-d6", "clickedRoller", true);
+                        ui.notifications.warn("This button will be changed to a die on next reload (Change in Game Settings).");
                     }
                     // If you very recently created an action
 					if (rollerClickTimer) {
@@ -637,7 +657,6 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
     console.log("actors filtered");
     // Create dialog
     const statDialogResult = await renderDialog("stat", { actors, quadrantNum });
-    console.log(statDialogResult);
     if (!statDialogResult) return;
     const { stat, sourceUuid, actorId, selectedModifierIds = [], gambit = null } = statDialogResult;
     if (!stat) return;
