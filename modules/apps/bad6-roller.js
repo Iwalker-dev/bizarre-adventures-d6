@@ -33,7 +33,6 @@ async function executeRollerAsGM(handler, ...args) {
 function decideRollerIcon() {
     const iconChoice = game.settings?.get("bizarre-adventures-d6", "rollerIconChoice") ?? null;
     const onDefault = game.settings?.get("bizarre-adventures-d6", "clickedRoller") ?? null;
-    console.log("Clicked Roller oD =" + onDefault);
 
     if (iconChoice) {
         return iconChoice;
@@ -58,7 +57,7 @@ export function rollerControl() {
 			tokenControls.tools["rollerButton"] = {
 			name: "rollerButton"
 			, title: "BAD6 Roller"
-			, icon: decideRollerIcon() // TODO: Default to menacing symbol, however allow the setting to change it to Aaesos' menacing kanji
+			, icon: decideRollerIcon()
 			, visible: true
 			, button: true
 			, order: 50
@@ -73,7 +72,6 @@ export function rollerControl() {
                         await game.settings?.set("bizarre-adventures-d6", "clickedRoller", true);
                         ui.notifications.warn("This button will be changed to a die on next reload (Change in Game Settings).");
                     }
-                    
                     // If you very recently created an action
 					if (rollerClickTimer) {
 						clearTimeout(rollerClickTimer);
@@ -659,7 +657,6 @@ async function renderStatSelectionDialog(messageId, quadrantNum, actorSources) {
     console.log("actors filtered");
     // Create dialog
     const statDialogResult = await renderDialog("stat", { actors, quadrantNum });
-    console.log(statDialogResult);
     if (!statDialogResult) return;
     const { stat, sourceUuid, actorId, selectedModifierIds = [], gambit = null } = statDialogResult;
     if (!stat) return;
