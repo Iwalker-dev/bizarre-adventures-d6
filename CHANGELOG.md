@@ -253,7 +253,7 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Other issues fixed
 - Begun reversion to single label per pair rolls
 
-## [0.9.15.01] - 2026-9-18
+## [0.9.15.05] - 2026-9-18
 - Added Aesos' menacing kanji to the BAD6 Roller (Changes to legacy on first click, can be changed in Game Settings)
 - Changed name of roller from "D6 Roller" to "BAD6 Roller"
 
