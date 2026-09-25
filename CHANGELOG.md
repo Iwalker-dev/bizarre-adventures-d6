@@ -257,6 +257,8 @@ Allow clicking a linked actor to open their sheet (also create css for linked ac
 - Added Aesos' menacing kanji to the BAD6 Roller (Changes to legacy on first click, can be changed in Game Settings)
 - Changed name of roller from "D6 Roller" to "BAD6 Roller"
 
+## [0.9.15.6] - 2026-9-25
+- Fixed new actors incorrectly gathering their templates due to poor migration from v13-v14
 
 # What's left? (Ordered By Priority)
 - Add button to chat message to make the roll message latest. Add option to automatically do so on update.
