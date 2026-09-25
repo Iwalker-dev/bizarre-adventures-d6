@@ -14,6 +14,7 @@ import { PowerSheet } from "./modules/sheets/power-actor-sheet.js";
 import { DefaultItemSheet } from "./modules/sheets/default-item-sheet.js";
 import { HitItemSheet } from "./modules/sheets/hit-item-sheet.js";
 import { GambitItemSheet } from "./modules/sheets/gambit-item-sheet.js";
+import { registerDocumentDataModels } from "./modules/models/templates.js";
 
 
 
@@ -97,6 +98,7 @@ Hooks.once("init", async () => {
 	// Replace default sheet registry
 	foundry.documents.collections.Items.unregisterSheet("core", foundry.appv1.sheets.ItemSheet);
 	foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
+	registerDocumentDataModels();
 
 
 /*
