@@ -2,7 +2,7 @@
   "id": "bizarre-adventures-d6",
   "title": "Bizarre Adventures D6",
   "description": "A core system for the Bizarre Adventures D6 system.",
-  "version": "0.9.15.6",
+  "version": "0.9.16",
   "authors": [
     {
       "name": "LONYO",
@@ -32,25 +32,28 @@
     "units": "m"
   },
   "manifest": "https://raw.githubusercontent.com/Iwalker-dev/bizarre-adventures-d6/main/system.json",
-  "download": "handled by workflow",
+  "download": "https://github.com/Iwalker-dev/bizarre-adventures-d6/releases/download/v0.9.15.6/bizarre-adventures-d6-v0.9.15.6.zip",
   "relationships": {
     "requires": [
       {
         "id": "socketlib",
         "type": "module",
-        "manifest": "https://github.com/farling42/foundryvtt-socketlib/releases/latest/download/module.json"
+        "manifest": "https://github.com/farling42/foundryvtt-socketlib/releases/latest/download/module.json",
+        "compatibility": {}
       }
     ],
     "recommends": [
       {
         "id": "lib-wrapper",
         "type": "module",
-        "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json"
+        "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json",
+        "compatibility": {}
       },
       {
         "id": "lancer-initiative",
         "type": "module",
-        "manifest": "https://codeberg.org/Bolts/lancer-initiative/releases/download/latest/module.json"
+        "manifest": "https://codeberg.org/Bolts/lancer-initiative/releases/download/latest/module.json",
+        "compatibility": {}
       }
     ]
   },
@@ -65,5 +68,6 @@
       "hit": {},
       "gambit": {}
     }
-  }
+  },
+  "flags": {}
 }

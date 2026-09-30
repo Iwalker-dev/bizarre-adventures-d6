@@ -9,6 +9,10 @@ Hooks.once("socketlib.ready", () => {
 	socket.register("triggerOutroEffect", triggerOutroEffect);
 });
 
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export function outroControl() {
 	if (isDebugEnabled()) {
 		console.log("Setting up Outro…");
@@ -30,7 +34,7 @@ export function outroControl() {
 }
 
 // 3) Send the outro effect (GM → everyone) and switch scene after delay
-function sendOutroEffect(wiggleAmount, wiggleDuration) {
+async function sendOutroEffect(wiggleAmount, wiggleDuration) {
 	if (isDebugEnabled()) {
 		console.log("Stopping all playlists");
 	}
@@ -40,31 +44,37 @@ function sendOutroEffect(wiggleAmount, wiggleDuration) {
 		if (isDebugEnabled()) {
 			console.log("Broadcasting outro effect to all clients…");
 		}
-		socket.executeForEveryone("triggerOutroEffect", wiggleAmount, wiggleDuration);
+		const outroScene = game.scenes.find(s => s.name === game.settings.get("bizarre-adventures-d6", "outroScene"));
+		if (outroScene) await game.scenes.preload(outroScene.id, true); // TODO: V16 Change to "if (outroScene) await game.scenes.broadcast(outroScene.id, true);"
+		const outroPlaylist = outroScene?.playlist;
+		const outroSound = outroScene?.playlistSound;
+		if (outroSound) outroPlaylist.playSound(outroSound);
+		else console.log("no outro song detected");
+		await sleep(game.settings.get("bizarre-adventures-d6", "outroDelay"));
+		await socket.executeForEveryone("triggerOutroEffect", wiggleAmount, wiggleDuration);
 	} else {
 		console.error("Socketlib is not initialized!");
 	}
-
 	// Delay scene switch until after the arrow animation
-	setTimeout(() => {
-		const outroScene = game.scenes.find(s => s.name === "Outro");
-		if (outroScene) {
-			if (isDebugEnabled()) {
-				console.log("Switching to Outro scene…");
+		setTimeout(() => {
+			const sceneLabel = game.settings.get("bizarre-adventures-d6", "outroScene");
+			const outroScene = game.scenes.find(s => s.name === sceneLabel);
+			if (outroScene) {
+				if (isDebugEnabled()) {
+					console.log(`Switching to Outro scene "${sceneLabel}"...`);
+				}
+				outroScene.activate();
+			} else {
+				console.warn(`No scene named ${sceneLabel} found.`);
 			}
-			outroScene.activate();
-		} else {
-			console.warn("No scene named 'Outro' found.");
-		}
-	}, 2500);
+		}, (2500));
 }
 
 // Client-side effect: tint, arrow, shake
-function triggerOutroEffect(wiggleAmount, wiggleDuration) {
+async function triggerOutroEffect(wiggleAmount, wiggleDuration) {
 	if (isDebugEnabled()) {
 		console.log("Outro received, everybody freeze!");
 	}
-
 	// Create screen tint
 	const tint = document.createElement("div");
 	tint.id = "screen-tint";
@@ -75,7 +85,7 @@ function triggerOutroEffect(wiggleAmount, wiggleDuration) {
 		, width: "100%"
 		, height: "100%"
 		, background: "rgba(255,215,0,0.17)"
-		, zIndex: "1000"
+		, zIndex: "1001"
 	});
 	document.body.appendChild(tint);
 
@@ -91,44 +101,47 @@ function triggerOutroEffect(wiggleAmount, wiggleDuration) {
 		, height: "auto"
 		, opacity: "0"
 		, transition: "left 1.4s ease-out, opacity 2s ease-in"
-		, zIndex: "2000"
+		, zIndex: "1002"
 	});
 	document.body.appendChild(arrow);
-
-	// Kick off the arrow animation
+	// Fix sequencing issue with sleep
 	requestAnimationFrame(() => {
-		arrow.style.left = "0";
-		arrow.style.opacity = "1";
+		// Kick off the arrow animation
+		requestAnimationFrame(() => {
+			arrow.style.left = "0";
+			arrow.style.opacity = "1";
 
-		// After the arrow finishes, do the shake + cleanup
-		setTimeout(() => {
-			const originalPan = {
-				x: canvas.stage.pivot.x
-				, y: canvas.stage.pivot.y
-			};
-			const shakeEnd = Date.now() + wiggleDuration;
+			// After the arrow finishes, do the shake + cleanup
+			setTimeout(() => {
+				const originalPan = {
+					x: canvas.stage.pivot.x
+					, y: canvas.stage.pivot.y
+				};
+				const shakeEnd = Date.now() + wiggleDuration;
 
-			(function shake() {
-				if (Date.now() >= shakeEnd) {
-					canvas.pan(originalPan);
-					setTimeout(() => {
-						arrow.remove();
-						tint.remove();
-						if (isDebugEnabled()) {
-							console.log("Outro cleanup complete.");
-						}
-					}, 500);
-					return;
-				}
-				const xOff = (Math.random() - 0.5) * wiggleAmount;
-				const yOff = (Math.random() - 0.5) * wiggleAmount;
-				canvas.pan({
-					x: originalPan.x + xOff
-					, y: originalPan.y + yOff
-					, duration: 50
-				});
-				requestAnimationFrame(shake);
-			})();
-		}, 1400); // start shake after arrow has moved on-screen
+				(function shake() {
+					if (Date.now() >= shakeEnd) {
+						canvas.pan(originalPan);
+						setTimeout(() => {
+							arrow.remove();
+							tint.remove();
+							if (isDebugEnabled()) {
+								console.log("Outro cleanup complete.");
+							}
+						}, 500);
+						return;
+					}
+					const xOff = (Math.random() - 0.5) * wiggleAmount;
+					const yOff = (Math.random() - 0.2) * wiggleAmount;
+					canvas.pan({
+						x: originalPan.x + xOff
+						, y: originalPan.y + yOff
+						, duration: 50
+					});
+					requestAnimationFrame(shake);
+				})();
+			}, 1400); // start shake after arrow has moved on-screen
+		});
 	});
+	return;
 }

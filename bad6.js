@@ -74,6 +74,25 @@ Hooks.once("init", async () => {
 		default: "",
 		requiresReload: true
 	});
+	// For outro use (Isn't available during initilization, needs different solution)
+	// const sceneLabels = game.scenes.contents.map(s => s.name); // array of all scene names
+	game.settings.register("bizarre-adventures-d6", "outroScene", {
+		name: "Outro Scene Name",
+		hint: "Choose a Scene in the world for the Outro to change to.",
+		scope: "world",
+		config: true,
+		type: String,
+		// choices: sceneLabels,
+		default: "Outro"
+	});
+	game.settings.register("bizarre-adventures-d6", "outroDelay", {
+		name: "Outro Delay",
+		hint: "Choose a Delay (in ms) before the Outro animation plays. Music will still play instantly after loading. (Arrow animation is 1400ms)",
+		scope: "world",
+		config: true,
+		type: Number,
+		default: 0
+	});
 
 
 

@@ -9,7 +9,7 @@ export const welcomeText = `
             <li>🎯 As a player your owned actors are the roll's context.</li>
             <li>🎯 Contest rolls are resolved in the same chat message; use the buttons in each quadrant.</li>
             <li>🔧 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue</li>
-            <li>🌟 To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called "Outro" and it will automatically switch to it afterwards.</li>
+            <li>🌟 To Be Continued - Runs the outro sequence. Customize delay and automatic scene switching in settings.</li>
             <li>🧑 Old Actors - On each load, actors will be automatically moved to a type (if set up properly in the Worldbuilding version.).</li>
         </ul>
         <p> This system is unfinished! Certain features are not yet implemented such as...</p>
@@ -18,7 +18,7 @@ export const welcomeText = `
             <li> (View the changelog for longer list) </li>
         </ul>
     <p> Please report any problems, ideas, or comments to itpart on Discord as I try to handle them quickly. I would love to make this the perfect system with your help!
-    <p> <a href="https://discordapp.com/invite/2QVASDt" target="_blank" rel="noopener noreferrer">Official Bizarre Adventures Discord</a></p>
+    <p> <a href="https://discordapp.com/invite/2QVASDt" target="_blank" rel="noopener noreferrer">Official Bizarre Adventures D6 Discord</a></p>
     <p>	<a href="https://discord.gg/f6t3tGMgMD" target="_blank" rel="noopener noreferrer">FoundryVTT System's Discord</a>  </p>`
 
 export const actionLabels = [ 
