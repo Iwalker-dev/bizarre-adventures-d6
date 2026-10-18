@@ -24,9 +24,9 @@ export function HueShiftControl() {
 			} // default Ctrl+H
     ]
 		, restricted: true, // GMs only
-		onDown: () => {
+		onDown: async () => {
 			if (!game.user.isGM) return false;
-			socket.executeForEveryone("stepHueShift", -targetHue);
+			await socket.executeForEveryone("stepHueShift", -targetHue);
 			ui.controls.render();
 			return false; // Prevent browser reload
 		}
@@ -44,11 +44,14 @@ export function HueShiftControl() {
 			, toggle: false
 			, active: targetHue !== 0
 			, order: 100
-			, onChange: (_value, event) => {
-          if (targetHue == 30) ui.notifications.info("Reset hue through its keybind (Ctrl+H by default)")
-          if (targetHue == 330) ui.notifications.warn("Next click will reset hue")
-					socket.executeForEveryone("stepHueShift", 30);
-          
+			, onChange: async (_value, event) => {
+				if (targetHue == 30) ui.notifications.info("Reset hue through its keybind (Ctrl+H by default)");
+				if (targetHue == 330) ui.notifications.warn("Next click will reset hue");
+				await socket.executeForEveryone("stepHueShift", 30);
+				/*
+				const tool = ui.controls.control.tools?.["hueShift"];
+				if (tool) tool.active = (targetHue !== 0);
+				*/
 				ui.controls.render();
 			}
 		};
@@ -63,7 +66,7 @@ function stepHueShift(step) {
 
 	// Create & attach the filter if needed
 	if (!hueFilter) {
-		hueFilter = new PIXI.filters.ColorMatrixFilter();
+		hueFilter = new PIXI.ColorMatrixFilter();
 		canvas.app.stage.filters = [...(canvas.app.stage.filters || []), hueFilter];
 	}
 
@@ -82,13 +85,6 @@ function stepHueShift(step) {
 		// Apply the hue
 		hueFilter.hue(currentHue, false);
 
-		// Update the button glow if the Lighting tab is open
-		if (ui.controls.control?.name === "lighting") {
-			const tool = ui.controls.control.tools?.["hueShift"];
-			if (tool) tool.active = (targetHue !== 0);
-			ui.controls.render();
-		}
-
 		// Stop when done
 		if (currentHue === targetHue) {
 			PIXI.Ticker.shared.remove(animTicker);
@@ -101,6 +97,7 @@ function stepHueShift(step) {
 
 // Re-apply filter & ticker if you reload the canvas
 Hooks.on("canvasReady", () => {
+	hueFilter = null;
 	if (currentHue === 0 && targetHue === 0) return;
 
 	// Recreate the filter
@@ -118,13 +115,13 @@ Hooks.on("canvasReady", () => {
 				(currentHue + Math.sign(diff) * speed + 360) % 360;
 
 			hueFilter.hue(currentHue, false);
-
+			/*
 			if (ui.controls.control?.name === "lighting") {
 				const tool = ui.controls.control.tools?.["hueShift"];
 				if (tool) tool.active = (targetHue !== 0);
 				ui.controls.render();
 			}
-
+			*/
 			if (currentHue === targetHue) {
 				PIXI.Ticker.shared.remove(animTicker);
 				animTicker = null;
