@@ -38,11 +38,11 @@ Random Character Generator (Would require a resource)
 
 **Use Info**
 
-(Updated September 18th, 2026)
+(Updated September 27th, 2026)
 
 Hue Shift - Within Lighting controls, click the "Hue Shift Canvas" button to shift the hue 30 degrees. By default, use ctrl+h to reset the hue.
 
-To Be Continued - Click the button to place the animation over all screens, turning off all current music. Create a Scene called Outro and it will automatically switch to it afterwards.
+To Be Continued - Runs the outro sequence. Customize delay and automatic scene switching in settings.
 
 Roller - Click the button in token controls. Double click for a contest
 - GM: May select from their highlighted actors.
